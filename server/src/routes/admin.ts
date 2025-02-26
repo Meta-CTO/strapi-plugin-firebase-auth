@@ -6,18 +6,16 @@ export default [
     config: {
       policies: [
         'admin::isAuthenticatedAdmin',
-        { name: 'admin::hasPermissions', config: { actions: ['plugin::firebase-auth.settings.read'] } },
       ],
     },
   },
   {
-    method: 'PUT',
+    method: 'POST',
     path: '/config',
     handler: 'admin.updateConfig',
     config: {
       policies: [
         'admin::isAuthenticatedAdmin',
-        { name: 'admin::hasPermissions', config: { actions: ['plugin::firebase-auth.settings.read'] } },
       ],
     },
   },
