@@ -1,5 +1,7 @@
-import controller from './controller';
+import admin from './admin';
+import firebase from './firebase';
 
 export default {
-  controller,
+  admin,
+  firebase,
 };
