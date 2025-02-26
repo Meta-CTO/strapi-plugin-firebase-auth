@@ -1,78 +1,58 @@
-type TradOptions = Record<string, string>;
+import { PLUGIN_ID } from "./pluginId";
+import { Initializer } from "./components/Initializer";
+import { PluginIcon } from "./components/PluginIcon";
+import { prefixPluginTranslations } from "./utils/prefixPluginTranslations";
+import { PERMISSIONS } from "./permissions";
+import { getTranslation } from "./utils/getTranslation";
 
-const prefixPluginTranslations = (
-  trad: TradOptions,
-  pluginId: string
-): TradOptions => {
-  if (!pluginId) {
-    throw new TypeError("pluginId can't be empty");
-  }
-  return Object.keys(trad).reduce((acc, current) => {
-    acc[`${pluginId}.${current}`] = trad[current];
-    return acc;
-  }, {} as TradOptions);
-};
-
-
-
-import pluginPkg from "../../package.json";
-import pluginId from "./pluginId";
-import { Initializer } from "./components/Initializer/Initializer";
-import PluginIcon from "./components/PluginIcon";
-import pluginPermissions from "./utils/permissions";
-import getTrad from "./utils/getTrad";
-
-const name = pluginPkg.strapi.name;
 
 export default {
   register(app: any) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${PLUGIN_ID}`,
       icon: PluginIcon,
       intlLabel: {
-        id: `${pluginId}.plugin.name`,
-        defaultMessage: `Firebase Auth`,
+        id: `${PLUGIN_ID}.page.title`,
+        defaultMessage: PLUGIN_ID,
       },
-      Component: async () => {
-        const component = await import("./pages/App/index.tsx");
-        return component.default;
-      },
-      permissions: pluginPermissions.main,
+      Component: () =>
+        import("./pages/App").then((mod) => ({
+          default: mod.App,
+        })),
+      permissions: PERMISSIONS["menu-link"],
     });
 
     app.createSettingSection(
       {
-        id: pluginId,
+        id: PLUGIN_ID,
         intlLabel: {
-          id: getTrad("SettingsNav.section-label"),
+          id: getTranslation("SettingsNav.section-label"),
           defaultMessage: "Firebase-Auth Plugin",
         },
       },
       [
         {
           intlLabel: {
-            id: getTrad("Settings.firebase-auth.plugin.title"),
+            id: getTranslation("Settings.firebase-auth.plugin.title"),
             defaultMessage: "Settings",
           },
           id: "settings",
-          to: `/settings/${pluginId}`,
+          to: `/settings/${PLUGIN_ID}`,
           async Component() {
-            const component = await import("./pages/Settings/index.tsx");
+            const component = await import("./pages/Settings/index");
             return component.default;
           },
-          permissions: pluginPermissions.settings,
+          permissions:  PERMISSIONS["menu-link"],
         },
       ]
     );
 
-    const plugin = {
-      id: pluginId,
+    app.registerPlugin({
+      id: PLUGIN_ID,
       initializer: Initializer,
       isReady: false,
-      name,
-    };
-
-    app.registerPlugin(plugin);
+      name: PLUGIN_ID,
+    });
   },
 
   async registerTrads({ locales }: { locales: string[] }) {
@@ -81,7 +61,7 @@ export default {
         return import(`./translations/${locale}.json`)
           .then(({ default: data }) => {
             return {
-              data: prefixPluginTranslations(data, pluginId),
+              data: prefixPluginTranslations(data, PLUGIN_ID),
               locale,
             };
           })
@@ -96,4 +76,4 @@ export default {
 
     return Promise.resolve(importedTrads);
   },
-}; 
+};

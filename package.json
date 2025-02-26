@@ -1,6 +1,21 @@
 {
-  "version": "0.0.0",
-  "keywords": [],
+  "name": "strapi-plugin-firebase-auth",
+  "version": "1.0.0",
+  "description": "Allows easy integration between clients utilizing Firebase for authentication and Strapi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Meta-CTO/strapi-plugin-firebase-auth.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Meta-CTO/strapi-plugin-firebase-auth/issues"
+  },
+  "homepage": "https://github.com/Meta-CTO/strapi-plugin-firebase-auth#readme",
+  "author": "Garrett Fritz <garrett@metacto.com>",
+  "keywords": [
+    "strapi5",
+    "strapi-plugin"
+  ],
   "type": "commonjs",
   "exports": {
     "./package.json": "./package.json",
@@ -12,8 +27,8 @@
       "default": "./dist/admin/index.js"
     },
     "./strapi-server": {
-      "types": "./dist/server/index.d.ts",
-      "source": "./server/index.ts",
+      "types": "./dist/server/src/index.d.ts",
+      "source": "./server/src/index.ts",
       "import": "./dist/server/index.mjs",
       "require": "./dist/server/index.js",
       "default": "./dist/server/index.js"
@@ -23,60 +38,54 @@
     "dist"
   ],
   "scripts": {
+    "afterClone": "rm -rf dist node_modules package-lock.json && npm install",
     "build": "strapi-plugin build",
-    "watch": "strapi-plugin watch",
-    "watch:link": "strapi-plugin watch:link",
-    "verify": "strapi-plugin verify",
+    "format": "npx prettier --write .",
+    "format:check": "npx prettier -c .",
+    "release": "npm run format && npm run build && npm run verify && changelogen --release && npm publish && git push --follow-tags",
+    "test:ts:back": "run -T tsc -p server/tsconfig.json",
     "test:ts:front": "run -T tsc -p admin/tsconfig.json",
-    "test:ts:back": "run -T tsc -p server/tsconfig.json"
+    "verify": "strapi-plugin verify",
+    "watch": "strapi-plugin watch",
+    "watch:link": "strapi-plugin watch:link"
   },
   "dependencies": {
-    "@strapi/design-system": "2.0.0-rc.18",
-    "@strapi/icons": "2.0.0-rc.18",
+    "@strapi/design-system": "^2.0.0-rc.16",
+    "@strapi/icons": "^2.0.0-rc.16",
     "crypto-js": "^4.2.0",
-    "decimal.js": "^10.4.3",
-    "firebase-admin": "^12.0.0",
-    "lodash": "^4.17.21"
-
+    "destr": "^2.0.3",
+    "firebase-admin": "^13.1.0",
+    "react-intl": "^7.1.6",
+    "react-syntax-highlighter": "^15.6.1"
   },
   "devDependencies": {
-    "@strapi/sdk-plugin": "^5.3.2",
-    "@strapi/strapi": "^5.10.3",
-    "@strapi/typescript-utils": "^5.10.3",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "@types/styled-components": "^5.1.34",
-    "react-router-dom": "^6.0.0",
-    "prettier": "^3.5.2",
+    "@strapi/sdk-plugin": "^5.3.1",
+    "@strapi/strapi": "^5.10.2",
+    "@strapi/typescript-utils": "^5.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "changelogen": "^0.5.7",
+    "prettier": "^3.5.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.29.0",
+    "styled-components": "^6.1.15",
     "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "@strapi/sdk-plugin": "^5.3.2",
-    "@strapi/strapi": "^5.10.3",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "react-helmet": "^6.1.0",
-    "react-icons": "^4.10.1",
-    "react-router-dom": "^6.0.0",
-    "styled-components": "^6.0.0"
+    "@strapi/sdk-plugin": "^5.2.6",
+    "@strapi/strapi": "^5.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "styled-components": "^6.1.13"
   },
+  "access": "public",
   "strapi": {
     "kind": "plugin",
     "name": "firebase-auth",
     "displayName": "Strapi <-> Firebase Auth Plugin",
-    "description": "Allows easy integration between clients utilizing Firebase for authentication and Strapi",
-   
-  },
-  "name": "strapi-plugin-firebase-auth",
-  "description": "Allows easy integration between clients utilizing Firebase for authentication and Strapi",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+ssh://git@github.com/Meta-CTO/strapi-plugin-firebase-auth.git"
-  },
-  "bugs": {
-    "url": "https://github.com/Meta-CTO/strapi-plugin-firebase-auth/issues"
-  },
-  "homepage": "https://github.com/Meta-CTO/strapi-plugin-firebase-auth#readme",
-  "author": "Garrett Fritz <garrett@metacto.com>"
+    "description": "Allows easy integration between clients utilizing Firebase for authentication and Strapi"
+  }
 }

@@ -1,13 +1,8 @@
 import React from "react";
-import {
-  Dialog,
-  DialogBody,
-  DialogFooter,
-  Flex,
-  Typography,
-  Button,
-} from "@strapi/design-system";
-import { ExclamationMarkCircle } from "@strapi/icons";
+import { Dialog } from "@strapi/design-system";
+import { Button } from "@strapi/design-system";
+import { Typography } from "@strapi/design-system";
+import { WarningCircle } from "@strapi/icons";
 
 interface DeleteJsonConfigurationDialogueProps {
   isOpen: boolean;
@@ -17,35 +12,32 @@ interface DeleteJsonConfigurationDialogueProps {
 
 export const DeleteJsonConfigurationDialogue = ({
   isOpen,
-  onConfirm,
   onToggleDialog,
+  onConfirm,
 }: DeleteJsonConfigurationDialogueProps) => {
+  console.log('Dialog props:', { isOpen });
   return (
-    <>
-      <Dialog onClose={onToggleDialog} title="Delete Account" isOpen={isOpen}>
-        <DialogBody icon={<ExclamationMarkCircle />}>
-          <Flex direction="column" alignItems="center" gap={2}>
-            <Flex justifyContent="flex-start" textAlign="center">
-              <Typography textColor="danger700">
-                Are you sure you want to delete your current firebase
-                configuration?
-              </Typography>
-            </Flex>
-          </Flex>
-        </DialogBody>
-        <DialogFooter
-          startAction={
-            <Button onClick={onToggleDialog} variant="tertiary">
+    <Dialog.Root onClose={onToggleDialog} isOpen={isOpen}>
+      <Dialog.Content>
+        <Dialog.Header>Delete Configuration</Dialog.Header>
+        <Dialog.Body icon={<WarningCircle fill="danger600" />}>
+          <Typography textColor="danger700">
+            Are you sure you want to delete your current firebase configuration?
+          </Typography>
+        </Dialog.Body>
+        <Dialog.Footer>
+          <Dialog.Cancel>
+            <Button fullWidth variant="tertiary" onClick={onToggleDialog}>
               Cancel
             </Button>
-          }
-          endAction={
-            <Button variant="danger" onClick={onConfirm}>
-              Delete
+          </Dialog.Cancel>
+          <Dialog.Action>
+            <Button fullWidth variant="danger-light" onClick={onConfirm}>
+              Yes, delete
             </Button>
-          }
-        />
-      </Dialog>
-    </>
+          </Dialog.Action>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 };
