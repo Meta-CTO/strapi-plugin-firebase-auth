@@ -6,6 +6,8 @@ import {
   Button,
   Typography,
 } from "@strapi/design-system";
+
+
 import { Page } from '@strapi/strapi/admin';
 import { useNotification } from '@strapi/strapi/admin';
 import {
@@ -93,14 +95,13 @@ function SettingsPage() {
     return <Page.Loading  />;
   }
 
-  const isJsonString = (str: any) => {
-    if (!str) return false;
+  const isJsonString = (str) => {
     try {
       JSON.parse(str);
-      return true;
     } catch (e) {
       return false;
     }
+    return true;
   };
 
   return (
@@ -157,10 +158,16 @@ function SettingsPage() {
                 You have successfully submitted your json configuration for
                 project:{" "}
                 <span style={{ fontWeight: 700 }}>
-                  {firebaseJsonValue?.firebaseConfigJson && isJsonString(firebaseJsonValue.firebaseConfigJson) 
-                    ? JSON.parse(firebaseJsonValue.firebaseConfigJson).project_id || 
-                      JSON.parse(firebaseJsonValue.firebaseConfigJson).projectId
-                    : 'Unknown Project'}
+                  {firebaseJsonValue?.firebaseConfigJson && 
+                    (() => {
+                      try {
+                        const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
+                        return config.project_id || config.projectId || 'Unknown Project';
+                      } catch (e) {
+                        return 'Invalid Config';
+                      }
+                    })()
+                  }
                 </span>
                 <button
                   onClick={() => {
