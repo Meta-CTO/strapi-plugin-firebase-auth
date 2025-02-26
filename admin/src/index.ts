@@ -1,40 +1,101 @@
-import { PLUGIN_ID } from './pluginId';
-import { Initializer } from './components/Initializer';
-import { PluginIcon } from './components/PluginIcon';
+type TradOptions = Record<string, string>;
+
+const prefixPluginTranslations = (
+  trad: TradOptions,
+  pluginId: string
+): TradOptions => {
+  if (!pluginId) {
+    throw new TypeError("pluginId can't be empty");
+  }
+  return Object.keys(trad).reduce((acc, current) => {
+    acc[`${pluginId}.${current}`] = trad[current];
+    return acc;
+  }, {} as TradOptions);
+};
+
+
+
+import pluginPkg from "../../package.json";
+import pluginId from "./pluginId";
+import { Initializer } from "./components/Initializer/Initializer";
+import PluginIcon from "./components/PluginIcon";
+import pluginPermissions from "./utils/permissions";
+import getTrad from "./utils/getTrad";
+
+const name = pluginPkg.strapi.name;
 
 export default {
   register(app: any) {
     app.addMenuLink({
-      to: `plugins/${PLUGIN_ID}`,
+      to: `/plugins/${pluginId}`,
       icon: PluginIcon,
       intlLabel: {
-        id: `${PLUGIN_ID}.plugin.name`,
-        defaultMessage: 'Firebase Authentication',
+        id: `${pluginId}.plugin.name`,
+        defaultMessage: `Firebase Auth`,
       },
       Component: async () => {
-        const { App } = await import('./pages/App');
-        return App;
+        const component = await import("./pages/App");
+        return component.default;  // Add .default here
       },
+      permissions: pluginPermissions.main,
     });
 
-    app.registerPlugin({
-      id: PLUGIN_ID,
+    app.createSettingSection(
+      {
+        id: pluginId,
+        intlLabel: {
+          id: getTrad("SettingsNav.section-label"),
+          defaultMessage: "Firebase-Auth Plugin",
+        },
+      },
+      [
+        {
+          intlLabel: {
+            id: getTrad("Settings.firebase-auth.plugin.title"),
+            defaultMessage: "Settings",
+          },
+          id: "settings",
+          to: `/settings/${pluginId}`,
+          async Component() {
+            const component = await import("./pages/Settings");
+            return component.default;  // Add .default here
+          },
+          permissions: pluginPermissions.settings,
+        },
+      ]
+    );
+
+    const plugin = {
+      id: pluginId,
       initializer: Initializer,
       isReady: false,
-      name: 'Firebase Authentication',
-    });
+      name,
+    };
+
+    app.registerPlugin(plugin);
   },
 
+  bootstrap(app: any) {},
+
   async registerTrads({ locales }: { locales: string[] }) {
-    return Promise.all(
-      locales.map(async (locale) => {
-        try {
-          const { default: data } = await import(`./translations/${locale}.json`);
-          return { data, locale };
-        } catch {
-          return { data: {}, locale };
-        }
+    const importedTrads = await Promise.all(
+      locales.map((locale) => {
+        return import(`./translations/${locale}.json`)
+          .then(({ default: data }) => {
+            return {
+              data: prefixPluginTranslations(data, pluginId),
+              locale,
+            };
+          })
+          .catch(() => {
+            return {
+              data: {},
+              locale,
+            };
+          });
       })
     );
+
+    return Promise.resolve(importedTrads);
   },
-};
+}; 
