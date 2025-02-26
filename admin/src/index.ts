@@ -75,8 +75,6 @@ export default {
     app.registerPlugin(plugin);
   },
 
-  bootstrap(app: any) {},
-
   async registerTrads({ locales }: { locales: string[] }) {
     const importedTrads = await Promise.all(
       locales.map((locale) => {

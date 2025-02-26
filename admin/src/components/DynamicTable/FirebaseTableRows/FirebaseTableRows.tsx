@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Box } from "@strapi/design-system";
-import { IconButton } from "@strapi/design-system";
-import { Tbody, Td, Tr } from "@strapi/design-system";
-import { Flex } from "@strapi/design-system";
+import { Box, IconButton, Tbody, Td, Tr, Flex, Checkbox, SimpleMenu, MenuItem, Typography } from "@strapi/design-system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
-import { BaseCheckbox } from "@strapi/design-system";
-import { SimpleMenu, MenuItem } from "@strapi/design-system";
-import { CarretDown } from "@strapi/icons";
-import { Cross, Check } from "@strapi/icons";
-import { Typography } from "@strapi/design-system";
 import styled from "styled-components";
 import { MapProviderToIcon } from "../../../utils/provider";
 import { User } from "../../../../../model/User";
+import { ArrowDown, Check, Cross } from "@strapi/icons";
 
 const TypographyMaxWidth = styled(Typography)`
   max-width: 300px;
@@ -68,7 +61,7 @@ export const FirebaseTableRows = ({
           return (
             <Tr key={data.uid}>
               <Box style={{ paddingLeft: 4, paddingRight: 4 }}>
-                <BaseCheckbox
+                <Checkbox
                   aria-label={formatMessage({
                     id: "app.component.table.select.one-entry",
                     defaultMessage: `Select {target}`,
@@ -112,7 +105,7 @@ export const FirebaseTableRows = ({
                   <Cross />
                 )}
               </Td>
-              <Td key={data.disabled}>
+              <Td>
                 {data.disabled ? <Check /> : <Cross />}
               </Td>
               <CellLink key={data.strapiId}>
@@ -137,8 +130,7 @@ export const FirebaseTableRows = ({
                 <Box key={data.uid}>
                   <SimpleMenu
                     label="Actions"
-                    as={IconButton}
-                    icon={<CarretDown />}
+                    icon={<ArrowDown />}
                   >
                     <MenuItem
                       onClick={() => {

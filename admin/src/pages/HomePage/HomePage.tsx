@@ -18,7 +18,7 @@ import { fetchUsers } from "./utils/api";
 import ListView from "../ListView";
 import { User } from "../../../../model/User";
 import { ResponseMeta } from "../../../../model/Meta";
-import { ExclamationMarkCircle } from "@strapi/icons";
+import { WarningCircle } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 import { getFirebaseConfig } from "../Settings/api";
 
@@ -85,7 +85,7 @@ export const HomePage = () => {
             </Grid>
           ) : (
             <Flex direction="column" marginTop={10}>
-              <ExclamationMarkCircle />
+              <WarningCircle />
               <Box marginTop={1}>
                 <Typography>
                   Firebase is not configured, please configure Firebase

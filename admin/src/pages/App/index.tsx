@@ -8,7 +8,8 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import { Page } from '@strapi/strapi/admin';
-import { DesignSystemProvider } from '@strapi/design-system';
+import { DesignSystemProvider, lightTheme } from '@strapi/design-system';
+
 import pluginPermissions from "../../utils/permissions";
 import pluginId from "../../pluginId";
 import { HomePage } from "../HomePage/HomePage";
@@ -19,7 +20,7 @@ import SettingsPage from "../Settings";
 
 const App = () => {
   return (
-    <DesignSystemProvider>
+    <DesignSystemProvider  theme={lightTheme}>
       <Page.Protect permissions={pluginPermissions.main}>
         <Routes>
           <Route path={`/plugins/${pluginId}`} element={<HomePage />} />
