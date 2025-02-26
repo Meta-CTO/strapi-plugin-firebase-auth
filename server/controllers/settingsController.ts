@@ -1,4 +1,3 @@
-
 import {errors} from '@strapi/utils';
 import { Context, DefaultContext } from "koa";
 
@@ -17,26 +16,38 @@ export default {
       .setFirebaseConfigJson(ctx);
   },
   getFirebaseConfigJson: async (ctx: DefaultContext | Context) => {
-    const config = await strapi
-      .plugin("firebase-auth")
-      .service("settingsService")
-      .getFirebaseConfigJson(ctx);
+    try {
+      const config = await strapi
+        .plugin("firebase-auth")
+        .service("settingsService")
+        .getFirebaseConfigJson(ctx);
 
-    if (!config || !config.firebaseConfigJson) {
-      ctx.notFound("no firebase config Found");
-      return;
+      if (!config) {
+        return ctx.send(null);
+      }
+
+      ctx.body = config;
+    } catch (error) {
+      throw new errors.ApplicationError("Error retrieving Firebase config", {
+        error: error.message,
+      });
     }
-    ctx.body = config;
   },
   async delFirebaseConfigJson(ctx: DefaultContext | Context) {
-    const isExist = await strapi
-      .plugin("firebase-auth")
-      .service("settingsService")
-      .delFirebaseConfigJson(ctx);
-    if (!isExist) {
-      ctx.notFound("No Firebase configs Exists for deletion");
-    } else {
+    try {
+      const isExist = await strapi
+        .plugin("firebase-auth")
+        .service("settingsService")
+        .delFirebaseConfigJson(ctx);
+      if (!isExist) {
+        throw new errors.NotFoundError('No Firebase configs exists for deletion');
+      }
       ctx.body = isExist;
+    } catch (error) {
+      if (error.name === 'NotFoundError') {
+        throw error;
+      }
+      throw new errors.ApplicationError('Error deleting Firebase config');
     }
   },
   async restart(ctx: DefaultContext | Context) {

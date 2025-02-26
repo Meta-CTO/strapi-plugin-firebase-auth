@@ -50,14 +50,24 @@ export default ({ strapi }) => {
         const configObject = await strapi.entityService.findMany(
           "plugin::firebase-auth.firebase-auth-configuration",
         );
+
+        if (!configObject || !configObject["firebase_config_json"]) {
+          return null;
+        }
+
         const firebaseConfigJsonObj = configObject["firebase_config_json"];
         const hashedJson = firebaseConfigJsonObj["firebaseConfigJson"];
+        
+        if (!hashedJson) {
+          return null;
+        }
 
         const firebaseConfigJson = await this.decryptJson(key, hashedJson);
-
         return { firebaseConfigJson };
+        
       } catch (error) {
-        throw new ApplicationError("some thing went wrong", {
+        console.error('Firebase config error:', error);
+        throw new errors.ApplicationError("Error retrieving Firebase config", {
           error: error.message,
         });
       }

@@ -9,7 +9,7 @@ import { Page } from '@strapi/strapi/admin';
 import { EditForm } from "./EditForm";
 
 export const EditView = () => {
-  const { id }: { id: string } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { toggleNotification } = useNotification();
   const { status, data } = useQuery(
     `firebase-auth-${id}`,

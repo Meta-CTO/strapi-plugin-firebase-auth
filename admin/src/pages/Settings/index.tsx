@@ -17,6 +17,9 @@ import {
 import { Trash } from "@strapi/icons";
 import { DeleteJsonConfigurationDialogue } from "./DeleteJsonConfigurationDialogue";
 import { useNavigate } from "react-router-dom";
+import selectAppImage from "../../assets/firebase-config-tutorial/select-app.png";
+import configImage from "../../assets/firebase-config-tutorial/config.png";
+import submissionImage from "../../assets/firebase-config-tutorial/submission.png";
 
 function SettingsPage() {
   const { toggleNotification } = useNotification();
@@ -90,13 +93,14 @@ function SettingsPage() {
     return <Page.Loading  />;
   }
 
-  const isJsonString = (str) => {
+  const isJsonString = (str: any) => {
+    if (!str) return false;
     try {
       JSON.parse(str);
+      return true;
     } catch (e) {
       return false;
     }
-    return true;
   };
 
   return (
@@ -153,10 +157,10 @@ function SettingsPage() {
                 You have successfully submitted your json configuration for
                 project:{" "}
                 <span style={{ fontWeight: 700 }}>
-                  {(firebaseJsonValue &&
-                    JSON.parse(firebaseJsonValue.firebaseConfigJson)
-                      .project_id) ||
-                    JSON.parse(firebaseJsonValue.firebaseConfigJson).projectId}
+                  {firebaseJsonValue?.firebaseConfigJson && isJsonString(firebaseJsonValue.firebaseConfigJson) 
+                    ? JSON.parse(firebaseJsonValue.firebaseConfigJson).project_id || 
+                      JSON.parse(firebaseJsonValue.firebaseConfigJson).projectId
+                    : 'Unknown Project'}
                 </span>
                 <button
                   onClick={() => {
@@ -202,7 +206,7 @@ function SettingsPage() {
                       Scroll down to the apps section and select your app
                     </Typography>
                     <img
-                      src={require("../../assets/firebase-config-tutorial/select-app.png")}
+                      src={selectAppImage}
                       style={{ maxWidth: "100%", marginTop: 32 }}
                     />
                   </li>
@@ -213,7 +217,7 @@ function SettingsPage() {
                     </Typography>
                     <div>
                       <img
-                        src={require("../../assets/firebase-config-tutorial/config.png")}
+                        src={configImage}
                         style={{ maxWidth: "100%", marginTop: 32 }}
                       />
                     </div>
@@ -226,7 +230,7 @@ function SettingsPage() {
                     </Typography>
                     <div style={{ marginTop: 24 }}>
                       <img
-                        src={require("../../assets/firebase-config-tutorial/submission.png")}
+                        src={submissionImage}
                         style={{ maxWidth: "100%" }}
                       />
                     </div>

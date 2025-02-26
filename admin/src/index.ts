@@ -34,8 +34,8 @@ export default {
         defaultMessage: `Firebase Auth`,
       },
       Component: async () => {
-        const component = await import("./pages/App");
-        return component.default;  // Add .default here
+        const component = await import("./pages/App/index.tsx");
+        return component.default;
       },
       permissions: pluginPermissions.main,
     });
@@ -57,8 +57,8 @@ export default {
           id: "settings",
           to: `/settings/${pluginId}`,
           async Component() {
-            const component = await import("./pages/Settings");
-            return component.default;  // Add .default here
+            const component = await import("./pages/Settings/index.tsx");
+            return component.default;
           },
           permissions: pluginPermissions.settings,
         },

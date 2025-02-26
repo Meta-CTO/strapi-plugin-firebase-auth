@@ -1,5 +1,5 @@
 import React from "react";
-import {  Table } from "@strapi/strapi/admin";
+import { Table } from "@strapi/design-system";
 import { FirebaseTableRows } from "./FirebaseTableRows/FirebaseTableRows";
 import { DeleteAccount } from "../UserManagement/DeleteAccount";
 import { tableHeaders } from "./TableHeaders";

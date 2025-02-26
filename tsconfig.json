@@ -4,9 +4,10 @@
     "rootDir": ".",
     "outDir": "build",
     "target": "ES5",
-    "module": "commonjs",
+    "module": "Node16",
     "jsx": "react",
     "moduleResolution": "node16",
+    "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "removeComments": true,
@@ -15,11 +16,13 @@
     "incremental": true,
     "allowJs": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noEmit": true
   },
   "include": [
     "./server/**/*",
     "./admin/**/*",
+    "./admin/src/types/*.d.ts",
     "./strapi-server.*",
     "./setup-package.ts",
     "./strapi-admin.*",

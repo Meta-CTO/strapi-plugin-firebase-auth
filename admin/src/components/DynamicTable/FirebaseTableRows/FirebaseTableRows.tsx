@@ -3,7 +3,7 @@ import { Box } from "@strapi/design-system";
 import { IconButton } from "@strapi/design-system";
 import { Tbody, Td, Tr } from "@strapi/design-system";
 import { Flex } from "@strapi/design-system";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
 import { BaseCheckbox } from "@strapi/design-system";
 import { SimpleMenu, MenuItem } from "@strapi/design-system";
@@ -46,6 +46,7 @@ export const FirebaseTableRows = ({
 }: FirebaseTableRowsProps) => {
   const [rowsData, setRowsData] = useState<User[]>(rows);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { formatMessage } = useIntl();
 
   useEffect(() => {
