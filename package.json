@@ -31,8 +31,8 @@
     "test:ts:back": "run -T tsc -p server/tsconfig.json"
   },
   "dependencies": {
-    "@strapi/design-system": "^1.19.0",
-    "@strapi/icons": "^1.19.0",
+    "@strapi/design-system": "2.0.0-rc18",
+    "@strapi/icons": "2.0.0-rc18",
     "crypto-js": "^4.2.0",
     "decimal.js": "^10.4.3",
     "firebase-admin": "^12.0.0",
