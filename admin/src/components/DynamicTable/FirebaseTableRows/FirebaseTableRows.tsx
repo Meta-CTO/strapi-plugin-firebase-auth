@@ -5,7 +5,7 @@ import { Tbody, Td, Tr } from "@strapi/design-system";
 import { Flex } from "@strapi/design-system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
-import { BaseCheckbox } from "@strapi/design-system";
+
 import { SimpleMenu, MenuItem } from "@strapi/design-system";
 import { ArrowDown } from "@strapi/icons";
 import { Cross, Check } from "@strapi/icons";
@@ -64,17 +64,7 @@ export const FirebaseTableRows = ({
           return (
             <Tr key={data.uid}>
               <Box style={{ paddingLeft: 4, paddingRight: 4 }}>
-                <BaseCheckbox
-                  aria-label={formatMessage({
-                    id: "app.component.table.select.one-entry",
-                    defaultMessage: `Select {target}`,
-                  })}
-                  checked={isChecked}
-                  onChange={(e: any) => {
-                    onSelectRow &&
-                      onSelectRow({ name: data.id, value: e.target.checked });
-                  }}
-                />
+                
               </Box>
               <Td key={data.email} style={{ padding: 16 }}>
                 <TypographyMaxWidth ellipsis textColor="neutral800">
@@ -105,13 +95,13 @@ export const FirebaseTableRows = ({
               </Td>
               <Td>
                 {data.emailVerified ? (
-                  <Check />
+                  <Check aria-hidden />
                 ) : (
-                  <Cross />
+                  <Cross aria-hidden />
                 )}
               </Td>
               <Td key={data.disabled}>
-                {data.disabled ? <Check  /> : <Cross />}
+                {data.disabled ? <Check aria-hidden /> : <Cross aria-hidden />}
               </Td>
               <CellLink key={data.strapiId}>
                 <TypographyMaxWidth ellipsis textColor="neutral800">
@@ -131,30 +121,7 @@ export const FirebaseTableRows = ({
                   {data.username}
                 </TypographyMaxWidth>
               </Td>
-              <Flex alignItems="center" paddingTop={3} gap={4}>
-                <Box key={data.uid}>
-                  <SimpleMenu
-                    label="Actions"
-                    as={IconButton}
-                    icon={<ArrowDown />}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        onResetPasswordClick(data);
-                      }}
-                    >
-                      Reset Password
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        onDeleteAccountClick(data);
-                      }}
-                    >
-                      Delete Account
-                    </MenuItem>
-                  </SimpleMenu>
-                </Box>
-              </Flex>
+              
             </Tr>
           );
         })}

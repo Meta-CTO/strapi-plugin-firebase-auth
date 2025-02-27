@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from "react";
-
-import { Page } from '@strapi/strapi/admin';
+import { Page, Layouts } from '@strapi/strapi/admin';
 import { useNotification } from '@strapi/strapi/admin';
-
-
-import { Layout } from "@strapi/design-system";
-import { Main } from "@strapi/design-system";
-import { Box } from "@strapi/design-system";
-import {
-  Grid,
-  GridItem,
-  Typography,
-  Button,
-  Flex,
-} from "@strapi/design-system";
-import { useQuery } from "react-query";
+import { Box, Typography, Button, Flex } from "@strapi/design-system";
 import { fetchUsers } from "./utils/api";
 import ListView from "./ListView";
 import { User } from "../../../model/User";
@@ -35,75 +22,66 @@ export const HomePage = () => {
     meta: ResponseMeta;
   }>(INITIAL_USERS_DATA);
   const [isNotConfigured, setIsNotConfigured] = useState(false);
-  const [isLoadingConfiguration, setIsLoadingConfiguration] = useState(true);
-
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const handleRetrieveFirebaseJsonConfig = () => {
-    getFirebaseConfig()
-      .then(() => {
-        setIsNotConfigured(false);
-        setIsLoadingConfiguration(false);
-      })
-      .catch((err) => {
-        setIsNotConfigured(true);
-        setIsLoadingConfiguration(false);
-      });
-  };
-
   useEffect(() => {
-    handleRetrieveFirebaseJsonConfig();
+    const loadData = async () => {
+      try {
+        await getFirebaseConfig();
+        setIsNotConfigured(false);
+        const result = await fetchUsers();
+        setUsersData(result);
+      } catch (err) {
+        setIsNotConfigured(true);
+        toggleNotification({
+          type: "warning",
+          message: "An error occurred",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const { isLoading } = useQuery("firebase-auth-", () => fetchUsers(), {
-    onSuccess: (result) => {
-      setUsersData(result);
-    },
-
-    onError: (err: any) => {
-      toggleNotification({
-        type: "warning",
-        message: "An error occured",
-      });
-    },
-    enabled: !isLoadingConfiguration && !isNotConfigured,
-  });
-
-  if (isLoading || isLoadingConfiguration) {
+  if (isLoading) {
     return <Page.Loading />;
   }
 
   return (
-    <Layout>
-      
-      <Main>
-        <Box padding={10}>
-          {!isNotConfigured ? (
-            <Grid gap={4}>
-              <GridItem col={12} s={12}>
-                <ListView data={usersData.data} meta={usersData.meta} />
-              </GridItem>
-            </Grid>
-          ) : (
-            <Flex direction="column" marginTop={10}>
-              <WarningCircle />
-              <Box marginTop={1}>
-                <Typography>
-                  Firebase is not configured, please configure Firebase
-                </Typography>
-              </Box>
-              <Button
-                marginTop={3}
-                onClick={() => {
-                  navigate("/settings/firebase-auth");
-                }}
-              >
-                Configure firebase
-              </Button>
-            </Flex>
-          )}
-        </Box>
-      </Main>
-    </Layout>
+    <Page.Main>
+      <Page.Title>Firebase Users</Page.Title>
+      <Layouts.Header
+        id="title"
+        title="Firebase Users"
+        
+      />
+      <Box padding={10}>
+        {!isNotConfigured ? (
+          <Flex direction="column" alignItems="stretch" gap={4}>
+            <ListView data={usersData.data} meta={usersData.meta} />
+          </Flex>
+        ) : (
+          <Flex direction="column" marginTop={10}>
+            <WarningCircle />
+            <Box marginTop={1}>
+              <Typography>
+                Firebase is not configured, please configure Firebase
+              </Typography>
+            </Box>
+            <Button
+              marginTop={3}
+              onClick={() => {
+                navigate("/settings/firebase-auth");
+              }}
+            >
+              Configure firebase
+            </Button>
+          </Flex>
+        )}
+      </Box>
+    </Page.Main>
   );
 };

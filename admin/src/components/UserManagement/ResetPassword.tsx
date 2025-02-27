@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   Dialog,
-  DialogBody,
-  DialogFooter,
   Flex,
   Typography,
   Button,
@@ -42,7 +40,7 @@ export const ResetPassword = ({
   return (
     <>
       <Dialog onClose={handleClose} title="Reset password" isOpen={isOpen}>
-        <DialogBody>
+        <Dialog.Body>
           <Flex direction="column" alignItems="center" gap={2}>
             <Flex justifyContent="flex-start">
               <Typography>Send a password reset email.</Typography>
@@ -77,8 +75,8 @@ export const ResetPassword = ({
             </div>
             <div></div>
           </Flex>
-        </DialogBody>
-        <DialogFooter
+        </Dialog.Body>
+        <Dialog.Footer
           startAction={
             <Button onClick={handleClose} variant="tertiary">
               Cancel

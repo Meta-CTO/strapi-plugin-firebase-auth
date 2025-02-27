@@ -1,12 +1,13 @@
 import React, { memo, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import get from "lodash/get";
-import { Page } from '@strapi/strapi/admin';
+import { Page, Layouts } from '@strapi/strapi/admin';
 import { useQueryParams } from '@strapi/strapi/admin';
 import { useNotification } from '@strapi/strapi/admin';
 
 import { Main } from "@strapi/design-system";
 import {
+  
   ContentLayout,
   HeaderLayout,
   ActionLayout,
@@ -247,7 +248,7 @@ function ListView({ data, meta }: ListViewProps) {
 
   return (
     <Main aria-busy={isLoading}>
-      <HeaderLayout
+      <Layouts.Header
         primaryAction={getCreateAction()}
         subtitle={headSubtitle}
         title={headerLayoutTitle}
@@ -257,45 +258,39 @@ function ListView({ data, meta }: ListViewProps) {
           </Link>
         }
       />
-      
-      <ContentLayout>
+      <Layouts.Action
+        endActions={<></>}
+        startActions={
+          <>
+            <SearchURLQuery
+              label={formatMessage(
+                {
+                  id: "app.component.search.label",
+                  defaultMessage: "Search for {target}",
+                },
+                { target: headerLayoutTitle },
+              )}
+              placeholder={formatMessage({
+                id: "app.component.search.placeholder",
+                defaultMessage: "Search...",
+              })}
+              trackedEvent="didSearch"
+            />
+          </>
+        }
+      />
+      <Layouts.Content>
         <>
-          <ResetPassword
-            isOpen={showResetPasswordDialogue.isOpen}
-            email={showResetPasswordDialogue.email}
-            onClose={handleCloseResetDialogue}
-            onConfirm={resetPassword}
-          />
-          <DeleteAccount
-            isOpen={showDeleteAccountDialogue.isOpen}
-            email={showDeleteAccountDialogue.email}
-            onToggleDialog={handleCloseDeleteDialogoue}
-            onConfirm={deleteAccount}
-            isSingleRecord
-          />
+          
           <FirebaseTable
-            onConfirmDeleteAll={handleDeleteAll}
-            isLoading={isLoading}
+            
+            
             rows={rowsData}
-            action={getCreateAction()}
-            onResetPasswordClick={({ email, uid }) => {
-              setShowResetPasswordDialogue({
-                isOpen: true,
-                email,
-                id: uid,
-              });
-            }}
-            onDeleteAccountClick={({ email, uid }) => {
-              setShowDeleteAccountDialogue({
-                isOpen: true,
-                email,
-                id: uid,
-              });
-            }}
+            
           />
           <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
         </>
-      </ContentLayout>
+      </Layouts.Content>
     </Main>
   );
 }

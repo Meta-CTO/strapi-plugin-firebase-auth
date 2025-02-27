@@ -3,8 +3,7 @@ import { Box } from "@strapi/design-system";
 import { Checkbox } from "@strapi/design-system";
 import {
   Dialog,
-  DialogBody,
-  DialogFooter,
+  
   Flex,
   Typography,
   Button,
@@ -37,7 +36,7 @@ export const DeleteAccount = ({
   return (
     <>
       <Dialog onClose={onToggleDialog} title="Delete Account" isOpen={isOpen}>
-        <DialogBody icon={<WarningCircle />}>
+        <Dialog.Body icon={<WarningCircle />}>
           <Flex direction="column" alignItems="center" gap={2}>
             <Flex justifyContent="flex-start" textAlign="center">
               <Typography textColor="danger700">
@@ -84,8 +83,8 @@ export const DeleteAccount = ({
               </>
             )}
           </Flex>
-        </DialogBody>
-        <DialogFooter
+        </Dialog.Body>
+        <Dialog.Footer
           startAction={
             <Button onClick={onToggleDialog} variant="tertiary">
               Cancel
