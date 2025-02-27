@@ -13,6 +13,9 @@ import { Typography } from "@strapi/design-system";
 import styled from "styled-components";
 import { MapProviderToIcon } from "../../../utils/provider";
 import { User } from "../../../../../model/User";
+import { Thead } from "@strapi/design-system";
+import { Th } from "@strapi/design-system";
+import { tableHeaders } from "../TableHeaders";
 
 const TypographyMaxWidth = styled(Typography)`
   max-width: 300px;
@@ -31,6 +34,7 @@ const CellLink = styled(Td)`
 
 interface FirebaseTableRowsProps {
   rows: User[];
+  headers: string[];
   entriesToDelete?: string[];
   onSelectRow?: ({ name, value }: { name: string; value: boolean }) => void;
   onResetPasswordClick: (data: User) => void;
@@ -55,6 +59,14 @@ export const FirebaseTableRows = ({
 
   return (
     <>
+          <Thead>
+        <Tr>
+          {tableHeaders.map((header) => (
+            <Th key={header.name}>{header.name}</Th>
+          ))}
+        </Tr>
+      </Thead>
+
       <Tbody>
         {rowsData.map((data: User) => {
           const isChecked =

@@ -35,6 +35,7 @@ export const FirebaseTable = ({
       onConfirmDeleteAll={onConfirmDeleteAll}
       footer={null}
     >
+      
       <FirebaseTableRows
         onResetPasswordClick={onResetPasswordClick}
         onDeleteAccountClick={onDeleteAccountClick}
