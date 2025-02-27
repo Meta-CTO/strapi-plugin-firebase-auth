@@ -301,6 +301,24 @@ function ListView({ data, meta }: ListViewProps) {
           <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
         </>
       </Layouts.Content>
+
+      {showResetPasswordDialogue.isOpen && (
+        <ResetPassword
+          isOpen={showResetPasswordDialogue.isOpen}
+          onClose={handleCloseResetDialogue}
+          onConfirm={resetPassword}
+          email={showResetPasswordDialogue.email}
+        />
+      )}
+      {showDeleteAccountDialogue.isOpen && (
+        <DeleteAccount
+          isOpen={showDeleteAccountDialogue.isOpen}
+          onToggleDialog={handleCloseDeleteDialogoue}
+          onConfirm={deleteAccount}
+          email={showDeleteAccountDialogue.email}
+          isSingleRecord={true}
+        />
+      )}
     </Main>
   );
 }
