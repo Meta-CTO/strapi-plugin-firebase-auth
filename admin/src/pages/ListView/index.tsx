@@ -283,10 +283,20 @@ function ListView({ data, meta }: ListViewProps) {
         <>
           
           <FirebaseTable
-            
-            
+            action={null}
+            isLoading={isLoading}
             rows={rowsData}
-            
+            onConfirmDeleteAll={handleDeleteAll}
+            onResetPasswordClick={(data) => setShowResetPasswordDialogue({ 
+              isOpen: true, 
+              email: data.email, 
+              id: data.uid 
+            })}
+            onDeleteAccountClick={(data) => setShowDeleteAccountDialogue({ 
+              isOpen: true, 
+              email: data.email, 
+              id: data.uid 
+            })}
           />
           <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
         </>

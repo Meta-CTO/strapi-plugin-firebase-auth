@@ -1,17 +1,10 @@
 import React from "react";
-import { 
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Td,
-  Th 
-} from '@strapi/design-system';
+
 import { FirebaseTableRows } from "./FirebaseTableRows/FirebaseTableRows";
 import { DeleteAccount } from "../UserManagement/DeleteAccount";
 import { tableHeaders } from "./TableHeaders";
 import { User } from "../../../../model/User";
-
+import { Table } from "@strapi/design-system";
 interface FirebaseTableProps {
   action: React.ReactNode;
   isLoading: boolean;
@@ -30,24 +23,23 @@ export const FirebaseTable = ({
   onDeleteAccountClick,
 }: FirebaseTableProps) => {
   return (
-    <Table 
-      colCount={tableHeaders.length}
-      rowCount={rows.length}
+    <Table
+      components={{ ConfirmDialogDeleteAll: DeleteAccount }}
+      contentType="Firebase Users"
+      action={action}
+      isLoading={isLoading}
+      headers={tableHeaders}
+      rows={rows}
+      withMainAction
+      withBulkActions
+      onConfirmDeleteAll={onConfirmDeleteAll}
+      footer={null}
     >
-      <Thead>
-        <Tr>
-          {tableHeaders.map((header) => (
-            <Th key={header.name}>{header.name}</Th>
-          ))}
-        </Tr>
-      </Thead>
-      <Tbody>
-        <FirebaseTableRows
-          onResetPasswordClick={onResetPasswordClick}
-          onDeleteAccountClick={onDeleteAccountClick}
-          rows={rows}
-        />
-      </Tbody>
+      <FirebaseTableRows
+        onResetPasswordClick={onResetPasswordClick}
+        onDeleteAccountClick={onDeleteAccountClick}
+        rows={rows}
+      />
     </Table>
   );
 };

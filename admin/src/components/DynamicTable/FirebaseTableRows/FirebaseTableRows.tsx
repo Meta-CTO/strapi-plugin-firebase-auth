@@ -5,10 +5,10 @@ import { Tbody, Td, Tr } from "@strapi/design-system";
 import { Flex } from "@strapi/design-system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
-
+import { Checkbox } from '@strapi/design-system';
 import { SimpleMenu, MenuItem } from "@strapi/design-system";
 import { ArrowDown } from "@strapi/icons";
-import { Cross, Check } from "@strapi/icons";
+import { RxCross2, RxCheck } from "react-icons/rx";
 import { Typography } from "@strapi/design-system";
 import styled from "styled-components";
 import { MapProviderToIcon } from "../../../utils/provider";
@@ -45,9 +45,9 @@ export const FirebaseTableRows = ({
   onDeleteAccountClick,
 }: FirebaseTableRowsProps) => {
   const [rowsData, setRowsData] = useState<User[]>(rows);
+  const { formatMessage } = useIntl();
   const navigate = useNavigate();
   const location = useLocation();
-  const { formatMessage } = useIntl();
 
   useEffect(() => {
     setRowsData(rows);
@@ -64,7 +64,17 @@ export const FirebaseTableRows = ({
           return (
             <Tr key={data.uid}>
               <Box style={{ paddingLeft: 4, paddingRight: 4 }}>
-                
+                <Checkbox
+                  aria-label={formatMessage({
+                    id: "app.component.table.select.one-entry",
+                    defaultMessage: `Select {target}`,
+                  })}
+                  checked={isChecked}
+                  onChange={(e: any) => {
+                    onSelectRow &&
+                      onSelectRow({ name: data.id, value: e.target.checked });
+                  }}
+                />
               </Box>
               <Td key={data.email} style={{ padding: 16 }}>
                 <TypographyMaxWidth ellipsis textColor="neutral800">
@@ -74,9 +84,10 @@ export const FirebaseTableRows = ({
               <CellLink
                 key={data.uid}
                 onClick={() => {
-                  navigate(`${location.pathname}/${data.uid}`, {
-                    state: { from: location.pathname, strapiId: data.strapiId }
-                  });
+                  navigate(
+                    `${location.pathname}/${data.uid}`,
+                    { state: { from: location.pathname, strapiId: data.strapiId } }
+                  );
                 }}
               >
                 <TypographyMaxWidth ellipsis textColor="neutral800">
@@ -95,13 +106,13 @@ export const FirebaseTableRows = ({
               </Td>
               <Td>
                 {data.emailVerified ? (
-                  <Check aria-hidden />
+                  <RxCheck size={24} />
                 ) : (
-                  <Cross aria-hidden />
+                  <RxCross2 size={24} />
                 )}
               </Td>
               <Td key={data.disabled}>
-                {data.disabled ? <Check aria-hidden /> : <Cross aria-hidden />}
+                {data.disabled ? <RxCheck size={24} /> : <RxCross2 size={24} />}
               </Td>
               <CellLink key={data.strapiId}>
                 <TypographyMaxWidth ellipsis textColor="neutral800">
@@ -109,6 +120,7 @@ export const FirebaseTableRows = ({
                     onClick={() => {
                       navigate(
                         `/content-manager/collectionType/plugin::users-permissions.user/${data.strapiId}`,
+                        { state: { from: location.pathname } }
                       );
                     }}
                   >
