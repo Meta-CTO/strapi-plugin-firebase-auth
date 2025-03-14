@@ -135,6 +135,10 @@ export default ({ strapi }) => {
           "plugin::firebase-authentication.firebase-authentication-configuration"
         );
         console.log("isExist 🤣", isExist);
+        if (!isExist) {
+          console.log("No Firebase configs exists for deletion");
+          return null;
+        }
         const res = await strapi.entityService.delete(
           "plugin::firebase-authentication.firebase-authentication-configuration",
           isExist.id

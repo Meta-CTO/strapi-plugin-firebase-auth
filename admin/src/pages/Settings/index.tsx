@@ -21,12 +21,14 @@ function SettingsPage() {
     setLoading(true);
     getFirebaseConfig()
       .then((data) => {
+        console.log("Retrieved Firebase Config:", data);
         setLoading(false);
         setFirebaseJsonValue(data);
         setFirebaseJsonValueInput(data);
       })
-      .catch((err) => {
+      .catch((error) => {
         setLoading(false);
+        console.error("Error retrieving Firebase config:", error);
       });
   };
 
@@ -56,9 +58,10 @@ function SettingsPage() {
   };
 
   const handleFirebaseJsonSubmit = async () => {
+    console.log("Submitting Firebase JSON:", firebaseJsonValueInput);
     try {
-      setLoading(true);
       const data = await saveFirebaseConfig(firebaseJsonValueInput);
+      console.log("Firebase JSON submission response:", data);
       setFirebaseJsonValue(data["firebase_config_json"]);
       setLoading(false);
       toggleNotification({
@@ -67,6 +70,7 @@ function SettingsPage() {
       });
       // restartServer();
     } catch (error) {
+      console.error("Error submitting Firebase JSON:", error);
       toggleNotification({
         type: "warning",
         message: "Something went wrong",
@@ -94,6 +98,7 @@ function SettingsPage() {
         <Box style={{ width: "100%" }}>
           {!firebaseJsonValue ? (
             <>
+              {console.log("Rendering JSON input form, firebaseJsonValue:", firebaseJsonValue)}
               <JSONInput
                 label="Firebase-json-configuration"
                 value={firebaseJsonValueInput}
@@ -125,6 +130,7 @@ function SettingsPage() {
             </>
           ) : (
             <>
+              {console.log("Showing success message, firebaseJsonValue:", firebaseJsonValue)}
               <Flex gap={4}>
                 🚀 You have successfully submitted your json configuration for project:{" "}
                 <span style={{ fontWeight: 700 }}>
