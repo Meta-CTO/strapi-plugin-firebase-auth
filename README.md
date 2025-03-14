@@ -58,16 +58,17 @@ To ensure the security of sensitive information, we have implemented a robust en
 
 ```js
 module.exports = () => ({
-    // ...
+  // ...
 
-    "firebase-auth": {
-        enabled: true,
-        config:{ FIREBASE_JSON_ENCRYPTION_KEY:"encryptMe" }
-    },
+  "firebase-auth": {
+    enabled: true,
+    config: { FIREBASE_JSON_ENCRYPTION_KEY: "encryptMe" },
+  },
 
-    // ...
+  // ...
 });
 ```
+
 Replace `"encryptMe"` with a strong and secure key. This key will be used in the encryption and decryption process.
 
 ### Step 2: Firebase Configuration Encryption and Integration with Strapi
@@ -110,7 +111,6 @@ That's it! You're ready to use Firebase Authentication in your Strapi project. E
 
 ## Usage
 
-
 ### Handling User Information
 
 To ensure proper handling of user information, make sure to include the following fields in the user object:
@@ -118,11 +118,11 @@ To ensure proper handling of user information, make sure to include the followin
 - `firebaseUserID` is the field that maps firebase user object to strapi user object.
 
 These fields can be populated during the creation of the user object if `profileMetaData` is provided.
+
 - `firstName`
 - `lastName`
 - `phoneNumber`
 - `email`
-
 
 #### Using `firebase-auth` Endpoint
 
@@ -130,13 +130,13 @@ When interacting with the `firebase-auth` endpoint, use the following JSON struc
 
 ```json
 {
-    "idToken": "{{idToken}}",
-    "profileMetaData": {
-        "firstName": "name",
-        "lastName": "name",
-        "email": "email@gmail.com",
-        "phoneNumber" : "+100000000"
-    }
+  "idToken": "{{idToken}}",
+  "profileMetaData": {
+    "firstName": "name",
+    "lastName": "name",
+    "email": "email@gmail.com",
+    "phoneNumber": "+100000000"
+  }
 }
 ```
 
@@ -180,6 +180,7 @@ links and their brief descriptions:
   documentation: [Android Firebase Authentication with Google](https://firebase.google.com/docs/auth/android/google-signin)
 - After signing with Google,you need to get the GoogleAuthProvider Credential and pass it to firebaseSDK to be able to get the user token
 - Sample Code:
+
 ```kotlin
 // Obtain an ID token from Google. Use it to authenticate with Firebase.
 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
@@ -202,6 +203,7 @@ auth.signInWithCredential(firebaseCredential)
 - After signing with Google,you need to get the GoogleAuthProvider Credential and pass it to firebaseSDK to be able to get the user token
 
 - Sample Code:
+
 ```swift
   guard let clientID = FirebaseApp.app()?.options.clientID else { return }
 
@@ -225,7 +227,7 @@ GIDSignIn.sharedInstance.signIn(withPresenting: self) { [unowned self] result, e
                                                  accessToken: user.accessToken.tokenString)
 
   // ...
-  
+
   Auth.auth().signIn(with: credential) { result, error in
 
   // At this point, our user is signed in
@@ -234,7 +236,7 @@ GIDSignIn.sharedInstance.signIn(withPresenting: self) { [unowned self] result, e
 
 
 }
-  ```
+```
 
 **Web Sample:**
 
@@ -242,29 +244,31 @@ GIDSignIn.sharedInstance.signIn(withPresenting: self) { [unowned self] result, e
   documentation: [Web Firebase Authentication with Google](https://firebase.google.com/docs/auth/web/google-signin)
 - After signing with Google,you need to get the GoogleAuthProvider Credential and pass it to firebaseSDK to be able to get the user token
 - Sample Code:
+
 ```javascript
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 
 const auth = getAuth();
 signInWithPopup(auth, provider)
-        .then((result) => {
-          // This gives you a Google Access Token. You can use it to access the Google API.
-          const credential = GoogleAuthProvider.credentialFromResult(result);
-          const token = credential.accessToken;
-          // The signed-in user info.
-          const user = result.user;
-          // IdP data available using getAdditionalUserInfo(result)
-          // ...
-        }).catch((error) => {
-  // Handle Errors here.
-  const errorCode = error.code;
-  const errorMessage = error.message;
-  // The email of the user's account used.
-  const email = error.customData.email;
-  // The AuthCredential type that was used.
-  const credential = GoogleAuthProvider.credentialFromError(error);
-  // ...
-});  
+  .then((result) => {
+    // This gives you a Google Access Token. You can use it to access the Google API.
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const token = credential.accessToken;
+    // The signed-in user info.
+    const user = result.user;
+    // IdP data available using getAdditionalUserInfo(result)
+    // ...
+  })
+  .catch((error) => {
+    // Handle Errors here.
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    // The email of the user's account used.
+    const email = error.customData.email;
+    // The AuthCredential type that was used.
+    const credential = GoogleAuthProvider.credentialFromError(error);
+    // ...
+  });
 ```
 
 These samples will guide you on how to implement Google Sign-In and obtain the authentication token, which you can then
@@ -279,7 +283,7 @@ If you need additional samples for authentication methods like Sign-In with Appl
 **Short Links to Specific Authentication Methods:**
 
 - **Sign-In with Apple:**
-To ensure a smooth user login experience with Apple authentication, it’s essential to include the appleEmail field in the user object within the Strapi dashboard.
+  To ensure a smooth user login experience with Apple authentication, it’s essential to include the appleEmail field in the user object within the Strapi dashboard.
 
   - Android: [Link](https://firebase.google.com/docs/auth/android/apple)
   - iOS: [Link](https://firebase.google.com/docs/auth/ios/apple)
@@ -291,5 +295,3 @@ To ensure a smooth user login experience with Apple authentication, it’s essen
   - Web: [Link](https://firebase.google.com/docs/auth/web/password-auth)
 
 These short links will take you directly to Firebase's official documentation pages for each authentication method, where you can find in-depth information and code samples.
-
-
