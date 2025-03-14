@@ -8,12 +8,11 @@ export type FirebaseAuthConfig = {
    * @default 'your-key-here'
    */
   firebaseJsonEncryptionKey: string;
-
 };
 
 export default {
   default: ({ env }) => ({
-    firebaseJsonEncryptionKey: env("FIREBASE_JSON_ENCRYPTION_KEY", "your-key-here")
+    firebaseJsonEncryptionKey: env("FIREBASE_JSON_ENCRYPTION_KEY", "your-key-here"),
   }),
   validator(config: FirebaseAuthConfig) {
     if (!config.firebaseJsonEncryptionKey) {

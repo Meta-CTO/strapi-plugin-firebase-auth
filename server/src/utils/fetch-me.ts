@@ -12,13 +12,9 @@ export const fetchUser = async (currentUser, populate: string[] = ["*"]) => {
       populate.push(relation);
     }
   });
-  return strapi.entityService.findOne(
-    "plugin::users-permissions.user",
-    currentUser.id,
-    {
-      populate,
-    },
-  );
+  return strapi.entityService.findOne("plugin::users-permissions.user", currentUser.id, {
+    populate,
+  });
 };
 
 export const processMeData = async (currentUser, populate = ["*"]) => {

@@ -25,16 +25,11 @@ export const FirebaseTable = ({
   return (
     <Table
       components={{ ConfirmDialogDeleteAll: DeleteAccount }}
-      
       action={action}
-      
       headers={tableHeaders}
       rows={rows}
-      
-      
       footer={null}
     >
-      
       <FirebaseTableRows
         onResetPasswordClick={onResetPasswordClick}
         onDeleteAccountClick={onDeleteAccountClick}

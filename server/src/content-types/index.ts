@@ -1,2 +1,2 @@
-import schema from "./firebase-auth-configuration/schema.json";
-export default { "firebase-auth-configuration": { schema } };
+import schema from "./firebase-authentication-configuration/schema.json";
+export default { "firebase-authentication-configuration": { schema } };

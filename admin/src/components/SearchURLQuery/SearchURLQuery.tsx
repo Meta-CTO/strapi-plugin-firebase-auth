@@ -69,11 +69,7 @@ const SearchURLQuery = ({ label, placeholder }: SearchURLQuery) => {
   }
 
   return (
-    <Button
-      ref={iconButtonRef}
-      variant="secondary"
-      onClick={handleToggle}
-    >
+    <Button ref={iconButtonRef} variant="secondary" onClick={handleToggle}>
       Search
     </Button>
   );

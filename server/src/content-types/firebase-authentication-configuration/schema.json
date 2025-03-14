@@ -1,10 +1,10 @@
 {
   "kind": "singleType",
-  "collectionName": "firebase_auth_configurations",
+  "collectionName": "firebase_authentication_configurations",
   "info": {
-    "singularName": "firebase-auth-configuration",
-    "pluralName": "firebase-auth-configurations",
-    "displayName": "Firebase-auth configuration"
+    "singularName": "firebase-authentication-configuration",
+    "pluralName": "firebase-authentication-configurations",
+    "displayName": "Firebase-authentication configuration"
   },
   "options": {
     "draftAndPublish": false

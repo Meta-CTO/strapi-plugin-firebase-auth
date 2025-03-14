@@ -1,8 +1,6 @@
-
-import {errors} from "@strapi/utils";
+import { errors } from "@strapi/utils";
 
 import { Context, DefaultContext } from "koa";
-
 
 const STRAPI_DESTINATION = "strapi";
 const FIREBASE_DESTINATION = "firebase";
@@ -18,28 +16,22 @@ export default {
     }
 
     ctx.body = await strapi
-      .plugin("firebase-auth")
+      .plugin("firebase-authentication")
       .service("userService")
       .list(pagination, nextPageToken);
   },
 
   create: async (ctx) => {
-    ctx.body = await strapi
-      .plugin("firebase-auth")
-      .service("userService")
-      .create(ctx.request.body);
+    ctx.body = await strapi.plugin("firebase-authentication").service("userService").create(ctx.request.body);
   },
 
   get: async (ctx) => {
-    ctx.body = await strapi
-      .plugin("firebase-auth")
-      .service("userService")
-      .get(ctx.params.id);
+    ctx.body = await strapi.plugin("firebase-authentication").service("userService").get(ctx.params.id);
   },
 
   update: async (ctx) => {
     ctx.body = await strapi
-      .plugin("firebase-auth")
+      .plugin("firebase-authentication")
       .service("userService")
       .update(ctx.params.id, ctx.request.body);
   },
@@ -49,19 +41,19 @@ export default {
     switch (destination) {
       case STRAPI_DESTINATION:
         ctx.body = await strapi
-          .plugin("firebase-auth")
+          .plugin("firebase-authentication")
           .service("userService")
           .deleteStrapiUser(ctx.params.id);
         break;
       case FIREBASE_DESTINATION:
         ctx.body = await strapi
-          .plugin("firebase-auth")
+          .plugin("firebase-authentication")
           .service("userService")
           .deleteFirebaseUser(ctx.params.id);
         break;
       default:
         ctx.body = await strapi
-          .plugin("firebase-auth")
+          .plugin("firebase-authentication")
           .service("userService")
           .delete(ctx.params.id);
         break;
@@ -70,7 +62,7 @@ export default {
 
   deleteMany: async (ctx) => {
     ctx.body = await strapi
-      .plugin("firebase-auth")
+      .plugin("firebase-authentication")
       .service("userService")
       .deleteMany(ctx.query.ids);
   },
@@ -82,7 +74,7 @@ export default {
     switch (destination) {
       case STRAPI_DESTINATION:
         ctx.body = await strapi
-          .plugin("firebase-auth")
+          .plugin("firebase-authentication")
           .service("userService")
           .resetPasswordStrapiUser(ctx.params.id, {
             password: ctx.request.body.password,
@@ -90,7 +82,7 @@ export default {
         break;
       case FIREBASE_DESTINATION:
         ctx.body = await strapi
-          .plugin("firebase-auth")
+          .plugin("firebase-authentication")
           .service("userService")
           .resetPasswordFirebaseUser(ctx.params.id, {
             password: ctx.request.body.password,
@@ -98,7 +90,7 @@ export default {
         break;
       default:
         ctx.body = await strapi
-          .plugin("firebase-auth")
+          .plugin("firebase-authentication")
           .service("userService")
           .resetPassword(ctx.params.id, {
             password: ctx.request.body.password,

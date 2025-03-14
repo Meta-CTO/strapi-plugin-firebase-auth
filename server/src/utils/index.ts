@@ -1,11 +1,9 @@
-import {sanitize} from '@strapi/utils'
+import { sanitize } from "@strapi/utils";
 
 export const sanitizeOutput = (user, ctx) => {
   const schema = strapi.getModel("plugin::users-permissions.user");
   const { auth } = ctx.state;
-  return sanitize.sanitizers.defaultSanitizeOutput({ schema, getModel: strapi.getModel }, user)
-  
-
+  return sanitize.sanitizers.defaultSanitizeOutput({ schema, getModel: strapi.getModel }, user);
 };
 
 export const getService = (name) => {
@@ -23,9 +21,7 @@ export const generateReferralCode = (length) => {
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   const charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
-    referralCode += characters.charAt(
-      Math.floor(Math.random() * charactersLength),
-    );
+    referralCode += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return referralCode;
 };

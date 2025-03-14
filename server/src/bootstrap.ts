@@ -7,10 +7,10 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       section: "plugins",
       displayName: "Allow access to the Firebase Auth interface",
       uid: "menu-link",
-      pluginName: "firebase-auth",
+      pluginName: "firebase-authentication",
     },
   ];
-  await strapi.plugin("firebase-auth").service("settingsService").init();
+  await strapi.plugin("firebase-authentication").service("settingsService").init();
   await strapi.admin.services.permission.actionProvider.registerMany(actions);
 };
 

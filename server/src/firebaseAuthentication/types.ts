@@ -1,2 +1,4 @@
-export const PLUGIN_ID = "firebase-authentication";
+/**
+ * The name of the plugin
+ */
 export const pluginName = "firebase-authentication";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Page, Layouts } from '@strapi/strapi/admin';
-import { useNotification } from '@strapi/strapi/admin';
+import { Page, Layouts } from "@strapi/strapi/admin";
+import { useNotification } from "@strapi/strapi/admin";
 import { Box, Typography, Button, Flex } from "@strapi/design-system";
 import { fetchUsers } from "./utils/api";
 import ListView from "./ListView";
@@ -53,11 +53,7 @@ export const HomePage = () => {
   return (
     <Page.Main>
       <Page.Title>Firebase Users</Page.Title>
-      <Layouts.Header
-        id="title"
-        title="Firebase Users"
-        
-      />
+      <Layouts.Header id="title" title="Firebase Users" />
       <Box padding={10}>
         {!isNotConfigured ? (
           <Flex direction="column" alignItems="stretch" gap={4}>
@@ -67,14 +63,12 @@ export const HomePage = () => {
           <Flex direction="column" marginTop={10}>
             <WarningCircle />
             <Box marginTop={1}>
-              <Typography>
-                Firebase is not configured, please configure Firebase
-              </Typography>
+              <Typography>Firebase is not configured, please configure Firebase</Typography>
             </Box>
             <Button
               marginTop={3}
               onClick={() => {
-                navigate("/settings/firebase-auth");
+                navigate("/settings/firebase-authentication");
               }}
             >
               Configure firebase

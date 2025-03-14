@@ -5,7 +5,6 @@ import { prefixPluginTranslations } from "./utils/prefixPluginTranslations";
 import { PERMISSIONS } from "./permissions";
 import { getTranslation } from "./utils/getTranslation";
 
-
 export default {
   register(app: any) {
     app.addMenuLink({
@@ -27,13 +26,13 @@ export default {
         id: PLUGIN_ID,
         intlLabel: {
           id: getTranslation("SettingsNav.section-label"),
-          defaultMessage: "Firebase-Auth Plugin",
+          defaultMessage: "Firebase-Authentication Plugin",
         },
       },
       [
         {
           intlLabel: {
-            id: getTranslation("Settings.firebase-auth.plugin.title"),
+            id: getTranslation("Settings.firebase-authentication.plugin.title"),
             defaultMessage: "Settings",
           },
           id: "settings",
@@ -42,7 +41,7 @@ export default {
             const component = await import("./pages/Settings/index");
             return component.default;
           },
-          permissions:  PERMISSIONS["menu-link"],
+          permissions: PERMISSIONS["menu-link"],
         },
       ]
     );

@@ -21,7 +21,7 @@ const useQueryParams = (initialParams?: QueryParams) => {
   }, [search, initialParams]);
 
   const setQuery = useCallback(
-    (nextParams: QueryParams, method: 'push' | 'remove' = "push") => {
+    (nextParams: QueryParams, method: "push" | "remove" = "push") => {
       let nextQuery = { ...query };
 
       if (method === "remove") {
@@ -40,4 +40,4 @@ const useQueryParams = (initialParams?: QueryParams) => {
   return { query, rawQuery: search, setQuery };
 };
 
-export default useQueryParams; 
+export default useQueryParams;

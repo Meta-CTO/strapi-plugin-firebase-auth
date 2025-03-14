@@ -1,6 +1,5 @@
-import { getFetchClient } from '@strapi/strapi/admin';
-import { PLUGIN_ID } from '../../pluginId';
-
+import { getFetchClient } from "@strapi/strapi/admin";
+import { PLUGIN_ID } from "../../pluginId";
 
 export const restartServer = async () => {
   const url = `/${PLUGIN_ID}/settings/restart`;

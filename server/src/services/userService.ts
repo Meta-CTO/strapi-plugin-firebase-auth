@@ -38,16 +38,11 @@ export default ({ strapi }) => ({
 
   register: async (userID, payload) => {
     try {
-      const res = await strapi
-        .plugin("firebase-auth")
-        .service("userService")
-        .create(payload);
+      const res = await strapi.plugin("firebase-authentication").service("userService").create(payload);
       const actionCodeSettings = {
         url: process.env.BASE_URL,
       };
-      const link = await strapi.firebase
-        .auth()
-        .generatePasswordResetLink(payload.email, actionCodeSettings);
+      const link = await strapi.firebase.auth().generatePasswordResetLink(payload.email, actionCodeSettings);
       await strapi.plugin("users-permissions").service("user").edit(userID, {
         firebaseUserID: res.uid,
         passwordResetLink: link,
@@ -58,21 +53,13 @@ export default ({ strapi }) => ({
   },
 
   list: async (pagination, nextPageToken) => {
-    const response = await strapi.firebase
-      .auth()
-      .listUsers(parseInt(pagination.pageSize), nextPageToken);
+    const response = await strapi.firebase.auth().listUsers(parseInt(pagination.pageSize), nextPageToken);
     const totalUserscount = await strapi.firebase.auth().listUsers();
-    const strapiUsers = await strapi.db
-      .query("plugin::users-permissions.user")
-      .findMany();
+    const strapiUsers = await strapi.db.query("plugin::users-permissions.user").findMany();
 
     const allUsers = formatUserData(response, strapiUsers);
 
-    const { meta } = paginate(
-      response.users,
-      totalUserscount.users.length,
-      pagination,
-    );
+    const { meta } = paginate(response.users, totalUserscount.users.length, pagination);
     return { data: allUsers.users, pageToken: response.pageToken, meta };
   },
 
@@ -85,9 +72,7 @@ export default ({ strapi }) => ({
   },
   update: async (entityId, payload) => {
     try {
-      const firebasePromise = strapi.firebase
-        .auth()
-        .updateUser(entityId, payload);
+      const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
 
       return Promise.allSettled([firebasePromise]);
     } catch (e) {
@@ -112,9 +97,7 @@ export default ({ strapi }) => ({
   },
   resetPassword: async (entityId, payload) => {
     try {
-      const firebasePromise = strapi.firebase
-        .auth()
-        .updateUser(entityId, payload);
+      const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
       const strapiPromise = strapi
         .query("plugin::users-permissions.user")
         .update({ where: { firebaseUserID: entityId }, data: payload });
@@ -155,9 +138,7 @@ export default ({ strapi }) => ({
   },
   deleteMany: async (entityIDs) => {
     try {
-      const response = await strapi.firebase
-        .auth()
-        .deleteUsers(JSON.parse(entityIDs));
+      const response = await strapi.firebase.auth().deleteUsers(JSON.parse(entityIDs));
       return response;
     } catch (e) {
       throw new errors.ApplicationError(e.message.toString());

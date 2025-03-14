@@ -3,5 +3,5 @@ export const PERMISSIONS = {
   // If the plugin link should be displayed in the menu
   // And also if the plugin is accessible. This use case is found when a user types the url of the
   // plugin directly in the browser
-  "menu-link": [{ action: "plugin::firebase-auth.menu-link", subject: null }],
+  "menu-link": [{ action: "plugin::firebase-authentication.menu-link", subject: null }],
 };

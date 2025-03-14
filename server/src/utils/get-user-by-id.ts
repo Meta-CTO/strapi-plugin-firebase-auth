@@ -1,15 +1,15 @@
 import { processMeData } from "./fetch-me";
-import  utils from "@strapi/utils";
+import utils from "@strapi/utils";
 const { ValidationError, NotFoundError } = utils.errors;
 
-import  { NO_DESTINATION_ID, USER_NOT_FOUND } from "../constants/errors";
+import { NO_DESTINATION_ID, USER_NOT_FOUND } from "../constants/errors";
 
 /*
  * @description Fetch `users-permissions` user by ID
  * @param {Number} userID
  * @returns userObject
  */
-export default async userID => {
+export default async (userID) => {
   if (!userID) {
     throw new ValidationError(NO_DESTINATION_ID);
   }

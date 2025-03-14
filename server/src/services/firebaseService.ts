@@ -1,287 +1,266 @@
-import type { Core } from '@strapi/strapi';
-
-import {errors} from "@strapi/utils";
+import { errors } from "@strapi/utils";
 import { processMeData } from "../utils/fetch-me";
 import { generateReferralCode } from "../utils";
 import { promiseHandler } from "../utils/promiseHandler";
 
-
-
 const createFakeEmail = async () => {
-	let randomString = generateReferralCode(8).toLowerCase();
-	const fakeEmail = `${randomString}@maz.com`;
-	let anotherUserWithTheSameReferralCode = await strapi.db
-		.query("plugin::users-permissions.user")
-		.findOne({
-			where: { email: fakeEmail },
-		});
+  let randomString = generateReferralCode(8).toLowerCase();
+  const fakeEmail = `${randomString}@maz.com`;
+  let anotherUserWithTheSameReferralCode = await strapi.db.query("plugin::users-permissions.user").findOne({
+    where: { email: fakeEmail },
+  });
 
-	while (anotherUserWithTheSameReferralCode) {
-		randomString = generateReferralCode(8);
-		anotherUserWithTheSameReferralCode = await strapi.db
-			.query("plugin::users-permissions.user")
-			.findOne({
-				where: { email: fakeEmail },
-			});
-	}
+  while (anotherUserWithTheSameReferralCode) {
+    randomString = generateReferralCode(8);
+    anotherUserWithTheSameReferralCode = await strapi.db.query("plugin::users-permissions.user").findOne({
+      where: { email: fakeEmail },
+    });
+  }
 
-	return fakeEmail;
+  return fakeEmail;
 };
 
-export default ({ strapi }: Core.Strapi | any) => ({
-	async getUserAttributes() {
-		return strapi.plugins["users-permissions"].contentTypes["user"].attributes;
-	},
-	delete: async (entityId) => {
-		await strapi.firebase.auth().deleteUser(entityId);
-		return { success: true };
-	},
+export default ({ strapi }) => ({
+  async getUserAttributes() {
+    return strapi.plugins["users-permissions"].contentTypes["user"].attributes;
+  },
+  delete: async (entityId) => {
+    await strapi.firebase.auth().deleteUser(entityId);
+    return { success: true };
+  },
 
-	validateExchangeTokenPayload: async (requestPayload) => {
-		const { idToken } = requestPayload;
-		console.log("Validating idToken:", idToken?.substring(0, 20) + "...");
-		
-		if (!idToken || idToken.length === 0) {
-			throw new errors.ValidationError("idToken is missing!");
-		}
+  validateExchangeTokenPayload: async (requestPayload) => {
+    const { idToken } = requestPayload;
+    console.log("Validating idToken:", idToken?.substring(0, 20) + "...");
 
-		try {
-			console.log("idToken 🤣", idToken);
-			let test = await strapi.firebase.auth().getUserByEmail("test30555@test.com")
-			console.log("test 🤣", test);
-			try {
-			const decodedToken = await strapi.firebase.auth().verifyIdToken(idToken);
-			if (!decodedToken) {
-				throw new Error("Token verification returned null");
-			}
-			return decodedToken;
-		} catch (error) {
-			console.error("Firebase token verification failed:", {
-				error: error.message,
-				stack: error.stack
-			});
-			throw new errors.UnauthorizedError(
-				`Firebase authentication failed: ${error.message}`
-			);
-		}
-			
-		} catch (error) {
-			console.error("Firebase token verification failed:", {
-				error: error.message,
-				stack: error.stack
-			});
-			
-			// Throw a more specific error
-			throw new errors.UnauthorizedError(
-				`Firebase authentication failed: ${error.message}`
-			);
-		}
-	},
+    if (!idToken || idToken.length === 0) {
+      throw new errors.ValidationError("idToken is missing!");
+    }
 
-	decodeIDToken: async (idToken) => {
-		return await strapi.firebase.auth().verifyIdToken(idToken);
-	},
+    try {
+      console.log("idToken 🤣", idToken);
+      let test = await strapi.firebase.auth().getUserByEmail("test30555@test.com");
+      console.log("test 🤣", test);
+      try {
+        const decodedToken = await strapi.firebase.auth().verifyIdToken(idToken);
+        if (!decodedToken) {
+          throw new Error("Token verification returned null");
+        }
+        return decodedToken;
+      } catch (error) {
+        console.error("Firebase token verification failed:", {
+          error: error.message,
+          stack: error.stack,
+        });
+        throw new errors.UnauthorizedError(`Firebase authentication failed: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Firebase token verification failed:", {
+        error: error.message,
+        stack: error.stack,
+      });
 
-	overrideFirebaseAccess: async (ctx) => {
-		if (!ctx.request.body || !ctx.request.body.overrideUserId) {
-			return ctx.badRequest(null, [{ messages: [{ id: "unauthorized" }] }]);
-		}
+      // Throw a more specific error
+      throw new errors.UnauthorizedError(`Firebase authentication failed: ${error.message}`);
+    }
+  },
 
-		const overrideUserId = ctx.request.body.overrideUserId;
+  decodeIDToken: async (idToken) => {
+    return await strapi.firebase.auth().verifyIdToken(idToken);
+  },
 
-		const user =
-			await strapi.plugins["users-permissions"].services.user.fetch(
-				overrideUserId,
-			);
+  overrideFirebaseAccess: async (ctx) => {
+    if (!ctx.request.body || !ctx.request.body.overrideUserId) {
+      return ctx.badRequest(null, [{ messages: [{ id: "unauthorized" }] }]);
+    }
 
-		const jwt = await strapi.plugins["users-permissions"].services.jwt.issue({
-			id: user.id,
-		});
+    const overrideUserId = ctx.request.body.overrideUserId;
 
-		ctx.body = {
-			user: await processMeData(user),
-			jwt,
-		};
+    const user = await strapi.plugins["users-permissions"].services.user.fetch(overrideUserId);
 
-		return ctx.body;
-	},
+    const jwt = await strapi.plugins["users-permissions"].services.jwt.issue({
+      id: user.id,
+    });
 
-	async checkIfUserExists(decodedToken) {
-		const userModel = await this.getUserAttributes();
+    ctx.body = {
+      user: await processMeData(user),
+      jwt,
+    };
 
-		let query: any = {};
-		let dbUser = null;
+    return ctx.body;
+  },
 
-		// First Check if the user exists in the database with firebaseUserID
-		if (
-			userModel.hasOwnProperty("firebaseUserID") &&
-			(decodedToken.user_id || decodedToken.uid)
-		) {
-			const firebaseUserID = decodedToken.user_id || decodedToken.uid;
-			dbUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-				where: {
-					firebaseUserID,
-				},
-			});
-			if (dbUser) {
-				return dbUser;
-			}
-		}
+  async checkIfUserExists(decodedToken) {
+    const userModel = await this.getUserAttributes();
 
-		query.$or = [];
+    let query: any = {};
+    let dbUser = null;
 
-		// Check if email is available and construct query
-		if (decodedToken.email) {
-			query.$or.push({ email: decodedToken.email });
-			// Extend the query with appleEmail if that attribute exists in the userModel
-			if (userModel.hasOwnProperty("appleEmail")) {
-				query.$or.push({ appleEmail: decodedToken.email });
-			}
-		}
+    // First Check if the user exists in the database with firebaseUserID
+    if (userModel.hasOwnProperty("firebaseUserID") && (decodedToken.user_id || decodedToken.uid)) {
+      const firebaseUserID = decodedToken.user_id || decodedToken.uid;
+      dbUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+        where: {
+          firebaseUserID,
+        },
+      });
+      if (dbUser) {
+        return dbUser;
+      }
+    }
 
-		// Add phone number to query if available
-		if (decodedToken.phone_number) {
-			query.$or.push({ phoneNumber: decodedToken.phone_number });
-		}
+    query.$or = [];
 
-		// Execute a single database query with constructed conditions
-		dbUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-			where: query,
-		});
+    // Check if email is available and construct query
+    if (decodedToken.email) {
+      query.$or.push({ email: decodedToken.email });
+      // Extend the query with appleEmail if that attribute exists in the userModel
+      if (userModel.hasOwnProperty("appleEmail")) {
+        query.$or.push({ appleEmail: decodedToken.email });
+      }
+    }
 
-		// Return user or null if not found
-		return dbUser;
-	},
+    // Add phone number to query if available
+    if (decodedToken.phone_number) {
+      query.$or.push({ phoneNumber: decodedToken.phone_number });
+    }
 
-	fetchUser: async (decodedToken) => {
-		const { data: user, error } = await promiseHandler(
-			strapi.db.query("plugin::users-permissions.user").findOne({
-				where: {
-					firebaseUserID: decodedToken.uid,
-				},
-			}),
-		);
+    // Execute a single database query with constructed conditions
+    dbUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+      where: query,
+    });
 
-		if (error) {
-			throw new errors.ValidationError(error?.message || "User not found", error);
-		}
+    // Return user or null if not found
+    return dbUser;
+  },
 
-		return user;
-	},
+  fetchUser: async (decodedToken) => {
+    const { data: user, error } = await promiseHandler(
+      strapi.db.query("plugin::users-permissions.user").findOne({
+        where: {
+          firebaseUserID: decodedToken.uid,
+        },
+      })
+    );
 
-	generateJWTForCurrentUser: async (user) => {
-		return strapi.plugins["users-permissions"].services.jwt.issue({
-			id: user.id,
-		});
-	},
+    if (error) {
+      throw new errors.ValidationError(error?.message || "User not found", error);
+    }
 
-	async createStrapiUser(decodedToken, idToken, profileMetaData) {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const userPayload: any = {};
+    return user;
+  },
 
-		const pluginStore = await strapi.store({
-			environment: "",
-			type: "plugin",
-			name: "users-permissions",
-		});
+  generateJWTForCurrentUser: async (user) => {
+    return strapi.plugins["users-permissions"].services.jwt.issue({
+      id: user.id,
+    });
+  },
 
-		const settings = await pluginStore.get({
-			key: "advanced",
-		});
+  async createStrapiUser(decodedToken, idToken, profileMetaData) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userPayload: any = {};
 
-		const role = await strapi.db
-			.query("plugin::users-permissions.role")
-			.findOne({ where: { type: settings.default_role } });
-		userPayload.role = role.id;
-		userPayload.firebaseUserID = decodedToken.uid;
-		userPayload.confirmed = true;
+    const pluginStore = await strapi.store({
+      environment: "",
+      type: "plugin",
+      name: "users-permissions",
+    });
 
-		userPayload.email = decodedToken.email;
-		userPayload.phoneNumber = decodedToken.phone_number;
-		userPayload.idToken = idToken;
-		if (profileMetaData) {
-			userPayload.firstName = profileMetaData?.firstName;
-			userPayload.lastName = profileMetaData?.lastName;
-			userPayload.phoneNumber = profileMetaData?.phoneNumber;
-		}
+    const settings = await pluginStore.get({
+      key: "advanced",
+    });
 
-		if (decodedToken.email) {
-			const emailComponents = decodedToken.email.split("@");
-			userPayload.username = emailComponents[0];
-			if (emailComponents[1].includes("privaterelay.appleid.com")) {
-				userPayload.appleEmail = decodedToken.email;
-			}
-		} else {
-			userPayload.username = userPayload.phoneNumber;
-			userPayload.email = profileMetaData?.email || (await createFakeEmail());
-		}
+    const role = await strapi.db
+      .query("plugin::users-permissions.role")
+      .findOne({ where: { type: settings.default_role } });
+    userPayload.role = role.id;
+    userPayload.firebaseUserID = decodedToken.uid;
+    userPayload.confirmed = true;
 
-		return strapi
-			.query("plugin::users-permissions.user")
-			.create({ data: userPayload });
-	},
+    userPayload.email = decodedToken.email;
+    userPayload.phoneNumber = decodedToken.phone_number;
+    userPayload.idToken = idToken;
+    if (profileMetaData) {
+      userPayload.firstName = profileMetaData?.firstName;
+      userPayload.lastName = profileMetaData?.lastName;
+      userPayload.phoneNumber = profileMetaData?.phoneNumber;
+    }
 
-	updateUserIDToken: async (user, idToken, decodedToken) => {
-		return strapi.db.query("plugin::users-permissions.user").update({
-			where: {
-				id: user.id,
-			},
-			data: { idToken, firebaseUserID: decodedToken.uid },
-		});
-	},
+    if (decodedToken.email) {
+      const emailComponents = decodedToken.email.split("@");
+      userPayload.username = emailComponents[0];
+      if (emailComponents[1].includes("privaterelay.appleid.com")) {
+        userPayload.appleEmail = decodedToken.email;
+      }
+    } else {
+      userPayload.username = userPayload.phoneNumber;
+      userPayload.email = profileMetaData?.email || (await createFakeEmail());
+    }
 
-	validateFirebaseToken: async (ctx) => {
-		console.log("validateFirebaseToken 🤣");
-		const { profileMetaData } = ctx.request.body;
-		const { error } = await promiseHandler(
-			strapi
-				.plugin("firebase-auth")
-				.service("firebaseService")
-				.validateExchangeTokenPayload(ctx.request.body),
-		);
-		if (error) {
-			ctx.status = 400;
-			return { error: error.message };
-		}
+    return strapi.query("plugin::users-permissions.user").create({ data: userPayload });
+  },
 
-		const { idToken } = ctx.request.body;
-		const populate = ctx.request.query.populate || [];
+  updateUserIDToken: async (user, idToken, decodedToken) => {
+    return strapi.db.query("plugin::users-permissions.user").update({
+      where: {
+        id: user.id,
+      },
+      data: { idToken, firebaseUserID: decodedToken.uid },
+    });
+  },
 
-		const decodedToken = await strapi
-			.plugin("firebase-auth")
-			.service("firebaseService")
-			.decodeIDToken(idToken);
+  validateFirebaseToken: async (ctx) => {
+    console.log("validateFirebaseToken 🤣");
+    const { profileMetaData } = ctx.request.body;
+    const { error } = await promiseHandler(
+      strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .validateExchangeTokenPayload(ctx.request.body)
+    );
+    if (error) {
+      ctx.status = 400;
+      return { error: error.message };
+    }
 
-		let user;
+    const { idToken } = ctx.request.body;
+    const populate = ctx.request.query.populate || [];
 
-		user = await strapi
-			.plugin("firebase-auth")
-			.service("firebaseService")
-			.checkIfUserExists(decodedToken, profileMetaData);
+    const decodedToken = await strapi
+      .plugin("firebase-authentication")
+      .service("firebaseService")
+      .decodeIDToken(idToken);
 
-		let jwt;
+    let user;
 
-		if (!user) {
-			// create strapi user
-			user = await strapi
-				.plugin("firebase-auth")
-				.service("firebaseService")
-				.createStrapiUser(decodedToken, idToken, profileMetaData);
-		}
+    user = await strapi
+      .plugin("firebase-authentication")
+      .service("firebaseService")
+      .checkIfUserExists(decodedToken, profileMetaData);
 
-		jwt = await strapi
-			.plugin("firebase-auth")
-			.service("firebaseService")
-			.generateJWTForCurrentUser(user);
+    let jwt;
 
-		strapi
-			.plugin("firebase-auth")
-			.service("firebaseService")
-			.updateUserIDToken(user, idToken, decodedToken);
+    if (!user) {
+      // create strapi user
+      user = await strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .createStrapiUser(decodedToken, idToken, profileMetaData);
+    }
 
-		return {
-			user: await processMeData(user, populate),
-			jwt,
-		};
-	},
+    jwt = await strapi
+      .plugin("firebase-authentication")
+      .service("firebaseService")
+      .generateJWTForCurrentUser(user);
+
+    strapi
+      .plugin("firebase-authentication")
+      .service("firebaseService")
+      .updateUserIDToken(user, idToken, decodedToken);
+
+    return {
+      user: await processMeData(user, populate),
+      jwt,
+    };
+  },
 });

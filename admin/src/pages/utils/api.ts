@@ -1,7 +1,7 @@
 import { User } from "../../../../model/User";
 import { Query } from "../../../../model/Request";
-import { getFetchClient } from '@strapi/strapi/admin';
-import {PLUGIN_ID} from "../../pluginId";
+import { getFetchClient } from "@strapi/strapi/admin";
+import { PLUGIN_ID } from "../../pluginId";
 
 const fetchStrapiUserById = async (userId: string) => {
   const url = `/${PLUGIN_ID}/users/${userId}`;
@@ -101,9 +101,7 @@ const fetchUserByID = async (userID: string) => {
  */
 
 const deleteUser = async (idToDelete: string, destination: string | null) => {
-  const url = `${PLUGIN_ID}/users/${idToDelete}${
-    destination ? `?destination=${destination}` : ""
-  }`;
+  const url = `${PLUGIN_ID}/users/${idToDelete}${destination ? `?destination=${destination}` : ""}`;
   try {
     const { del } = getFetchClient();
     const { data: users } = await del(url);
@@ -129,10 +127,7 @@ const updateUser = async (idToUpdate: string, payload: User) => {
   return user;
 };
 
-const resetUserPassword = async (
-  idToUpdate: string,
-  payload: { password: string }
-) => {
+const resetUserPassword = async (idToUpdate: string, payload: { password: string }) => {
   const url = `${PLUGIN_ID}/users/resetPassword/${idToUpdate}`;
   const { put } = getFetchClient();
   const { data: user } = await put(url, payload);

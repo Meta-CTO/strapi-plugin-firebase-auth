@@ -1,10 +1,5 @@
 import React, { useState } from "react";
-import {
-  Dialog,
-  Flex,
-  Typography,
-  Button,
-} from "@strapi/design-system";
+import { Dialog, Flex, Typography, Button } from "@strapi/design-system";
 import { TextInput } from "@strapi/design-system";
 
 interface ResetPasswordProps {
@@ -14,12 +9,7 @@ interface ResetPasswordProps {
   onConfirm: (newPassword: string) => void;
 }
 
-export const ResetPassword = ({
-  isOpen,
-  email,
-  onClose,
-  onConfirm,
-}: ResetPasswordProps) => {
+export const ResetPassword = ({ isOpen, email, onClose, onConfirm }: ResetPasswordProps) => {
   const [newPassword, setNewPassword] = useState("");
   const [isNewPasswordChange, setIsNewPasswordChanged] = useState(false);
 
@@ -66,10 +56,10 @@ export const ResetPassword = ({
                   !isNewPasswordChange
                     ? ""
                     : !newPassword
-                    ? "Password is required"
-                    : newPassword.length < 6
-                    ? "Password must contain at least 6 characters"
-                    : ""
+                      ? "Password is required"
+                      : newPassword.length < 6
+                        ? "Password must contain at least 6 characters"
+                        : ""
                 }
               />
             </div>

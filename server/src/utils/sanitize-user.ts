@@ -4,7 +4,7 @@
  * @returns {Object} sanitizedUser
  */
 
-export default user => {
+export default (user) => {
   delete user.password;
   delete user.resetPasswordToken;
   delete user.confirmationToken;

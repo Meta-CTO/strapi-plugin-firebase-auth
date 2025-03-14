@@ -1,28 +1,19 @@
 import React, { memo, useEffect, useState } from "react";
 import { useIntl } from "react-intl";
 import get from "lodash/get";
-import { Page, Layouts } from '@strapi/strapi/admin';
-import { useQueryParams } from '@strapi/strapi/admin';
-import { useNotification } from '@strapi/strapi/admin';
+import { Page, Layouts } from "@strapi/strapi/admin";
+import { useQueryParams } from "@strapi/strapi/admin";
+import { useNotification } from "@strapi/strapi/admin";
 
 import { Main } from "@strapi/design-system";
-import {
-  
-  ContentLayout,
-  HeaderLayout,
-  ActionLayout,
-} from "@strapi/design-system";
+import { ContentLayout, HeaderLayout, ActionLayout } from "@strapi/design-system";
 import { Button } from "@strapi/design-system";
 import { Link } from "@strapi/design-system";
 import { ArrowLeft } from "@strapi/icons";
 import { Plus } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 import { FirebaseTable } from "../../components/DynamicTable/FirebaseTable";
-import {
-  deleteUser,
-  fetchUsers,
-  resetUserPassword,
-} from "../utils/api";
+import { deleteUser, fetchUsers, resetUserPassword } from "../utils/api";
 import { PaginationFooter } from "./PaginationFooter";
 import SearchURLQuery from "../../components/SearchURLQuery/SearchURLQuery";
 import { matchSorter } from "match-sorter";
@@ -59,8 +50,6 @@ function ListView({ data, meta }: ListViewProps) {
   const pathname = window.location.pathname;
 
   const { toggleNotification } = useNotification();
-
-  
 
   const setNextPageToken = (page: string, nextPageToken: string) => {
     const formattedPage = parseInt(page) || 1;
@@ -150,11 +139,7 @@ function ListView({ data, meta }: ListViewProps) {
       });
       return newData;
     } catch (err) {
-      const errorMessage = get(
-        err,
-        "response.payload.message",
-        formatMessage({ id: "error.record.delete" }),
-      );
+      const errorMessage = get(err, "response.payload.message", formatMessage({ id: "error.record.delete" }));
       setIsLoading(false);
       toggleNotification({
         type: "warning",
@@ -178,7 +163,7 @@ function ListView({ data, meta }: ListViewProps) {
   const handleConfirmDeleteData = async (
     idsToDelete: string,
     isStrapiIncluded: boolean,
-    isFirebaseIncluded: boolean,
+    isFirebaseIncluded: boolean
   ) => {
     let destination: string | null = null;
     if (isStrapiIncluded && isFirebaseIncluded) {
@@ -193,8 +178,8 @@ function ListView({ data, meta }: ListViewProps) {
   const getCreateAction = () => (
     <Button
       onClick={() => {
-        navigate(`${pathname}/users/create`, { 
-          state: { from: pathname } 
+        navigate(`${pathname}/users/create`, {
+          state: { from: pathname },
         });
       }}
       startIcon={<Plus />}
@@ -233,14 +218,11 @@ function ListView({ data, meta }: ListViewProps) {
     }
   };
 
-  const deleteAccount = async (
-    isStrapiIncluded: boolean,
-    isFirebaseIncluded: boolean,
-  ) => {
+  const deleteAccount = async (isStrapiIncluded: boolean, isFirebaseIncluded: boolean) => {
     const newRowsData = await handleConfirmDeleteData(
       showDeleteAccountDialogue.id,
       isStrapiIncluded,
-      isFirebaseIncluded,
+      isFirebaseIncluded
     );
     handleCloseDeleteDialogoue();
     setRowsData(newRowsData);
@@ -268,7 +250,7 @@ function ListView({ data, meta }: ListViewProps) {
                   id: "app.component.search.label",
                   defaultMessage: "Search for {target}",
                 },
-                { target: headerLayoutTitle },
+                { target: headerLayoutTitle }
               )}
               placeholder={formatMessage({
                 id: "app.component.search.placeholder",
@@ -281,22 +263,25 @@ function ListView({ data, meta }: ListViewProps) {
       />
       <Layouts.Content>
         <>
-          
           <FirebaseTable
             action={null}
             isLoading={isLoading}
             rows={rowsData}
             onConfirmDeleteAll={handleDeleteAll}
-            onResetPasswordClick={(data) => setShowResetPasswordDialogue({ 
-              isOpen: true, 
-              email: data.email, 
-              id: data.uid 
-            })}
-            onDeleteAccountClick={(data) => setShowDeleteAccountDialogue({ 
-              isOpen: true, 
-              email: data.email, 
-              id: data.uid 
-            })}
+            onResetPasswordClick={(data) =>
+              setShowResetPasswordDialogue({
+                isOpen: true,
+                email: data.email,
+                id: data.uid,
+              })
+            }
+            onDeleteAccountClick={(data) =>
+              setShowDeleteAccountDialogue({
+                isOpen: true,
+                email: data.email,
+                id: data.uid,
+              })
+            }
           />
           <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
         </>

@@ -1,5 +1,4 @@
-
-import {pagination}  from '@strapi/utils'
+import { pagination } from "@strapi/utils";
 
 /**
  * @description Paginate data using start and limi flags
@@ -50,9 +49,7 @@ export default (data, totalUserscount, pagination) => {
   const total = data.length;
 
   if (!Array.isArray(data)) {
-    throw new pagination.PaginationError(
-      `Wrong data type expected Array recieved ${typeof data}`,
-    );
+    throw new pagination.PaginationError(`Wrong data type expected Array recieved ${typeof data}`);
   }
 
   // If no pagination provided, use the default one
@@ -80,10 +77,7 @@ export default (data, totalUserscount, pagination) => {
     pagination.page = Number(pagination.page);
     pagination.pageSize = Number(pagination.pageSize);
     if (!hasWithCount || pagination.withCount) {
-      pagination.pageCount = ___calculatePageCount(
-        totalUserscount,
-        pagination.pageSize,
-      );
+      pagination.pageCount = ___calculatePageCount(totalUserscount, pagination.pageSize);
 
       if (hasWithCount) {
         delete pagination.withCount;

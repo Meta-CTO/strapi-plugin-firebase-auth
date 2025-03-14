@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box } from "@strapi/design-system";
 import { Checkbox } from "@strapi/design-system";
-import {
-  Dialog,
-  
-  Flex,
-  Typography,
-  Button,
-} from "@strapi/design-system";
+import { Dialog, Flex, Typography, Button } from "@strapi/design-system";
 import { WarningCircle } from "@strapi/icons";
 
 interface DeleteAccountProps {
@@ -40,8 +34,7 @@ export const DeleteAccount = ({
           <Flex direction="column" alignItems="center" gap={2}>
             <Flex justifyContent="flex-start" textAlign="center">
               <Typography textColor="danger700">
-                After you delete an account, it's permanently deleted. Accounts
-                can't be undeleted.
+                After you delete an account, it's permanently deleted. Accounts can't be undeleted.
               </Typography>
             </Flex>
             {isSingleRecord && (
@@ -52,18 +45,12 @@ export const DeleteAccount = ({
                 <Flex justifyContent="flex-start">
                   <Typography>{email}</Typography>
                 </Flex>
-                <Flex
-                  justifyContent="flex-start"
-                  textAlign="center"
-                  marginTop={2}
-                >
+                <Flex justifyContent="flex-start" textAlign="center" marginTop={2}>
                   <Typography>Delete user from:</Typography>
                 </Flex>
                 <Flex justifyContent="flex-start">
                   <Checkbox
-                    onValueChange={(value: boolean) =>
-                      setIsStrapiIncluded(value)
-                    }
+                    onValueChange={(value: boolean) => setIsStrapiIncluded(value)}
                     value={isStrapiIncluded}
                   >
                     Strapi
@@ -71,9 +58,7 @@ export const DeleteAccount = ({
 
                   <Box marginLeft={4}>
                     <Checkbox
-                      onValueChange={(value: boolean) =>
-                        setIsFirebaseIncluded(value)
-                      }
+                      onValueChange={(value: boolean) => setIsFirebaseIncluded(value)}
                       value={isFirebaseIncluded}
                     >
                       Firebase

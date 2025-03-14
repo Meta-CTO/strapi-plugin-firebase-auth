@@ -13,11 +13,11 @@ Generate types for the different collections, single types & components found in
 ## Installation
 
 ```bash
-yarn add strapi-plugin-firebase-auth
+yarn add strapi-plugin-firebase-authentication
 ```
 
 ```bash
-npm install strapi-plugin-firebase-auth
+npm install strapi-plugin-firebase-authentication
 ```
 
 ## Configuration
@@ -26,18 +26,15 @@ You can configure the plugin by updating the `config/plugins.ts` file in your St
 
 The following options are available:
 
-
 - `singleFile` - Whether to generate a single file for all types or separate files for each collection. Default: `false`
 
 ```typescript
 // config/plugins.ts
 export default ({ env }) => ({
-  "firebase-auth": {
+  "firebase-authentication": {
     enabled: true,
     config: {
-
-     FIREBASE_JSON_ENCRYPTION_KEY: env('FIREBASE_JSON_ENCRYPTION_KEY', 'your-default-key'),
-    
+      FIREBASE_JSON_ENCRYPTION_KEY: env("FIREBASE_JSON_ENCRYPTION_KEY", "your-default-key"),
     },
   },
 });
