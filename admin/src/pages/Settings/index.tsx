@@ -23,12 +23,19 @@ function SettingsPage() {
       .then((data) => {
         console.log("Retrieved Firebase Config:", data);
         setLoading(false);
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          setFirebaseJsonValue(null);
+          setFirebaseJsonValueInput("");
+          return;
+        }
         setFirebaseJsonValue(data);
-        setFirebaseJsonValueInput(data);
+        setFirebaseJsonValueInput(typeof data === "string" ? data : JSON.stringify(data));
       })
       .catch((error) => {
         setLoading(false);
         console.error("Error retrieving Firebase config:", error);
+        setFirebaseJsonValue(null);
+        setFirebaseJsonValueInput("");
       });
   };
 
@@ -40,7 +47,7 @@ function SettingsPage() {
     try {
       setLoading(true);
       await delFirebaseConfig();
-      setFirebaseJsonValue("");
+      setFirebaseJsonValue(null);
       setFirebaseJsonValueInput("");
       // restartServer();
       setLoading(false);
@@ -52,7 +59,7 @@ function SettingsPage() {
       setLoading(false);
       toggleNotification({
         type: "warning",
-        message: "An error occured, please try again",
+        message: "An error occurred, please try again",
       });
     }
   };
@@ -60,9 +67,20 @@ function SettingsPage() {
   const handleFirebaseJsonSubmit = async () => {
     console.log("Submitting Firebase JSON:", firebaseJsonValueInput);
     try {
-      const data = await saveFirebaseConfig(firebaseJsonValueInput);
+      setLoading(true);
+      const jsonToSubmit =
+        typeof firebaseJsonValueInput === "string"
+          ? firebaseJsonValueInput
+          : JSON.stringify(firebaseJsonValueInput);
+
+      const data = await saveFirebaseConfig(jsonToSubmit);
       console.log("Firebase JSON submission response:", data);
-      setFirebaseJsonValue(data["firebase_config_json"]);
+
+      if (!data || !data.firebase_config_json) {
+        throw new Error("Invalid response from server");
+      }
+
+      setFirebaseJsonValue(data);
       setLoading(false);
       toggleNotification({
         type: "success",
@@ -96,63 +114,68 @@ function SettingsPage() {
     <>
       <Flex style={{ padding: 32 }} direction="column" alignItems="flex-start" gap={4}>
         <Box style={{ width: "100%" }}>
-          {!firebaseJsonValue ? (
-            <>
-              {console.log("Rendering JSON input form, firebaseJsonValue:", firebaseJsonValue)}
-              <JSONInput
-                label="Firebase-json-configuration"
-                value={firebaseJsonValueInput}
-                height={500}
-                style={{ height: 400 }}
-                onChange={setFirebaseJsonValueInput}
-                error={
-                  firebaseJsonValueInput && !isJsonString(firebaseJsonValueInput)
-                    ? "Please enter a valid JSON string"
-                    : ""
-                }
-              />
-              <Flex
-                style={{
-                  marginTop: 32,
-                  width: "100%",
-                  padding: 16,
-                }}
-                justifyContent="flex-end"
-              >
-                <Button
-                  size="L"
-                  onClick={handleFirebaseJsonSubmit}
-                  disabled={!isJsonString(firebaseJsonValueInput)}
+          {(() => {
+            console.log("Current firebaseJsonValue:", firebaseJsonValue);
+            return !firebaseJsonValue || !firebaseJsonValue.firebaseConfigJson ? (
+              <>
+                <JSONInput
+                  label="Firebase-json-configuration"
+                  value={firebaseJsonValueInput}
+                  height={500}
+                  style={{ height: 400 }}
+                  onChange={setFirebaseJsonValueInput}
+                  error={
+                    firebaseJsonValueInput && !isJsonString(firebaseJsonValueInput)
+                      ? "Please enter a valid JSON string"
+                      : ""
+                  }
+                />
+                <Flex
+                  style={{
+                    marginTop: 32,
+                    width: "100%",
+                    padding: 16,
+                  }}
+                  justifyContent="flex-end"
                 >
-                  Submit
+                  <Button
+                    size="L"
+                    onClick={handleFirebaseJsonSubmit}
+                    disabled={!isJsonString(firebaseJsonValueInput)}
+                  >
+                    Submit
+                  </Button>
+                </Flex>
+              </>
+            ) : (
+              <>
+                <Flex gap={4}>
+                  🚀 You have successfully submitted your json configuration for project:{" "}
+                  <span style={{ fontWeight: 700 }}>
+                    {firebaseJsonValue?.firebaseConfigJson &&
+                      (() => {
+                        try {
+                          const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
+                          return config.project_id || config.projectId || "Unknown Project";
+                        } catch (e) {
+                          return "Invalid Config";
+                        }
+                      })()}
+                  </span>
+                  <Button
+                    variant="danger-light"
+                    onClick={handleDeleteFirebaseJsonConfig}
+                    startIcon={<Trash />}
+                  >
+                    Delete
+                  </Button>
+                </Flex>
+                <Button onClick={() => navigate("/plugins/firebase-authentication")} marginTop={4}>
+                  Back to firebase plugin
                 </Button>
-              </Flex>
-            </>
-          ) : (
-            <>
-              {console.log("Showing success message, firebaseJsonValue:", firebaseJsonValue)}
-              <Flex gap={4}>
-                🚀 You have successfully submitted your json configuration for project:{" "}
-                <span style={{ fontWeight: 700 }}>
-                  {firebaseJsonValue?.firebaseConfigJson &&
-                    (() => {
-                      try {
-                        const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
-                        return config.project_id || config.projectId || "Unknown Project";
-                      } catch (e) {
-                        return "Invalid Config";
-                      }
-                    })()}
-                </span>
-                <Button variant="danger-light" onClick={handleDeleteFirebaseJsonConfig} startIcon={<Trash />}>
-                  Delete
-                </Button>
-              </Flex>
-              <Button onClick={() => navigate("/plugins/firebase-authentication")} marginTop={4}>
-                Back to firebase plugin
-              </Button>
-            </>
-          )}
+              </>
+            );
+          })()}
           {!firebaseJsonValue ? (
             <Flex direction="column" alignItems="flex-start" marginTop={10}>
               How to setup the firebase configuration:
