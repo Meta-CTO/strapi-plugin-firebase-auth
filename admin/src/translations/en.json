@@ -1,7 +1,7 @@
 {
-  "app.name": "Gen Types",
-  "page.title": "Generated Types",
-  "page.subTitle": "Quickly view & copy the types generated for your Strapi collections",
+  "app.name": "Firebase Authentication",
+  "page.title": "Firebase Authentication",
+  "page.subTitle": "Integrate Firebase Authentication with Strapi",
   "page.copy.notSupported.title": "Copy not supported",
   "page.copy.notSupported.message": "Your browser does not support copying to clipboard",
   "page.copy.success.title": "Copied to Clipboard",
