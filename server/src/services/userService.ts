@@ -22,6 +22,7 @@ export default ({ strapi }) => ({
         .getUserByEmail(payload.email)
         .catch(async (e) => {
           if (e.code === "auth/user-not-found") {
+            console.log("user not found, creating user");
             const response = await strapi.firebase.auth().createUser(payload);
 
             return response.toJSON();

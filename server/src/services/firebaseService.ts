@@ -38,9 +38,6 @@ export default ({ strapi }) => ({
     }
 
     try {
-      console.log("idToken 🤣", idToken);
-      let test = await strapi.firebase.auth().getUserByEmail("test30555@test.com");
-      console.log("test 🤣", test);
       try {
         const decodedToken = await strapi.firebase.auth().verifyIdToken(idToken);
         if (!decodedToken) {
