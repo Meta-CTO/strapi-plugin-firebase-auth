@@ -116,9 +116,10 @@ export const EditForm = ({ data }: EditFormProps) => {
       <Layouts.Content>
         <Flex
           direction="row"
-          alignItems="flex-start"
-          gap={6}
+          alignItems="stretch"
+          gap={4}
           width="100%"
+          style={{ alignItems: "stretch" }}
         >
           <Box
             background="neutral0"
@@ -126,7 +127,7 @@ export const EditForm = ({ data }: EditFormProps) => {
             hasRadius
             padding={8}
             shadow="tableShadow"
-            style={{ flex: "1 1 auto", minWidth: 0 }}
+            style={{ flex: "9 1 0px", minWidth: 0 }}
           >
               <Flex direction="column" gap={4} alignItems="stretch">
                 <Field.Root style={{ width: "100%" }}>
@@ -177,7 +178,7 @@ export const EditForm = ({ data }: EditFormProps) => {
                   )}
                   <Field.Hint>Leave empty to keep current password</Field.Hint>
                 </Field.Root>
-                <Box>
+                <Field.Root maxWidth="320px">
                   <Field.Label>Disabled</Field.Label>
                   <Toggle
                     name="disabled"
@@ -186,8 +187,8 @@ export const EditForm = ({ data }: EditFormProps) => {
                     checked={Boolean(userData.disabled)}
                     onChange={onToggleInputChange}
                   />
-                </Box>
-                <Box>
+                </Field.Root>
+                <Field.Root maxWidth="320px">
                   <Field.Label>Email Verified</Field.Label>
                   <Toggle
                     name="emailVerified"
@@ -196,14 +197,14 @@ export const EditForm = ({ data }: EditFormProps) => {
                     checked={Boolean(userData.emailVerified)}
                     onChange={onToggleInputChange}
                   />
-                </Box>
+                </Field.Root>
               </Flex>
           </Box>
 
           <Flex
             direction="column"
             gap={4}
-            style={{ flex: "0 0 auto", width: "320px" }}
+            style={{ flex: "3 1 0px", minWidth: "280px", maxWidth: "380px", alignItems: "stretch" }}
           >
             <Box
               as="aside"
