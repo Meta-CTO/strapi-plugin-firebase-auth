@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { useIntl } from "react-intl";
 import { Search } from "@strapi/icons";
-import { Searchbar, SearchForm, Button } from "@strapi/design-system";
+import { Searchbar, SearchForm, IconButton } from "@strapi/design-system";
 import useQueryParams from "../../hooks/useQueryParams";
 
 interface SearchURLQuery {
@@ -69,9 +69,17 @@ const SearchURLQuery = ({ label, placeholder }: SearchURLQuery) => {
   }
 
   return (
-    <Button ref={iconButtonRef} variant="secondary" onClick={handleToggle}>
-      Search
-    </Button>
+    <IconButton
+      ref={iconButtonRef}
+      variant="tertiary"
+      onClick={handleToggle}
+      aria-label={formatMessage({
+        id: "app.component.search.label",
+        defaultMessage: "Search",
+      })}
+    >
+      <Search />
+    </IconButton>
   );
 };
 

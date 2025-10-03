@@ -28,7 +28,9 @@ export interface FirebaseUser {
 
 export interface StrapiUser {
   strapiId: string;
+  strapiDocumentId?: string;
   id: string;
+  documentId?: string;
   username: string;
   email: string;
   password: string | null;

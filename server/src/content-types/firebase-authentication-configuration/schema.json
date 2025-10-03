@@ -20,6 +20,9 @@
   "attributes": {
     "firebase_config_json": {
       "type": "json"
+    },
+    "firebase_web_api_key": {
+      "type": "string"
     }
   }
 }

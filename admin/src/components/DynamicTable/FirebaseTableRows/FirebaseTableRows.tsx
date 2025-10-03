@@ -19,6 +19,7 @@ import { tableHeaders } from "../TableHeaders";
 import { Key, Trash } from "@strapi/icons";
 import { Button } from "@strapi/design-system";
 import { IconButton, IconButtonGroup } from "@strapi/design-system";
+import { format } from "date-fns";
 
 const TypographyMaxWidth = styled(Typography)`
   max-width: 300px;
@@ -63,11 +64,19 @@ export const FirebaseTableRows = ({
     <>
       <Thead>
         <Tr>
-          <Th></Th>
+          <Th style={{ width: '48px' }}></Th>
           {tableHeaders.map((header) => (
-            <Th key={header.name}>{header.name}</Th>
+            <Th key={header.name} style={{ whiteSpace: 'nowrap' }}>
+              <Typography variant="sigma" textColor="neutral600" style={{ fontSize: '14px' }}>
+                {header.metadatas.label}
+              </Typography>
+            </Th>
           ))}
-          <Th>Actions</Th>
+          <Th style={{ whiteSpace: 'nowrap' }}>
+            <Typography variant="sigma" textColor="neutral600" style={{ fontSize: '14px' }}>
+              Actions
+            </Typography>
+          </Th>
         </Tr>
       </Thead>
 
@@ -91,11 +100,6 @@ export const FirebaseTableRows = ({
                   />
                 </Flex>
               </Td>
-              <Td key={data.email} style={{ padding: 16 }}>
-                <TypographyMaxWidth ellipsis textColor="neutral800">
-                  {data.email}
-                </TypographyMaxWidth>
-              </Td>
               <CellLink
                 key={data.uid}
                 onClick={() => {
@@ -108,22 +112,12 @@ export const FirebaseTableRows = ({
                   {data.uid}
                 </TypographyMaxWidth>
               </CellLink>
-              <Td>
-                <MapProviderToIcon providerData={data.providerData}></MapProviderToIcon>
-              </Td>
-              <Td>
-                <TypographyMaxWidth ellipsis textColor="neutral800">
-                  {data.displayName}
-                </TypographyMaxWidth>
-              </Td>
-              <Td>{data.emailVerified ? <RxCheck size={24} /> : <RxCross2 size={24} />}</Td>
-              <Td key={data.disabled}>{data.disabled ? <RxCheck size={24} /> : <RxCross2 size={24} />}</Td>
               <CellLink key={data.strapiId}>
                 <TypographyMaxWidth ellipsis textColor="neutral800">
                   <Box
                     onClick={() => {
                       navigate(
-                        `/content-manager/collectionType/plugin::users-permissions.user/${data.strapiId}`,
+                        `/content-manager/collectionType/plugin::users-permissions.user/${data.strapiDocumentId || data.strapiId}`,
                         { state: { from: location.pathname } }
                       );
                     }}
@@ -135,6 +129,42 @@ export const FirebaseTableRows = ({
               <Td key={data.username}>
                 <TypographyMaxWidth ellipsis textColor="neutral800">
                   {data.username}
+                </TypographyMaxWidth>
+              </Td>
+              <Td>
+                <TypographyMaxWidth ellipsis textColor="neutral800">
+                  {data.displayName}
+                </TypographyMaxWidth>
+              </Td>
+              <Td key={data.email} style={{ padding: 16 }}>
+                <TypographyMaxWidth ellipsis textColor="neutral800">
+                  {data.email}
+                </TypographyMaxWidth>
+              </Td>
+              <Td key={data.phoneNumber} style={{ padding: 16 }}>
+                <TypographyMaxWidth ellipsis textColor="neutral800">
+                  {data.phoneNumber || '-'}
+                </TypographyMaxWidth>
+              </Td>
+              <Td>
+                <MapProviderToIcon providerData={data.providerData}></MapProviderToIcon>
+              </Td>
+              <Td>{data.emailVerified ? <RxCheck size={24} /> : <RxCross2 size={24} />}</Td>
+              <Td key={data.disabled}>{data.disabled ? <RxCheck size={24} /> : <RxCross2 size={24} />}</Td>
+              <Td key={data.createdAt}>
+                <TypographyMaxWidth ellipsis textColor="neutral800">
+                  {data.createdAt
+                    ? format(new Date(data.createdAt), "yyyy/MM/dd kk:mm")
+                    : data.metadata?.creationTime
+                    ? format(new Date(data.metadata.creationTime), "yyyy/MM/dd kk:mm")
+                    : '-'}
+                </TypographyMaxWidth>
+              </Td>
+              <Td key={data.metadata?.lastSignInTime || 'lastSignInTime'}>
+                <TypographyMaxWidth ellipsis textColor="neutral800">
+                  {data.metadata?.lastSignInTime
+                    ? format(new Date(data.metadata.lastSignInTime), "yyyy/MM/dd kk:mm")
+                    : '-'}
                 </TypographyMaxWidth>
               </Td>
               <Td>

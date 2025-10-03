@@ -53,7 +53,6 @@ export const HomePage = () => {
   return (
     <Page.Main>
       <Page.Title>Firebase Users</Page.Title>
-      <Layouts.Header id="title" title="Firebase Users" />
       <Box padding={10}>
         {!isNotConfigured ? (
           <Flex direction="column" alignItems="stretch" gap={4}>

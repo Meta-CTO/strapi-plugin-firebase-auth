@@ -58,6 +58,18 @@ export default ({ strapi }) => {
         console.error("Firebase bootstrap error:", error);
       }
     },
+    /**
+     * Retrieves and decrypts the Firebase configuration including Web API key
+     *
+     * @returns Firebase configuration object or null if not configured
+     *
+     * @throws ApplicationError - When there's an error retrieving or decrypting the configuration
+     *
+     * @remarks
+     * Returns an object containing:
+     * - `firebaseConfigJson`: Decrypted Firebase service account JSON string
+     * - `firebaseWebApiKey`: Firebase Web API key for Identity Toolkit API calls
+     */
     async getFirebaseConfigJson() {
       const key = encryptionKey;
       try {
@@ -77,7 +89,10 @@ export default ({ strapi }) => {
         }
 
         const firebaseConfigJson = await this.decryptJson(key, hashedJson);
-        return { firebaseConfigJson };
+        return {
+          firebaseConfigJson,
+          firebaseWebApiKey: configObject["firebase_web_api_key"]
+        };
       } catch (error) {
         console.error("Firebase config error:", error);
         throw new errors.ApplicationError("Error retrieving Firebase config", {
@@ -86,15 +101,33 @@ export default ({ strapi }) => {
       }
     },
 
+    /**
+     * Stores and encrypts Firebase configuration including Web API key
+     *
+     * @param ctx - Koa context object containing the configuration in request body
+     * @returns The saved configuration object with decrypted values
+     *
+     * @throws ValidationError - When required data is missing
+     * @throws ApplicationError - When there's an error saving the configuration
+     *
+     * @remarks
+     * Expects request body to contain:
+     * - `firebaseConfigJson`: Firebase service account JSON as string
+     * - `firebaseWebApiKey`: Firebase Web API key for REST API calls
+     *
+     * The service account JSON is encrypted using AES before storage,
+     * while the Web API key is stored in plain text.
+     */
     async setFirebaseConfigJson(ctx: DefaultContext | Context) {
       try {
         console.log("setFirebaseConfigJson", ctx.request);
-        const { body: firebaseConfigJson } = ctx.request;
-        const firebaseConfigJsonString = firebaseConfigJson.firebaseConfigJson;
+        const { body: requestBody } = ctx.request;
+        const firebaseConfigJsonString = requestBody.firebaseConfigJson;
+        const firebaseWebApiKey = requestBody.firebaseWebApiKey;
 
         const hash = await this.encryptJson(encryptionKey, firebaseConfigJsonString);
 
-        if (!firebaseConfigJson) throw new ValidationError("data is missing");
+        if (!requestBody) throw new ValidationError("data is missing");
         const isExist = await strapi.entityService.findMany(
           "plugin::firebase-authentication.firebase-authentication-configuration"
         );
@@ -103,7 +136,10 @@ export default ({ strapi }) => {
           res = await strapi.entityService.create(
             "plugin::firebase-authentication.firebase-authentication-configuration",
             {
-              data: { firebase_config_json: { firebaseConfigJson: hash } },
+              data: {
+                firebase_config_json: { firebaseConfigJson: hash },
+                firebase_web_api_key: firebaseWebApiKey
+              },
             }
           );
         } else {
@@ -113,6 +149,7 @@ export default ({ strapi }) => {
             {
               data: {
                 firebase_config_json: { firebaseConfigJson: hash },
+                firebase_web_api_key: firebaseWebApiKey
               },
             }
           );
@@ -121,6 +158,7 @@ export default ({ strapi }) => {
         const firebaseConfigHash = res["firebase_config_json"].firebaseConfigJson;
         const firebaseConfigJsonValue = await this.decryptJson(encryptionKey, firebaseConfigHash);
         res["firebase_config_json"].firebaseConfigJson = firebaseConfigJsonValue;
+        res["firebase_web_api_key"] = firebaseWebApiKey;
         return res;
       } catch (error) {
         throw new ApplicationError("some thing went wrong", {

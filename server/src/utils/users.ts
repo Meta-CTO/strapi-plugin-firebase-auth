@@ -7,10 +7,12 @@ export const formatUserData = (result: any, strapiUsersData: StrapiUser[]) => ({
       (strapiUser: StrapiUser) => strapiUser.email === user.email
     );
     if (!matchedStrapiUser) return user;
+
     return {
       ...user,
       ...matchedStrapiUser,
       strapiId: matchedStrapiUser.id,
+      strapiDocumentId: matchedStrapiUser.documentId,
       id: user.id,
     };
   }),

@@ -1,18 +1,5 @@
 export const tableHeaders = [
   {
-    name: "email",
-    fieldSchema: {
-      configurable: false,
-      type: "email",
-    },
-    metadatas: {
-      label: "Email",
-      sortable: true,
-      searchable: true,
-    },
-    key: "__email_key__",
-  },
-  {
     name: "uid",
     fieldSchema: {
       configurable: false,
@@ -26,17 +13,30 @@ export const tableHeaders = [
     key: "__uid_key__",
   },
   {
-    name: "providers",
+    name: "strapiId",
     fieldSchema: {
       configurable: false,
-      type: "icon",
+      type: "object",
     },
     metadatas: {
-      label: "Providers",
+      label: "Strapi id",
       sortable: false,
-      searchable: false,
+      searchable: true,
     },
-    key: "__provider_key__",
+    key: "__strapiid_key__",
+  },
+  {
+    name: "username",
+    fieldSchema: {
+      configurable: false,
+      type: "string",
+    },
+    metadatas: {
+      label: "strapi username",
+      sortable: true,
+      searchable: true,
+    },
+    key: "__username_key__",
   },
   {
     name: "displayName",
@@ -50,6 +50,45 @@ export const tableHeaders = [
       searchable: true,
     },
     key: "__displayName_key__",
+  },
+  {
+    name: "email",
+    fieldSchema: {
+      configurable: false,
+      type: "email",
+    },
+    metadatas: {
+      label: "Email",
+      sortable: true,
+      searchable: true,
+    },
+    key: "__email_key__",
+  },
+  {
+    name: "phoneNumber",
+    fieldSchema: {
+      configurable: false,
+      type: "string",
+    },
+    metadatas: {
+      label: "Phone Number",
+      sortable: true,
+      searchable: true,
+    },
+    key: "__phoneNumber_key__",
+  },
+  {
+    name: "providers",
+    fieldSchema: {
+      configurable: false,
+      type: "icon",
+    },
+    metadatas: {
+      label: "Providers",
+      sortable: false,
+      searchable: false,
+    },
+    key: "__provider_key__",
   },
   {
     name: "emailVerified",
@@ -78,29 +117,29 @@ export const tableHeaders = [
     key: "__disabled_key__",
   },
   {
-    name: "strapiId",
-    fieldSchema: {
-      configurable: false,
-      type: "object",
-    },
-    metadatas: {
-      label: "Strapi id",
-      sortable: false,
-      searchable: true,
-    },
-    key: "__strapiid_key__",
-  },
-  {
-    name: "username",
+    name: "createdAt",
     fieldSchema: {
       configurable: false,
       type: "string",
     },
     metadatas: {
-      label: "strapi username",
+      label: "Created At",
       sortable: true,
-      searchable: true,
+      searchable: false,
     },
-    key: "__username_key__",
+    key: "__createdAt_key__",
+  },
+  {
+    name: "lastSignInTime",
+    fieldSchema: {
+      configurable: false,
+      type: "string",
+    },
+    metadatas: {
+      label: "Last Sign In",
+      sortable: true,
+      searchable: false,
+    },
+    key: "__lastSignInTime_key__",
   },
 ];

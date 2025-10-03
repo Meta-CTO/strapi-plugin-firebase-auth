@@ -260,4 +260,151 @@ export default ({ strapi }) => ({
       jwt,
     };
   },
+
+  /**
+   * Authenticates a user with email and password through Firebase Identity Toolkit API
+   *
+   * @param ctx - Koa context object containing the HTTP request and response
+   * @returns Response object containing user and JWT token
+   *
+   * @throws ValidationError - When email/password are missing or invalid
+   * @throws ApplicationError - When Firebase Web API key is not configured or authentication fails
+   *
+   * @example
+   * ```typescript
+   * // Request
+   * POST /api/firebase-authentication/emailLogin
+   * {
+   *   "email": "user@example.com",
+   *   "password": "securePassword123"
+   * }
+   *
+   * // Response
+   * {
+   *   "user": {
+   *     "id": 1,
+   *     "email": "user@example.com",
+   *     "username": "user",
+   *     "confirmed": true,
+   *     "blocked": false
+   *   },
+   *   "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+   * }
+   * ```
+   *
+   * @remarks
+   * This method acts as a proxy to Firebase's REST API, eliminating the need for
+   * Firebase SDK on the client. It performs the following steps:
+   * 1. Validates email and password inputs
+   * 2. Retrieves Firebase Web API key from configuration
+   * 3. Calls Firebase Identity Toolkit API for authentication
+   * 4. Processes Firebase response and handles errors
+   * 5. Looks up or creates Strapi user
+   * 6. Generates and returns Strapi JWT token
+   */
+  emailLogin: async (ctx) => {
+    console.log("emailLogin endpoint called");
+    const { email, password } = ctx.request.body;
+
+    if (!email || !password) {
+      throw new errors.ValidationError("Email and password are required");
+    }
+
+    // Get Firebase Web API key from settings
+    const config = await strapi
+      .plugin("firebase-authentication")
+      .service("settingsService")
+      .getFirebaseConfigJson();
+
+    if (!config || !config.firebaseWebApiKey) {
+      throw new errors.ApplicationError("Firebase Web API key is not configured");
+    }
+
+    try {
+      // Call Firebase Identity Toolkit API
+      const response = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${config.firebaseWebApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            returnSecureToken: true,
+          }),
+        }
+      );
+
+      const data: any = await response.json();
+
+      if (!response.ok) {
+        // Handle Firebase errors
+        const errorMessage = data.error?.message || "Authentication failed";
+        console.error("Firebase authentication error:", errorMessage);
+
+        // Return specific error messages
+        if (errorMessage === "EMAIL_NOT_FOUND") {
+          throw new errors.ValidationError("User with this email does not exist");
+        } else if (errorMessage === "INVALID_PASSWORD") {
+          throw new errors.ValidationError("Invalid password");
+        } else if (errorMessage === "USER_DISABLED") {
+          throw new errors.ValidationError("User account has been disabled");
+        } else if (errorMessage === "INVALID_EMAIL") {
+          throw new errors.ValidationError("Invalid email format");
+        } else {
+          throw new errors.ValidationError(errorMessage);
+        }
+      }
+
+      // We now have the idToken from Firebase
+      const { idToken, refreshToken, localId } = data;
+      const populate = ctx.request.query.populate || [];
+
+      // Decode the token to get user details
+      const decodedToken = await strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .decodeIDToken(idToken);
+
+      // Check if user exists in Strapi
+      let user = await strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .checkIfUserExists(decodedToken);
+
+      if (!user) {
+        // Create Strapi user if doesn't exist
+        user = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseService")
+          .createStrapiUser(decodedToken, idToken, null);
+      }
+
+      // Generate Strapi JWT
+      const jwt = await strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .generateJWTForCurrentUser(user);
+
+      // Update user's idToken
+      strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .updateUserIDToken(user, idToken, decodedToken);
+
+      // Return same format as validateFirebaseToken
+      return {
+        user: await processMeData(user, populate),
+        jwt,
+      };
+    } catch (error) {
+      console.error("emailLogin error:", error);
+      if (error instanceof errors.ValidationError || error instanceof errors.ApplicationError) {
+        throw error;
+      }
+      throw new errors.ApplicationError("Authentication failed");
+    }
+  },
 });

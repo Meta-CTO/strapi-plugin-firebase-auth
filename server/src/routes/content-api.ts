@@ -9,5 +9,13 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "POST",
+      path: "/emailLogin",
+      handler: "firebaseController.emailLogin",
+      config: {
+        policies: [],
+      },
+    },
   ],
 };

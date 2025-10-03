@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { JSONInput, Flex, Box, Button, Typography } from "@strapi/design-system";
+import { JSONInput, Flex, Box, Button, Typography, TextInput } from "@strapi/design-system";
 
 import { Page } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
@@ -14,6 +14,7 @@ function SettingsPage() {
   const { toggleNotification } = useNotification();
   const [firebaseJsonValue, setFirebaseJsonValue] = useState<any>(null);
   const [firebaseJsonValueInput, setFirebaseJsonValueInput] = useState<any>("");
+  const [firebaseWebApiKey, setFirebaseWebApiKey] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -30,6 +31,7 @@ function SettingsPage() {
         }
         setFirebaseJsonValue(data);
         setFirebaseJsonValueInput(typeof data === "string" ? data : JSON.stringify(data));
+        setFirebaseWebApiKey(data?.firebaseWebApiKey || "");
       })
       .catch((error) => {
         setLoading(false);
@@ -49,6 +51,7 @@ function SettingsPage() {
       await delFirebaseConfig();
       setFirebaseJsonValue(null);
       setFirebaseJsonValueInput("");
+      setFirebaseWebApiKey("");
       // restartServer();
       setLoading(false);
       toggleNotification({
@@ -73,7 +76,7 @@ function SettingsPage() {
           ? firebaseJsonValueInput
           : JSON.stringify(firebaseJsonValueInput);
 
-      const data = await saveFirebaseConfig(jsonToSubmit);
+      const data = await saveFirebaseConfig(jsonToSubmit, firebaseWebApiKey);
       console.log("Firebase JSON submission response:", data);
 
       if (!data || !data.firebase_config_json) {
@@ -119,9 +122,9 @@ function SettingsPage() {
             return !firebaseJsonValue || !firebaseJsonValue.firebaseConfigJson ? (
               <>
                 <JSONInput
-                  label="Firebase-json-configuration"
+                  label="Firebase Service Account JSON"
                   value={firebaseJsonValueInput}
-                  height={500}
+                  height={400}
                   style={{ height: 400 }}
                   onChange={setFirebaseJsonValueInput}
                   error={
@@ -129,6 +132,15 @@ function SettingsPage() {
                       ? "Please enter a valid JSON string"
                       : ""
                   }
+                />
+                <TextInput
+                  label="Firebase Web API Key"
+                  name="firebaseWebApiKey"
+                  value={firebaseWebApiKey}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirebaseWebApiKey(e.target.value)}
+                  placeholder="Enter your Firebase Web API Key"
+                  hint="Found in Firebase Console > Project Settings > General > Web API Key"
+                  style={{ marginTop: 16 }}
                 />
                 <Flex
                   style={{

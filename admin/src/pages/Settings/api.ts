@@ -7,10 +7,10 @@ export const restartServer = async () => {
   await post(url);
 };
 
-export const saveFirebaseConfig = async (json: string) => {
+export const saveFirebaseConfig = async (json: string, firebaseWebApiKey?: string) => {
   const url = `/${PLUGIN_ID}/settings/firebase-config`;
   const { post } = getFetchClient();
-  const { data } = await post(url, { firebaseConfigJson: json });
+  const { data } = await post(url, { firebaseConfigJson: json, firebaseWebApiKey });
   return data;
 };
 

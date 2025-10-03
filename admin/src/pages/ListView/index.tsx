@@ -5,13 +5,14 @@ import { Page, Layouts } from "@strapi/strapi/admin";
 import { useQueryParams } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
 
-import { Main } from "@strapi/design-system";
+import { Main, Box } from "@strapi/design-system";
 import { ContentLayout, HeaderLayout, ActionLayout } from "@strapi/design-system";
 import { Button } from "@strapi/design-system";
 import { Link } from "@strapi/design-system";
 import { ArrowLeft } from "@strapi/icons";
 import { Plus } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
 import { FirebaseTable } from "../../components/DynamicTable/FirebaseTable";
 import { deleteUser, fetchUsers, resetUserPassword } from "../utils/api";
 import { PaginationFooter } from "./PaginationFooter";
@@ -26,6 +27,15 @@ interface ListViewProps {
   data: User[];
   meta: ResponseMeta;
 }
+
+const ScrollableBox = styled(Box)`
+  overflow-x: auto;
+  width: 100%;
+`;
+
+const StyledMain = styled(Main)`
+  overflow-x: hidden;
+`;
 
 /* eslint-disable react/no-array-index-key */
 function ListView({ data, meta }: ListViewProps) {
@@ -229,7 +239,7 @@ function ListView({ data, meta }: ListViewProps) {
   };
 
   return (
-    <Main aria-busy={isLoading}>
+    <StyledMain aria-busy={isLoading}>
       <Layouts.Header
         primaryAction={getCreateAction()}
         subtitle={headSubtitle}
@@ -262,7 +272,7 @@ function ListView({ data, meta }: ListViewProps) {
         }
       />
       <Layouts.Content>
-        <>
+        <ScrollableBox background="neutral0" hasRadius shadow="tableShadow">
           <FirebaseTable
             action={null}
             isLoading={isLoading}
@@ -283,8 +293,8 @@ function ListView({ data, meta }: ListViewProps) {
               })
             }
           />
-          <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
-        </>
+        </ScrollableBox>
+        <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
       </Layouts.Content>
 
       {showResetPasswordDialogue.isOpen && (
@@ -304,7 +314,7 @@ function ListView({ data, meta }: ListViewProps) {
           isSingleRecord={true}
         />
       )}
-    </Main>
+    </StyledMain>
   );
 }
 

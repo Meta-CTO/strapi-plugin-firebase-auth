@@ -12,7 +12,6 @@ import {
 import React from "react";
 import { MdPassword } from "react-icons/md";
 import { Flex } from "@strapi/design-system";
-import { Tooltip } from "@strapi/design-system";
 
 const providerIconMapping: { [key: string]: any } = {
   password: <MdPassword size={24} />,
@@ -31,9 +30,16 @@ export const MapProviderToIcon = ({ providerData }: any) => {
   return (
     <Flex gap={2}>
       {providerData?.map(({ providerId }: any) => (
-        <Tooltip description={providerId} key={providerId}>
-          <div>{providerIconMapping[providerId] || providerId}</div>
-        </Tooltip>
+        <span
+          key={providerId}
+          title={providerId}
+          style={{
+            cursor: 'help',
+            display: 'inline-block'
+          }}
+        >
+          {providerIconMapping[providerId] || providerId}
+        </span>
       ))}
     </Flex>
   );

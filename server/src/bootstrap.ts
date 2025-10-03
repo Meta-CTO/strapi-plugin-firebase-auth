@@ -10,8 +10,17 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       pluginName: "firebase-authentication",
     },
   ];
+
   await strapi.plugin("firebase-authentication").service("settingsService").init();
   await strapi.admin.services.permission.actionProvider.registerMany(actions);
+
+  // Register content-api permissions for public access
+  if (strapi.plugin('users-permissions')) {
+    const userPermissionsService = strapi.plugin('users-permissions').service('users-permissions');
+
+    // Register firebase-authentication content-api routes
+    userPermissionsService.initialize();
+  }
 };
 
 export default bootstrap;
