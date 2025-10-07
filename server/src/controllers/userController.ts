@@ -7,7 +7,7 @@ const FIREBASE_DESTINATION = "firebase";
 
 export default {
   list: async (ctx: DefaultContext | Context) => {
-    let { pagination, nextPageToken } = ctx.query;
+    let { pagination, nextPageToken, sort, search } = ctx.query;
 
     if (!pagination) {
       pagination = {};
@@ -18,7 +18,7 @@ export default {
     ctx.body = await strapi
       .plugin("firebase-authentication")
       .service("userService")
-      .list(pagination, nextPageToken);
+      .list(pagination, nextPageToken, sort, search);
   },
 
   create: async (ctx) => {
