@@ -20,7 +20,7 @@ export const tableHeaders = [
     },
     metadatas: {
       label: "Strapi id",
-      sortable: false,
+      sortable: true,
       searchable: true,
     },
     key: "__strapiid_key__",

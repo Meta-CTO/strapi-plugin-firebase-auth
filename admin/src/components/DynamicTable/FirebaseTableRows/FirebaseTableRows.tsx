@@ -6,19 +6,13 @@ import { Flex } from "@strapi/design-system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
 import { Checkbox } from "@strapi/design-system";
-import { SimpleMenu, MenuItem } from "@strapi/design-system";
-import { ArrowDown } from "@strapi/icons";
 import { RxCross2, RxCheck } from "react-icons/rx";
 import { Typography } from "@strapi/design-system";
 import styled from "styled-components";
 import { MapProviderToIcon } from "../../../utils/provider";
 import { User } from "../../../../../model/User";
-import { Thead } from "@strapi/design-system";
-import { Th } from "@strapi/design-system";
-import { tableHeaders } from "../TableHeaders";
 import { Key, Trash } from "@strapi/icons";
 import { Button } from "@strapi/design-system";
-import { IconButton, IconButtonGroup } from "@strapi/design-system";
 import { format } from "date-fns";
 
 const TypographyMaxWidth = styled(Typography)`
@@ -61,27 +55,8 @@ export const FirebaseTableRows = ({
   }, [rows]);
 
   return (
-    <>
-      <Thead>
-        <Tr>
-          <Th style={{ width: '48px' }}></Th>
-          {tableHeaders.map((header) => (
-            <Th key={header.name} style={{ whiteSpace: 'nowrap' }}>
-              <Typography variant="sigma" textColor="neutral600" style={{ fontSize: '14px' }}>
-                {header.metadatas.label}
-              </Typography>
-            </Th>
-          ))}
-          <Th style={{ whiteSpace: 'nowrap' }}>
-            <Typography variant="sigma" textColor="neutral600" style={{ fontSize: '14px' }}>
-              Actions
-            </Typography>
-          </Th>
-        </Tr>
-      </Thead>
-
-      <Tbody>
-        {rowsData.map((data: User) => {
+    <Tbody>
+      {rowsData.map((data: User) => {
           const isChecked = entriesToDelete && entriesToDelete.findIndex((id) => id === data.id) !== -1;
 
           return (
@@ -103,8 +78,8 @@ export const FirebaseTableRows = ({
               <CellLink
                 key={data.uid}
                 onClick={() => {
-                  navigate(`${location.pathname}/${data.uid}`, {
-                    state: { from: location.pathname, strapiId: data.strapiId },
+                  navigate(data.uid, {
+                    state: { strapiId: data.strapiId },
                   });
                 }}
               >
@@ -186,7 +161,6 @@ export const FirebaseTableRows = ({
             </Tr>
           );
         })}
-      </Tbody>
-    </>
+    </Tbody>
   );
 };
