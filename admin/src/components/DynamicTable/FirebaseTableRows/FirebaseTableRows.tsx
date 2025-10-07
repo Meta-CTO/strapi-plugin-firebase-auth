@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Box } from "@strapi/design-system";
-
-import { Tbody, Td, Tr } from "@strapi/design-system";
-import { Flex } from "@strapi/design-system";
+import { Box, Flex, Checkbox, Typography, Button, Tbody, Tr, Td } from "@strapi/design-system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
-import { Checkbox } from "@strapi/design-system";
 import { RxCross2, RxCheck } from "react-icons/rx";
-import { Typography } from "@strapi/design-system";
 import styled from "styled-components";
 import { MapProviderToIcon } from "../../../utils/provider";
 import { User } from "../../../../../model/User";
 import { Key, Trash } from "@strapi/icons";
-import { Button } from "@strapi/design-system";
 import { format } from "date-fns";
 
 const TypographyMaxWidth = styled(Typography)`
@@ -69,7 +63,7 @@ export const FirebaseTableRows = ({
                       defaultMessage: `Select {target}`,
                     })}
                     checked={isChecked}
-                    onChange={(e: any) => {
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       onSelectRow && onSelectRow({ name: data.id, value: e.target.checked });
                     }}
                   />

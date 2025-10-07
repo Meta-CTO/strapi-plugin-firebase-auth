@@ -1,8 +1,10 @@
 {
-  "extends": "@strapi/typescript-utils/tsconfigs/server",
+  "extends": ["@strapi/typescript-utils/tsconfigs/server", "../tsconfig.json"],
   "include": ["./src"],
   "compilerOptions": {
     "rootDir": "../",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "skipLibCheck": true,
+    "types": []
   }
 }

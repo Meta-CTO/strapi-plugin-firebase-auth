@@ -2,10 +2,9 @@ import React from "react";
 import styled from "styled-components";
 
 import { FirebaseTableRows } from "./FirebaseTableRows/FirebaseTableRows";
-import { DeleteAccount } from "../UserManagement/DeleteAccount";
 import { tableHeaders } from "./TableHeaders";
 import { User } from "../../../../model/User";
-import { Table } from "@strapi/strapi/admin";
+import { Table, Thead, Tr, Th, Typography } from "@strapi/design-system";
 
 const StyledTableContainer = styled.div`
   width: 100%;
@@ -35,37 +34,35 @@ interface FirebaseTableProps {
   onDeleteAccountClick: (data: User) => void;
 }
 
-export const FirebaseTable = ({
-  action,
-  isLoading,
-  rows,
-  onConfirmDeleteAll,
-  onResetPasswordClick,
-  onDeleteAccountClick,
-}: FirebaseTableProps) => {
+export const FirebaseTable = ({ rows, onResetPasswordClick, onDeleteAccountClick }: FirebaseTableProps) => {
   return (
     <StyledTableContainer>
-      <Table.Root rows={rows} isLoading={isLoading}>
-        <Table.Content>
-          <Table.Head>
-            <Table.HeaderCell name="" label="" sortable={false} />
+      <Table colCount={tableHeaders.length + 2} rowCount={rows.length + 1}>
+        <Thead>
+          <Tr>
+            <Th>
+              <Typography variant="sigma" textColor="neutral600"></Typography>
+            </Th>
             {tableHeaders.map((header) => (
-              <Table.HeaderCell
-                key={header.key}
-                name={header.name}
-                label={header.metadatas.label}
-                sortable={header.metadatas.sortable}
-              />
+              <Th key={header.key}>
+                <Typography variant="sigma" textColor="neutral600">
+                  {header.metadatas.label}
+                </Typography>
+              </Th>
             ))}
-            <Table.HeaderCell name="actions" label="Actions" sortable={false} />
-          </Table.Head>
-          <FirebaseTableRows
-            onResetPasswordClick={onResetPasswordClick}
-            onDeleteAccountClick={onDeleteAccountClick}
-            rows={rows}
-          />
-        </Table.Content>
-      </Table.Root>
+            <Th>
+              <Typography variant="sigma" textColor="neutral600">
+                Actions
+              </Typography>
+            </Th>
+          </Tr>
+        </Thead>
+        <FirebaseTableRows
+          onResetPasswordClick={onResetPasswordClick}
+          onDeleteAccountClick={onDeleteAccountClick}
+          rows={rows}
+        />
+      </Table>
     </StyledTableContainer>
   );
 };
