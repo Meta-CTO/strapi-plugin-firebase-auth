@@ -1,8 +1,10 @@
 {
-  "extends": "@strapi/typescript-utils/tsconfigs/admin",
+  "extends": ["@strapi/typescript-utils/tsconfigs/admin", "../tsconfig.json"],
   "include": ["./src", "./custom.d.ts"],
   "compilerOptions": {
     "rootDir": "../",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "skipLibCheck": true,
+    "types": []
   }
 }
