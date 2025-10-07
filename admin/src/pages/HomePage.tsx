@@ -9,6 +9,12 @@ import { ResponseMeta } from "../../../model/Meta";
 import { WarningCircle } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 import { getFirebaseConfig } from "../pages/Settings/api";
+import styled from "styled-components";
+
+const StyledPageMain = styled(Page.Main)`
+  overflow-x: hidden;
+  max-width: 100vw;
+`;
 
 const INITIAL_USERS_DATA = {
   data: [],
@@ -51,7 +57,7 @@ export const HomePage = () => {
   }
 
   return (
-    <Page.Main>
+    <StyledPageMain>
       <Page.Title>Firebase Users</Page.Title>
       <Box padding={10}>
         {!isNotConfigured ? (
@@ -75,6 +81,6 @@ export const HomePage = () => {
           </Flex>
         )}
       </Box>
-    </Page.Main>
+    </StyledPageMain>
   );
 };

@@ -5,6 +5,27 @@ import { prefixPluginTranslations } from "./utils/prefixPluginTranslations";
 import { PERMISSIONS } from "./permissions";
 import { getTranslation } from "./utils/getTranslation";
 
+// Global style to fix scrollbar and layout issues
+// Prevents horizontal scroll and ensures single vertical scrollbar (inner white one)
+if (typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.textContent = `
+    html, body {
+      overflow-x: hidden !important;
+      overflow-y: hidden !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+    }
+    #strapi {
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export default {
   register(app: any) {
     app.addMenuLink({

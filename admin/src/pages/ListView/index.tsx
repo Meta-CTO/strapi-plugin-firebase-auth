@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useEffect, useState, useCallback } from "react";
 import { useIntl } from "react-intl";
 import get from "lodash/get";
 import { Page, Layouts } from "@strapi/strapi/admin";
@@ -6,7 +6,6 @@ import { useQueryParams } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
 
 import { Main, Box } from "@strapi/design-system";
-import { ContentLayout, HeaderLayout, ActionLayout } from "@strapi/design-system";
 import { Button } from "@strapi/design-system";
 import { Link } from "@strapi/design-system";
 import { ArrowLeft } from "@strapi/icons";
@@ -17,25 +16,46 @@ import { FirebaseTable } from "../../components/DynamicTable/FirebaseTable";
 import { deleteUser, fetchUsers, resetUserPassword } from "../utils/api";
 import { PaginationFooter } from "./PaginationFooter";
 import SearchURLQuery from "../../components/SearchURLQuery/SearchURLQuery";
-import { matchSorter } from "match-sorter";
 import { User } from "../../../../model/User";
 import { ResponseMeta } from "../../../../model/Meta";
 import { DeleteAccount } from "../../components/UserManagement/DeleteAccount";
 import { ResetPassword } from "../../components/UserManagement/ResetPassword";
+
+// Constants
+const HEADER_TITLE = "Firebase Users";
+const NOTIFICATION_MESSAGES = {
+  DELETED: "Deleted",
+  SAVED: "Saved",
+  RESET_ERROR: "Error resetting password, please try again",
+  LOAD_ERROR: "Failed to load users. Please try again.",
+};
+
+// Types
+interface PageTokens {
+  [page: number]: string;
+}
 
 interface ListViewProps {
   data: User[];
   meta: ResponseMeta;
 }
 
-const ScrollableBox = styled(Box)`
-  overflow-x: auto;
-  width: 100%;
-`;
-
 const StyledMain = styled(Main)`
   overflow-x: hidden;
+  max-width: 100vw;
+
+  /* Prevent all child containers from creating horizontal scroll */
+  & > * {
+    max-width: 100%;
+  }
 `;
+
+// Helper function to map user data
+const mapUserData = (users: any[]): User[] =>
+  users.map((item) => ({
+    id: item.uid,
+    ...item,
+  }));
 
 /* eslint-disable react/no-array-index-key */
 function ListView({ data, meta }: ListViewProps) {
@@ -53,51 +73,51 @@ function ListView({ data, meta }: ListViewProps) {
   const [rowsData, setRowsData] = useState<User[]>(data);
   const [rowsMeta, setRowsMeta] = useState<ResponseMeta>(meta);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const headerLayoutTitle = "Firebase Users";
   const [query] = useQueryParams();
 
   const navigate = useNavigate();
-  const pathname = window.location.pathname;
-
   const { toggleNotification } = useNotification();
+  const { formatMessage } = useIntl();
 
-  const setNextPageToken = (page: string, nextPageToken: string) => {
-    const formattedPage = parseInt(page) || 1;
-    const storeObject = localStorage.getItem("nextPageTokens");
-    let newObject: any = {};
-    if (storeObject) {
-      newObject = JSON.parse(storeObject);
-    }
+  // Pagination token management with proper types
+  const setNextPageToken = useCallback((page: string, nextPageToken: string) => {
+    const formattedPage = parseInt(page, 10) || 1;
+    const storeObject = sessionStorage.getItem("nextPageTokens");
+    const tokens: PageTokens = storeObject ? JSON.parse(storeObject) : {};
 
-    newObject[formattedPage + 1] = nextPageToken;
-    localStorage.setItem("nextPageTokens", JSON.stringify(newObject));
-  };
+    tokens[formattedPage + 1] = nextPageToken;
+    sessionStorage.setItem("nextPageTokens", JSON.stringify(tokens));
+  }, []);
 
-  const getNextPageToken = async (page: string) => {
-    const formattedPage = parseInt(page);
-    const storeObject = localStorage.getItem("nextPageTokens");
+  const getNextPageToken = useCallback((page: string): string | undefined => {
+    const formattedPage = parseInt(page, 10);
+    const storeObject = sessionStorage.getItem("nextPageTokens");
 
     if (!storeObject) {
       return undefined;
     }
-    const newObject = JSON.parse(storeObject);
 
-    return newObject[formattedPage];
-  };
+    const tokens: PageTokens = JSON.parse(storeObject);
+    return tokens[formattedPage];
+  }, []);
 
-  const fetchPaginatedUsers = async () => {
-    const nextPageToken = await getNextPageToken((query.query as any)?.page as string);
+  const fetchPaginatedUsers = useCallback(async () => {
+    const page = (query?.query as any)?.page as string | undefined;
+    const nextPageToken = page ? getNextPageToken(page) : undefined;
 
-    if (nextPageToken && query?.query) {
-      (query.query as any).nextPageToken = nextPageToken;
+    const queryWithToken = {
+      ...query.query,
+      ...(nextPageToken && { nextPageToken }),
+    };
+
+    const response = await fetchUsers(queryWithToken);
+
+    if (response.pageToken && page) {
+      setNextPageToken(page, response.pageToken);
     }
-    const response = await fetchUsers(query.query);
 
-    if (response.pageToken) {
-      setNextPageToken((query.query as any)?.page as string, response.pageToken);
-    }
     return response;
-  };
+  }, [query.query, getNextPageToken, setNextPageToken]);
 
   useEffect(() => {
     const fetchPaginatedData = async () => {
@@ -105,145 +125,166 @@ function ListView({ data, meta }: ListViewProps) {
         setIsLoading(true);
 
         const response = await fetchPaginatedUsers();
-        let data = response.data?.map((item: any) => {
-          return {
-            id: item.uid,
-            ...item,
-          };
-        });
-        if ((query.query as any)?._q) {
-          data = matchSorter(data, (query.query as any)?._q as string, {
-            keys: ["email", "displayName", "username"],
-          });
-        }
-        setRowsData(data);
+        const mappedData = mapUserData(response.data || []);
+
+        setRowsData(mappedData);
         setRowsMeta(response.meta);
-        setIsLoading(false);
-      } catch (err: any) {
+      } catch (err) {
+        toggleNotification({
+          type: "warning",
+          message: NOTIFICATION_MESSAGES.LOAD_ERROR,
+        });
+      } finally {
         setIsLoading(false);
       }
     };
     fetchPaginatedData();
-  }, [query.query]);
+  }, [query.query, fetchPaginatedUsers, toggleNotification]);
 
-  const { formatMessage } = useIntl();
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
 
       const response = await fetchPaginatedUsers();
+      const mappedData = mapUserData(response.data);
 
-      const newData = response.data.map((item: any) => {
-        return {
-          id: item.uid,
-          ...item,
-        };
-      });
-      setRowsData(newData);
+      setRowsData(mappedData);
       setRowsMeta(response.meta);
-      setIsLoading(false);
+
       toggleNotification({
         type: "success",
-        message: "Deleted",
+        message: NOTIFICATION_MESSAGES.DELETED,
       });
-      return newData;
+
+      return mappedData;
     } catch (err) {
       const errorMessage = get(err, "response.payload.message", formatMessage({ id: "error.record.delete" }));
-      setIsLoading(false);
+
       toggleNotification({
         type: "warning",
         message: errorMessage,
       });
+
       return Promise.reject([]);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [fetchPaginatedUsers, toggleNotification, formatMessage]);
 
-  const handleDeleteAll = async (idsToDelete: Array<string | number>) => {
-    await Promise.all(idsToDelete.map((id) => deleteUser(id as string, null)));
-    fetchData();
-  };
-
-  const handleDeleteRecord = async (idsToDelete: string, destination: string | null) => {
-    await deleteUser(idsToDelete, destination);
-    const result = await fetchData();
-    return result;
-  };
-
-  const handleConfirmDeleteData = async (
-    idsToDelete: string,
-    isStrapiIncluded: boolean,
-    isFirebaseIncluded: boolean
-  ) => {
-    let destination: string | null = null;
-    if (isStrapiIncluded && isFirebaseIncluded) {
-      destination = null;
-    } else if (isStrapiIncluded) {
-      destination = "strapi";
-    } else if (isFirebaseIncluded) destination = "firebase";
-    const result = await handleDeleteRecord(idsToDelete, destination);
-    return result;
-  };
-
-  const getCreateAction = () => (
-    <Button
-      onClick={() => {
-        navigate(`${pathname}/users/create`, {
-          state: { from: pathname },
-        });
-      }}
-      startIcon={<Plus />}
-    >
-      Create
-    </Button>
+  const handleDeleteAll = useCallback(
+    async (idsToDelete: Array<string | number>) => {
+      await Promise.all(idsToDelete.map((id) => deleteUser(id as string, null)));
+      await fetchData();
+    },
+    [fetchData]
   );
+
+  const handleDeleteRecord = useCallback(
+    async (idsToDelete: string, destination: string | null) => {
+      await deleteUser(idsToDelete, destination);
+      const result = await fetchData();
+      return result;
+    },
+    [fetchData]
+  );
+
+  const handleConfirmDeleteData = useCallback(
+    async (idsToDelete: string, isStrapiIncluded: boolean, isFirebaseIncluded: boolean) => {
+      let destination: string | null = null;
+
+      if (isStrapiIncluded && isFirebaseIncluded) {
+        destination = null;
+      } else if (isStrapiIncluded) {
+        destination = "strapi";
+      } else if (isFirebaseIncluded) {
+        destination = "firebase";
+      }
+
+      const result = await handleDeleteRecord(idsToDelete, destination);
+      return result;
+    },
+    [handleDeleteRecord]
+  );
+
+  const handleNavigateToCreate = useCallback(() => {
+    navigate("users/create");
+  }, [navigate]);
+
+  const getCreateAction = useCallback(
+    () => <Button onClick={handleNavigateToCreate} startIcon={<Plus />}>Create</Button>,
+    [handleNavigateToCreate]
+  );
+
+  const handleCloseResetDialogue = useCallback(() => {
+    setShowResetPasswordDialogue({ isOpen: false, email: "", id: "" });
+  }, []);
+
+  const handleCloseDeleteDialogue = useCallback(() => {
+    setShowDeleteAccountDialogue({ isOpen: false, email: "", id: "" });
+  }, []);
+
+  const resetPassword = useCallback(
+    async (newPassword: string) => {
+      try {
+        await resetUserPassword(showResetPasswordDialogue.id, {
+          password: newPassword,
+        });
+        handleCloseResetDialogue();
+        toggleNotification({
+          type: "success",
+          message: NOTIFICATION_MESSAGES.SAVED,
+        });
+      } catch (err) {
+        toggleNotification({
+          type: "danger",
+          message: NOTIFICATION_MESSAGES.RESET_ERROR,
+        });
+      }
+    },
+    [showResetPasswordDialogue.id, handleCloseResetDialogue, toggleNotification]
+  );
+
+  const deleteAccount = useCallback(
+    async (isStrapiIncluded: boolean, isFirebaseIncluded: boolean) => {
+      const newRowsData = await handleConfirmDeleteData(
+        showDeleteAccountDialogue.id,
+        isStrapiIncluded,
+        isFirebaseIncluded
+      );
+      handleCloseDeleteDialogue();
+      setRowsData(newRowsData);
+    },
+    [showDeleteAccountDialogue.id, handleConfirmDeleteData, handleCloseDeleteDialogue]
+  );
+
+  const handleResetPasswordClick = useCallback((data: User) => {
+    setShowResetPasswordDialogue({
+      isOpen: true,
+      email: data.email,
+      id: data.uid,
+    });
+  }, []);
+
+  const handleDeleteAccountClick = useCallback((data: User) => {
+    setShowDeleteAccountDialogue({
+      isOpen: true,
+      email: data.email,
+      id: data.uid,
+    });
+  }, []);
 
   if (isLoading) {
     return <Page.Loading />;
   }
 
   const headSubtitle = `Showing ${rowsData?.length || 0} entries`;
-  const handleCloseResetDialogue = () => {
-    setShowResetPasswordDialogue({ isOpen: false, email: "", id: "" });
-  };
-  const handleCloseDeleteDialogoue = () => {
-    setShowDeleteAccountDialogue({ isOpen: false, email: "", id: "" });
-  };
-
-  const resetPassword = async (newPassword: string) => {
-    try {
-      await resetUserPassword(showResetPasswordDialogue.id, {
-        password: newPassword,
-      });
-      handleCloseResetDialogue();
-      toggleNotification({
-        type: "success",
-        message: "Saved",
-      });
-    } catch (err) {
-      toggleNotification({
-        type: "success",
-        message: "Error resetting password, please try again",
-      });
-    }
-  };
-
-  const deleteAccount = async (isStrapiIncluded: boolean, isFirebaseIncluded: boolean) => {
-    const newRowsData = await handleConfirmDeleteData(
-      showDeleteAccountDialogue.id,
-      isStrapiIncluded,
-      isFirebaseIncluded
-    );
-    handleCloseDeleteDialogoue();
-    setRowsData(newRowsData);
-  };
 
   return (
     <StyledMain aria-busy={isLoading}>
       <Layouts.Header
         primaryAction={getCreateAction()}
         subtitle={headSubtitle}
-        title={headerLayoutTitle}
+        title={HEADER_TITLE}
         navigationAction={
           <Link startIcon={<ArrowLeft />} to="/content-manager/">
             Back
@@ -251,69 +292,54 @@ function ListView({ data, meta }: ListViewProps) {
         }
       />
       <Layouts.Action
-        endActions={<></>}
+        endActions={null}
         startActions={
-          <>
-            <SearchURLQuery
-              label={formatMessage(
-                {
-                  id: "app.component.search.label",
-                  defaultMessage: "Search for {target}",
-                },
-                { target: headerLayoutTitle }
-              )}
-              placeholder={formatMessage({
-                id: "app.component.search.placeholder",
-                defaultMessage: "Search...",
-              })}
-              trackedEvent="didSearch"
-            />
-          </>
+          <SearchURLQuery
+            label={formatMessage(
+              {
+                id: "app.component.search.label",
+                defaultMessage: "Search for {target}",
+              },
+              { target: HEADER_TITLE }
+            )}
+            placeholder={formatMessage({
+              id: "app.component.search.placeholder",
+              defaultMessage: "Search...",
+            })}
+            trackedEvent="didSearch"
+          />
         }
       />
       <Layouts.Content>
-        <ScrollableBox background="neutral0" hasRadius shadow="tableShadow">
+        <Box>
+          {showResetPasswordDialogue.isOpen && (
+            <ResetPassword
+              isOpen={showResetPasswordDialogue.isOpen}
+              onClose={handleCloseResetDialogue}
+              onConfirm={resetPassword}
+              email={showResetPasswordDialogue.email}
+            />
+          )}
+          {showDeleteAccountDialogue.isOpen && (
+            <DeleteAccount
+              isOpen={showDeleteAccountDialogue.isOpen}
+              onToggleDialog={handleCloseDeleteDialogue}
+              onConfirm={deleteAccount}
+              email={showDeleteAccountDialogue.email}
+              isSingleRecord={true}
+            />
+          )}
           <FirebaseTable
             action={null}
             isLoading={isLoading}
             rows={rowsData}
             onConfirmDeleteAll={handleDeleteAll}
-            onResetPasswordClick={(data) =>
-              setShowResetPasswordDialogue({
-                isOpen: true,
-                email: data.email,
-                id: data.uid,
-              })
-            }
-            onDeleteAccountClick={(data) =>
-              setShowDeleteAccountDialogue({
-                isOpen: true,
-                email: data.email,
-                id: data.uid,
-              })
-            }
+            onResetPasswordClick={handleResetPasswordClick}
+            onDeleteAccountClick={handleDeleteAccountClick}
           />
-        </ScrollableBox>
-        <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
+          <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
+        </Box>
       </Layouts.Content>
-
-      {showResetPasswordDialogue.isOpen && (
-        <ResetPassword
-          isOpen={showResetPasswordDialogue.isOpen}
-          onClose={handleCloseResetDialogue}
-          onConfirm={resetPassword}
-          email={showResetPasswordDialogue.email}
-        />
-      )}
-      {showDeleteAccountDialogue.isOpen && (
-        <DeleteAccount
-          isOpen={showDeleteAccountDialogue.isOpen}
-          onToggleDialog={handleCloseDeleteDialogoue}
-          onConfirm={deleteAccount}
-          email={showDeleteAccountDialogue.email}
-          isSingleRecord={true}
-        />
-      )}
     </StyledMain>
   );
 }

@@ -71,89 +71,84 @@ export const CreateView = () => {
         }
       />
       <Layouts.Content>
-        <Flex
-          direction="row"
-          alignItems="flex-start"
-          gap={6}
-          width="100%"
-        >
+        <Flex direction="row" alignItems="stretch" gap={4} width="100%" style={{ alignItems: "stretch" }}>
           <Box
             background="neutral0"
             borderColor="neutral150"
             hasRadius
             padding={8}
             shadow="tableShadow"
-            style={{ flex: "1 1 auto", minWidth: 0 }}
+            style={{ flex: "9 1 0px", minWidth: 0 }}
           >
             <Flex direction="column" gap={4} alignItems="stretch">
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Email</Field.Label>
-                  <TextInput
-                    id="email"
-                    name="email"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.email || ""}
-                  />
-                  {!userData?.email && !userData?.phoneNumber && (
-                    <Field.Error>Email or Phone Number is required</Field.Error>
-                  )}
-                </Field.Root>
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Display Name</Field.Label>
-                  <TextInput
-                    id="displayName"
-                    name="displayName"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.displayName || ""}
-                  />
-                </Field.Root>
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Phone Number</Field.Label>
-                  <TextInput
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.phoneNumber || ""}
-                  />
-                </Field.Root>
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Password</Field.Label>
-                  <TextInput
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.password || ""}
-                    required
-                  />
-                  {userData?.password?.length && userData?.password?.length < 6 && (
-                    <Field.Error>Password must be at least 6 characters</Field.Error>
-                  )}
-                </Field.Root>
-                <Box>
-                  <Field.Label>Disabled</Field.Label>
-                  <Toggle
-                    name="disabled"
-                    onLabel="True"
-                    offLabel="False"
-                    checked={Boolean(userData.disabled)}
-                    onChange={onToggleInputChange}
-                  />
-                </Box>
-                <Box>
-                  <Field.Label>Email Verified</Field.Label>
-                  <Toggle
-                    name="emailVerified"
-                    onLabel="True"
-                    offLabel="False"
-                    checked={Boolean(userData.emailVerified)}
-                    onChange={onToggleInputChange}
-                  />
-                </Box>
+              <Field.Root style={{ width: "100%" }}>
+                <Field.Label>Email</Field.Label>
+                <TextInput
+                  id="email"
+                  name="email"
+                  autoComplete="new-password"
+                  onChange={onTextInputChange}
+                  value={userData.email || ""}
+                />
+                {!userData?.email && !userData?.phoneNumber && (
+                  <Field.Error>Email or Phone Number is required</Field.Error>
+                )}
+              </Field.Root>
+              <Field.Root style={{ width: "100%" }}>
+                <Field.Label>Display Name</Field.Label>
+                <TextInput
+                  id="displayName"
+                  name="displayName"
+                  autoComplete="new-password"
+                  onChange={onTextInputChange}
+                  value={userData.displayName || ""}
+                />
+              </Field.Root>
+              <Field.Root style={{ width: "100%" }}>
+                <Field.Label>Phone Number</Field.Label>
+                <TextInput
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  autoComplete="new-password"
+                  onChange={onTextInputChange}
+                  value={userData.phoneNumber || ""}
+                />
+              </Field.Root>
+              <Field.Root style={{ width: "100%" }}>
+                <Field.Label>Password</Field.Label>
+                <TextInput
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  onChange={onTextInputChange}
+                  value={userData.password || ""}
+                  required
+                />
+                {userData?.password?.length && userData?.password?.length < 6 && (
+                  <Field.Error>Password must be at least 6 characters</Field.Error>
+                )}
+              </Field.Root>
+              <Field.Root maxWidth="320px">
+                <Field.Label>Disabled</Field.Label>
+                <Toggle
+                  name="disabled"
+                  onLabel="True"
+                  offLabel="False"
+                  checked={Boolean(userData.disabled)}
+                  onChange={onToggleInputChange}
+                />
+              </Field.Root>
+              <Field.Root maxWidth="320px">
+                <Field.Label>Email Verified</Field.Label>
+                <Toggle
+                  name="emailVerified"
+                  onLabel="True"
+                  offLabel="False"
+                  checked={Boolean(userData.emailVerified)}
+                  onChange={onToggleInputChange}
+                />
+              </Field.Root>
             </Flex>
           </Box>
         </Flex>
