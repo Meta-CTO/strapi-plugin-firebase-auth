@@ -22,11 +22,12 @@ export const EditView = () => {
           throw new Error("User not found");
         }
         setUserData(user);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error fetching user:", error);
+        const errorMessage = error instanceof Error ? error.message : "An error occurred while fetching user data";
         toggleNotification({
           type: "danger",
-          message: error?.message || "An error occurred while fetching user data",
+          message: errorMessage,
         });
       } finally {
         setIsLoading(false);
@@ -34,7 +35,7 @@ export const EditView = () => {
     };
 
     loadUser();
-  }, [id]);
+  }, [id, toggleNotification]);
 
   if (isLoading) {
     return <Page.Loading />;

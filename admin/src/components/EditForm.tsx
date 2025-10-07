@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Box,
   TextInput,
@@ -8,7 +8,6 @@ import {
   Toggle,
   Divider,
   Field,
-  Main,
 } from "@strapi/design-system";
 import { useNotification, Page, Layouts } from "@strapi/strapi/admin";
 import { Pencil } from "@strapi/icons";
@@ -49,6 +48,10 @@ interface EditFormProps {
   data: User;
 }
 
+interface LocationState {
+  strapiId?: string | number;
+}
+
 export const EditForm = ({ data }: EditFormProps) => {
   const [userData, setUserData] = useState<User>(data);
   const [originalUserData] = useState(data);
@@ -57,23 +60,23 @@ export const EditForm = ({ data }: EditFormProps) => {
   const { toggleNotification } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
-  const locationState = location.state as any;
+  const locationState = (location.state as LocationState) || {};
 
-  const onTextInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onTextInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setUserData((prevState) => ({
       ...prevState,
       [e.target.name]: e.target.value,
     }));
-  };
+  }, []);
 
-  const onToggleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onToggleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setUserData((prevState) => ({
       ...prevState,
       [e.target.name]: e.target.checked,
     }));
-  };
+  }, []);
 
-  const updateUserHandler = async () => {
+  const updateUserHandler = useCallback(async () => {
     setIsLoading(true);
     try {
       const updatedUser = await updateUser(userData.uid, userData);
@@ -87,6 +90,7 @@ export const EditForm = ({ data }: EditFormProps) => {
         message: "User updated successfully",
       });
     } catch (error) {
+      console.error("Error updating user:", error);
       toggleNotification({
         type: "danger",
         message: "An error occurred while updating the user",
@@ -94,14 +98,14 @@ export const EditForm = ({ data }: EditFormProps) => {
       setIsLoading(false);
       setUserData(data);
     }
-  };
+  }, [userData, toggleNotification, data]);
 
   if (isLoading) {
     return <Page.Loading />;
   }
 
   return (
-    <Main>
+    <Page.Main>
       <Header
         title="Edit User"
         onSave={updateUserHandler}
@@ -119,7 +123,6 @@ export const EditForm = ({ data }: EditFormProps) => {
           alignItems="stretch"
           gap={4}
           width="100%"
-          style={{ alignItems: "stretch" }}
         >
           <Box
             background="neutral0"
@@ -333,6 +336,6 @@ export const EditForm = ({ data }: EditFormProps) => {
           </Flex>
         </Flex>
       </Layouts.Content>
-    </Main>
+    </Page.Main>
   );
 };
