@@ -34,7 +34,15 @@ export const HomePage = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        await getFirebaseConfig();
+        const config = await getFirebaseConfig();
+
+        // Check if Firebase is actually configured (not just returning null/undefined)
+        if (!config || !config.firebaseConfigJson) {
+          setIsNotConfigured(true);
+          setIsLoading(false);
+          return;
+        }
+
         setIsNotConfigured(false);
         const result = await fetchUsers();
         setUsersData(result);

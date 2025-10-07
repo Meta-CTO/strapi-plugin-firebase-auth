@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, Flex, Typography, Button } from "@strapi/design-system";
+import { Modal, Flex, Typography, Button } from "@strapi/design-system";
 import { TextInput } from "@strapi/design-system";
 
 interface ResetPasswordProps {
@@ -27,62 +27,59 @@ export const ResetPassword = ({ isOpen, email, onClose, onConfirm }: ResetPasswo
     resetState();
     onConfirm(newPassword);
   };
+
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <>
-      <Dialog onClose={handleClose} title="Reset password" isOpen={isOpen}>
-        <Dialog.Body>
-          <Flex direction="column" alignItems="center" gap={2}>
-            <Flex justifyContent="flex-start">
-              <Typography>Send a password reset email.</Typography>
-            </Flex>
-            <Flex justifyContent="flex-start" marginTop={2}>
+    <Modal.Root open={isOpen} onOpenChange={handleClose}>
+      <Modal.Content>
+        <Modal.Header>
+          <Modal.Title>Reset password</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Flex direction="column" alignItems="stretch" gap={4}>
+            <Typography>Send a password reset email.</Typography>
+            <Flex direction="column" alignItems="stretch" gap={1}>
               <Typography variant="sigma">User account</Typography>
-            </Flex>
-            <Flex justifyContent="flex-start">
               <Typography>{email}</Typography>
             </Flex>
-            <div style={{ marginTop: 10 }}>
-              <TextInput
-                type="password"
-                label="New password"
-                aria-label="Password"
-                value={newPassword}
-                onChange={(e: any) => {
-                  setIsNewPasswordChanged(true);
-                  setNewPassword(e.target.value);
-                }}
-                required
-                error={
-                  !isNewPasswordChange
-                    ? ""
-                    : !newPassword
-                      ? "Password is required"
-                      : newPassword.length < 6
-                        ? "Password must contain at least 6 characters"
-                        : ""
-                }
-              />
-            </div>
-            <div></div>
+            <TextInput
+              type="password"
+              label="New password"
+              aria-label="Password"
+              value={newPassword}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setIsNewPasswordChanged(true);
+                setNewPassword(e.target.value);
+              }}
+              required
+              error={
+                !isNewPasswordChange
+                  ? ""
+                  : !newPassword
+                    ? "Password is required"
+                    : newPassword.length < 6
+                      ? "Password must contain at least 6 characters"
+                      : ""
+              }
+            />
           </Flex>
-        </Dialog.Body>
-        <Dialog.Footer
-          startAction={
-            <Button onClick={handleClose} variant="tertiary">
-              Cancel
-            </Button>
-          }
-          endAction={
-            <Button
-              variant="danger-light"
-              disabled={newPassword === "" || newPassword.length < 6}
-              onClick={handleConfirm}
-            >
-              Reset password
-            </Button>
-          }
-        />
-      </Dialog>
-    </>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={handleClose} variant="tertiary">
+            Cancel
+          </Button>
+          <Button
+            variant="danger-light"
+            disabled={newPassword === "" || newPassword.length < 6}
+            onClick={handleConfirm}
+          >
+            Reset password
+          </Button>
+        </Modal.Footer>
+      </Modal.Content>
+    </Modal.Root>
   );
 };

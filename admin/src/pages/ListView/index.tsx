@@ -306,29 +306,24 @@ function ListView({ data, meta }: ListViewProps) {
               id: "app.component.search.placeholder",
               defaultMessage: "Search...",
             })}
-            trackedEvent="didSearch"
           />
         }
       />
       <Layouts.Content>
         <Box>
-          {showResetPasswordDialogue.isOpen && (
-            <ResetPassword
-              isOpen={showResetPasswordDialogue.isOpen}
-              onClose={handleCloseResetDialogue}
-              onConfirm={resetPassword}
-              email={showResetPasswordDialogue.email}
-            />
-          )}
-          {showDeleteAccountDialogue.isOpen && (
-            <DeleteAccount
-              isOpen={showDeleteAccountDialogue.isOpen}
-              onToggleDialog={handleCloseDeleteDialogue}
-              onConfirm={deleteAccount}
-              email={showDeleteAccountDialogue.email}
-              isSingleRecord={true}
-            />
-          )}
+          <ResetPassword
+            isOpen={showResetPasswordDialogue.isOpen}
+            onClose={handleCloseResetDialogue}
+            onConfirm={resetPassword}
+            email={showResetPasswordDialogue.email}
+          />
+          <DeleteAccount
+            isOpen={showDeleteAccountDialogue.isOpen}
+            onToggleDialog={handleCloseDeleteDialogue}
+            onConfirm={deleteAccount}
+            email={showDeleteAccountDialogue.email}
+            isSingleRecord={true}
+          />
           <FirebaseTable
             action={null}
             isLoading={isLoading}

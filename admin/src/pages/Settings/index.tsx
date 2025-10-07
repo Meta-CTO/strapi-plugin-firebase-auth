@@ -6,9 +6,6 @@ import { useNotification } from "@strapi/strapi/admin";
 import { delFirebaseConfig, getFirebaseConfig, restartServer, saveFirebaseConfig } from "./api";
 import { Trash } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
-import selectAppImage from "../../assets/firebase-config-tutorial/select-app.png";
-import configImage from "../../assets/firebase-config-tutorial/config.png";
-import submissionImage from "../../assets/firebase-config-tutorial/submission.png";
 
 function SettingsPage() {
   const { toggleNotification } = useNotification();
@@ -190,47 +187,80 @@ function SettingsPage() {
           })()}
           {!firebaseJsonValue ? (
             <Flex direction="column" alignItems="flex-start" marginTop={10}>
-              How to setup the firebase configuration:
-              <Box marginTop={2} marginLeft={6}>
+              <Typography variant="beta">How to setup Firebase Service Account JSON:</Typography>
+              <Box
+                marginTop={2}
+                padding={3}
+                background="warning100"
+                borderRadius="4px"
+                style={{ width: "100%" }}
+              >
+                <Typography variant="omega" fontWeight="bold" textColor="warning700">
+                  ⚠️ Security Warning
+                </Typography>
+                <Typography variant="omega" textColor="warning700" marginTop={1}>
+                  The Service Account JSON contains sensitive credentials with full admin access to your Firebase project. Never commit this file to version control or share it publicly.
+                </Typography>
+              </Box>
+              <Box marginTop={4} marginLeft={6}>
                 <ol style={{ listStyle: "auto" }}>
-                  <li style={{ marginTop: 32 }}>
+                  <li style={{ marginTop: 24 }}>
                     <Typography>
-                      Go to your Project{" "}
+                      Go to the{" "}
                       <a
-                        href="https://console.firebase.google.com/project/_/settings/general/"
+                        href="https://console.firebase.google.com/project/_/settings/serviceaccounts/adminsdk"
                         target="_blank"
                         rel="noreferrer"
                       >
-                        settings
+                        Service Accounts tab
                       </a>{" "}
-                      in the Firebase console.
+                      in your Firebase Console (Project Settings → Service Accounts)
                     </Typography>
                   </li>
-                  <li style={{ marginTop: 32 }}>
-                    <Typography>Select the project in your list of projects</Typography>
+                  <li style={{ marginTop: 24 }}>
+                    <Typography>Click the <strong>"Generate New Private Key"</strong> button</Typography>
                   </li>
-                  <li style={{ marginTop: 32 }}>
-                    <Typography>Scroll down to the apps section and select your app</Typography>
-                    <img src={selectAppImage} style={{ maxWidth: "100%", marginTop: 32 }} />
-                  </li>
-                  <li style={{ marginTop: 32 }}>
+                  <li style={{ marginTop: 24 }}>
                     <Typography>
-                      Select Config from the Firebase SDK snippet pane and copy the JSON object.
+                      Confirm by clicking <strong>"Generate Key"</strong> in the confirmation dialog
                     </Typography>
-                    <div>
-                      <img src={configImage} style={{ maxWidth: "100%", marginTop: 32 }} />
-                    </div>
                   </li>
-                  <li style={{ marginTop: 32 }}>
+                  <li style={{ marginTop: 24 }}>
                     <Typography>
-                      Stringify the JSON object and Paste it in the Firebase-json-configuration input field
-                      above and click submit.
+                      A JSON file will be downloaded (e.g., <code>your-project-firebase-adminsdk-xxxxx.json</code>)
                     </Typography>
-                    <div style={{ marginTop: 24 }}>
-                      <img src={submissionImage} style={{ maxWidth: "100%" }} />
-                    </div>
+                  </li>
+                  <li style={{ marginTop: 24 }}>
+                    <Typography>
+                      Open the downloaded JSON file, copy its <strong>entire contents</strong>, and paste it in the "Firebase Service Account JSON" field above
+                    </Typography>
+                  </li>
+                  <li style={{ marginTop: 24 }}>
+                    <Typography>
+                      Enter your <strong>Firebase Web API Key</strong> (found in Project Settings → General → Web API Key)
+                    </Typography>
+                  </li>
+                  <li style={{ marginTop: 24 }}>
+                    <Typography>Click <strong>Submit</strong> to save your configuration</Typography>
                   </li>
                 </ol>
+              </Box>
+              <Box
+                marginTop={4}
+                padding={3}
+                background="neutral100"
+                borderRadius="4px"
+                style={{ width: "100%" }}
+              >
+                <Typography variant="omega" fontWeight="bold">
+                  📝 Note: Service Account JSON vs Web App Config
+                </Typography>
+                <Typography variant="omega" marginTop={2}>
+                  <strong>Service Account JSON</strong> (what you need here): Contains <code>private_key</code>, <code>client_email</code>, etc. Used for server-side Firebase Admin SDK operations. Download from <strong>Service Accounts tab</strong>.
+                </Typography>
+                <Typography variant="omega" marginTop={2}>
+                  <strong>Web App Config</strong> (NOT what you need): Contains <code>apiKey</code>, <code>authDomain</code>, etc. Used for client-side web apps. Found in SDK snippet - this is the wrong file!
+                </Typography>
               </Box>
             </Flex>
           ) : null}

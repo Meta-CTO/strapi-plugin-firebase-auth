@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box } from "@strapi/design-system";
 import { Checkbox } from "@strapi/design-system";
-import { Dialog, Flex, Typography, Button } from "@strapi/design-system";
+import { Modal, Flex, Typography, Button } from "@strapi/design-system";
 import { WarningCircle } from "@strapi/icons";
 
 interface DeleteAccountProps {
@@ -27,67 +27,66 @@ export const DeleteAccount = ({
     setIsFirebaseIncluded(true);
   }, [isOpen]);
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
-    <>
-      <Dialog onClose={onToggleDialog} title="Delete Account" isOpen={isOpen}>
-        <Dialog.Body icon={<WarningCircle />}>
-          <Flex direction="column" alignItems="center" gap={2}>
-            <Flex justifyContent="flex-start" textAlign="center">
+    <Modal.Root open={isOpen} onOpenChange={onToggleDialog}>
+      <Modal.Content>
+        <Modal.Header>
+          <Modal.Title>Delete Account</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Flex direction="column" alignItems="stretch" gap={4}>
+            <Flex direction="row" alignItems="center" gap={2}>
+              <WarningCircle fill="danger700" width="20px" height="20px" />
               <Typography textColor="danger700">
-                After you delete an account, it's permanently deleted. Accounts can't be undeleted.
+                After you delete an account, it's permanently deleted. Accounts cannot be undeleted.
               </Typography>
             </Flex>
             {isSingleRecord && (
               <>
-                <Flex justifyContent="flex-start" marginTop={2}>
+                <Flex direction="column" alignItems="stretch" gap={1}>
                   <Typography variant="sigma">User account</Typography>
-                </Flex>
-                <Flex justifyContent="flex-start">
                   <Typography>{email}</Typography>
                 </Flex>
-                <Flex justifyContent="flex-start" textAlign="center" marginTop={2}>
+                <Flex direction="column" alignItems="stretch" gap={2}>
                   <Typography>Delete user from:</Typography>
-                </Flex>
-                <Flex justifyContent="flex-start">
-                  <Checkbox
-                    onValueChange={(value: boolean) => setIsStrapiIncluded(value)}
-                    value={isStrapiIncluded}
-                  >
-                    Strapi
-                  </Checkbox>
-
-                  <Box marginLeft={4}>
+                  <Flex direction="row" alignItems="center" gap={4}>
+                    <Checkbox
+                      onValueChange={(value: boolean) => setIsStrapiIncluded(value)}
+                      value={isStrapiIncluded}
+                    >
+                      Strapi
+                    </Checkbox>
                     <Checkbox
                       onValueChange={(value: boolean) => setIsFirebaseIncluded(value)}
                       value={isFirebaseIncluded}
                     >
                       Firebase
                     </Checkbox>
-                  </Box>
+                  </Flex>
                 </Flex>
               </>
             )}
           </Flex>
-        </Dialog.Body>
-        <Dialog.Footer
-          startAction={
-            <Button onClick={onToggleDialog} variant="tertiary">
-              Cancel
-            </Button>
-          }
-          endAction={
-            <Button
-              variant="danger"
-              onClick={() => {
-                onConfirm(isStrapiIncluded, isFirebaseIncluded);
-              }}
-              disabled={!isFirebaseIncluded && !isStrapiIncluded}
-            >
-              Delete
-            </Button>
-          }
-        />
-      </Dialog>
-    </>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={onToggleDialog} variant="tertiary">
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              onConfirm(isStrapiIncluded, isFirebaseIncluded);
+            }}
+            disabled={!isFirebaseIncluded && !isStrapiIncluded}
+          >
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal.Content>
+    </Modal.Root>
   );
 };
