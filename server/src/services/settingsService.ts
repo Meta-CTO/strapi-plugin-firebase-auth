@@ -6,15 +6,17 @@ import CryptoJS from "crypto-js";
 
 const { ValidationError, ApplicationError } = errors;
 export default ({ strapi }) => {
-  const encryptionKey = strapi.plugin("firebase-authentication").config("FIREBASE_JSON_ENCRYPTION_KEY");
+  const encryptionKey = strapi.config.get(
+    "plugin::firebase-authentication.FIREBASE_JSON_ENCRYPTION_KEY"
+  );
 
   return {
     async init() {
       try {
         console.log("Starting Firebase initialization...");
-        const res = await strapi.entityService.findMany(
-          "plugin::firebase-authentication.firebase-authentication-configuration"
-        );
+        const res = await strapi.db
+          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .findOne({ where: {} });
         console.log("Found config:", !!res);
 
         if (!res) {
@@ -33,7 +35,7 @@ export default ({ strapi }) => {
           console.log("No valid JSON config, checking for existing Firebase app...");
           if (strapi.firebase) {
             console.log("Deleting existing Firebase app...");
-            await strapi.firebase.delete();
+            await strapi.firebase.app().delete();
           }
           return;
         }
@@ -49,11 +51,31 @@ export default ({ strapi }) => {
         }
 
         console.log("Initializing Firebase app...");
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount as ServiceAccount),
-        });
-        strapi.firebase = admin;
-        console.log("Firebase initialization complete");
+
+        // Check if Firebase app already exists and delete it
+        try {
+          const existingApp = admin.app();
+          if (existingApp) {
+            console.log("Deleting existing Firebase app before re-initialization...");
+            await existingApp.delete();
+            console.log("Existing app deleted");
+          }
+        } catch (error) {
+          // App doesn't exist, which is fine - continue with initialization
+          console.log("No existing Firebase app found, proceeding with initialization");
+        }
+
+        // Initialize Firebase
+        try {
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount as ServiceAccount),
+          });
+          strapi.firebase = admin;
+          console.log("✅ Firebase initialization complete - admin instance attached to strapi.firebase");
+        } catch (initError) {
+          console.error("❌ Failed to initialize Firebase:", initError);
+          throw initError;
+        }
       } catch (error) {
         console.error("Firebase bootstrap error:", error);
       }
@@ -73,9 +95,9 @@ export default ({ strapi }) => {
     async getFirebaseConfigJson() {
       const key = encryptionKey;
       try {
-        const configObject = await strapi.entityService.findMany(
-          "plugin::firebase-authentication.firebase-authentication-configuration"
-        );
+        const configObject = await strapi.db
+          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .findOne({ where: {} });
 
         if (!configObject || !configObject["firebase_config_json"]) {
           return null;
@@ -125,34 +147,60 @@ export default ({ strapi }) => {
         const firebaseConfigJsonString = requestBody.firebaseConfigJson;
         const firebaseWebApiKey = requestBody.firebaseWebApiKey;
 
-        const hash = await this.encryptJson(encryptionKey, firebaseConfigJsonString);
-
         if (!requestBody) throw new ValidationError("data is missing");
-        const isExist = await strapi.entityService.findMany(
-          "plugin::firebase-authentication.firebase-authentication-configuration"
-        );
+
+        // Validate Service Account JSON structure
+        try {
+          const parsedConfig = JSON.parse(firebaseConfigJsonString);
+          const requiredFields = ['private_key', 'client_email', 'project_id', 'type'];
+          const missingFields = requiredFields.filter(field => !parsedConfig[field]);
+
+          if (missingFields.length > 0) {
+            throw new ValidationError(
+              `Invalid Service Account JSON. Missing required fields: ${missingFields.join(', ')}. ` +
+              `Please download the correct JSON from Firebase Console → Service Accounts → Generate New Private Key. ` +
+              `Do NOT use the Web App Config (SDK snippet) - that is a different file!`
+            );
+          }
+
+          // Additional check: if it has apiKey or authDomain, it's the wrong JSON
+          if (parsedConfig.apiKey || parsedConfig.authDomain) {
+            throw new ValidationError(
+              `You uploaded a Web App Config (SDK snippet) instead of a Service Account JSON. ` +
+              `Please go to Firebase Console → Service Accounts tab → Generate New Private Key to download the correct file.`
+            );
+          }
+        } catch (parseError) {
+          if (parseError instanceof ValidationError) {
+            throw parseError;
+          }
+          throw new ValidationError("Invalid JSON format. Please ensure you copied the entire JSON content correctly.");
+        }
+
+        const hash = await this.encryptJson(encryptionKey, firebaseConfigJsonString);
+        const isExist = await strapi.db
+          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .findOne({ where: {} });
         let res: any;
         if (!isExist) {
-          res = await strapi.entityService.create(
-            "plugin::firebase-authentication.firebase-authentication-configuration",
-            {
+          res = await strapi.db
+            .query("plugin::firebase-authentication.firebase-authentication-configuration")
+            .create({
               data: {
                 firebase_config_json: { firebaseConfigJson: hash },
                 firebase_web_api_key: firebaseWebApiKey
               },
-            }
-          );
+            });
         } else {
-          res = await strapi.entityService.update(
-            "plugin::firebase-authentication.firebase-authentication-configuration",
-            isExist.id,
-            {
+          res = await strapi.db
+            .query("plugin::firebase-authentication.firebase-authentication-configuration")
+            .update({
+              where: { id: isExist.id },
               data: {
                 firebase_config_json: { firebaseConfigJson: hash },
                 firebase_web_api_key: firebaseWebApiKey
               },
-            }
-          );
+            });
         }
         await strapi.plugin("firebase-authentication").service("settingsService").init();
         const firebaseConfigHash = res["firebase_config_json"].firebaseConfigJson;
@@ -169,18 +217,19 @@ export default ({ strapi }) => {
     delFirebaseConfigJson: async () => {
       try {
         console.log("delFirebaseConfigJson 🤣");
-        const isExist = await strapi.entityService.findMany(
-          "plugin::firebase-authentication.firebase-authentication-configuration"
-        );
+        const isExist = await strapi.db
+          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .findOne({ where: {} });
         console.log("isExist 🤣", isExist);
         if (!isExist) {
           console.log("No Firebase configs exists for deletion");
           return null;
         }
-        const res = await strapi.entityService.delete(
-          "plugin::firebase-authentication.firebase-authentication-configuration",
-          isExist.id
-        );
+        const res = await strapi.db
+          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .delete({
+            where: { id: isExist.id }
+          });
         console.log("res 🤣", res);
         await strapi.plugin("firebase-authentication").service("settingsService").init();
         console.log("res 🤣", res);

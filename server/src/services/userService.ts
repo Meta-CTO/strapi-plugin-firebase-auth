@@ -3,9 +3,20 @@ import { errors } from "@strapi/utils";
 import paginate from "../utils/paginate";
 import { formatUserData } from "../utils/users";
 
-export default ({ strapi }) => ({
+export default ({ strapi }) => {
+  // Helper function to check if Firebase is initialized
+  const ensureFirebaseInitialized = () => {
+    if (!strapi.firebase) {
+      throw new errors.ApplicationError(
+        "Firebase is not initialized. Please upload Firebase service account configuration via Settings → Firebase Authentication."
+      );
+    }
+  };
+
+  return {
   get: async (entityId: string) => {
     try {
+      ensureFirebaseInitialized();
       const user = await strapi.firebase.auth().getUser(entityId);
       const firebaseUser = user.toJSON();
 
@@ -17,6 +28,7 @@ export default ({ strapi }) => ({
 
   create: async (payload) => {
     try {
+      ensureFirebaseInitialized();
       const userRecord = await strapi.firebase
         .auth()
         .getUserByEmail(payload.email)
@@ -39,6 +51,7 @@ export default ({ strapi }) => ({
 
   register: async (userID, payload) => {
     try {
+      ensureFirebaseInitialized();
       const res = await strapi.plugin("firebase-authentication").service("userService").create(payload);
       const actionCodeSettings = {
         url: process.env.BASE_URL,
@@ -54,6 +67,8 @@ export default ({ strapi }) => ({
   },
 
   list: async (pagination, nextPageToken, sort, searchQuery) => {
+    ensureFirebaseInitialized();
+
     // If search query exists, try exact match lookups first
     if (searchQuery) {
       try {
@@ -252,6 +267,7 @@ export default ({ strapi }) => ({
 
   updateFirebaseUser: async (entityId, payload) => {
     try {
+      ensureFirebaseInitialized();
       return await strapi.firebase.auth().updateUser(entityId, payload);
     } catch (e) {
       throw new errors.ApplicationError(e.message.toString());
@@ -259,6 +275,7 @@ export default ({ strapi }) => ({
   },
   update: async (entityId, payload) => {
     try {
+      ensureFirebaseInitialized();
       const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
 
       return Promise.allSettled([firebasePromise]);
@@ -268,6 +285,7 @@ export default ({ strapi }) => ({
   },
   resetPasswordFirebaseUser: async (entityId, payload) => {
     try {
+      ensureFirebaseInitialized();
       return await strapi.firebase.auth().updateUser(entityId, payload);
     } catch (e) {
       throw new errors.ApplicationError(e.message.toString());
@@ -284,6 +302,7 @@ export default ({ strapi }) => ({
   },
   resetPassword: async (entityId, payload) => {
     try {
+      ensureFirebaseInitialized();
       const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
       const strapiPromise = strapi
         .query("plugin::users-permissions.user")
@@ -296,6 +315,7 @@ export default ({ strapi }) => ({
   },
   delete: async (entityId) => {
     try {
+      ensureFirebaseInitialized();
       const firebasePromise = strapi.firebase.auth().deleteUser(entityId);
       const strapiPromise = strapi
         .query("plugin::users-permissions.user")
@@ -307,6 +327,7 @@ export default ({ strapi }) => ({
   },
   deleteFirebaseUser: async (entityId) => {
     try {
+      ensureFirebaseInitialized();
       const response = await strapi.firebase.auth().deleteUser(entityId);
       return response;
     } catch (e) {
@@ -325,6 +346,7 @@ export default ({ strapi }) => ({
   },
   deleteMany: async (entityIDs) => {
     try {
+      ensureFirebaseInitialized();
       const response = await strapi.firebase.auth().deleteUsers(JSON.parse(entityIDs));
       return response;
     } catch (e) {
@@ -332,4 +354,5 @@ export default ({ strapi }) => ({
     }
   },
   async setSocialMetaData() {},
-});
+  };
+};
