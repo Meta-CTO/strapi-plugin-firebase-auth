@@ -5,8 +5,8 @@ import { useQueryParams } from "@strapi/strapi/admin";
 import { FirebaseTableRows } from "./FirebaseTableRows/FirebaseTableRows";
 import { tableHeaders } from "./TableHeaders";
 import { User } from "../../../../model/User";
-import { Table, Thead, Tr, Th, Typography, Box, Flex, Button, Checkbox, IconButton } from "@strapi/design-system";
-import { Trash, CaretDown } from "@strapi/icons";
+import { Table, Thead, Tr, Th, Typography, Box, Flex, Button, Checkbox } from "@strapi/design-system";
+import { Trash, CaretDown, CaretUp } from "@strapi/icons";
 import { useBulkSelection } from "../../hooks/useBulkSelection";
 import { DeleteAccount } from "../UserManagement/DeleteAccount";
 
@@ -39,9 +39,22 @@ const BulkActionsBar = styled(Box)`
   padding: 12px 0;
 `;
 
-const SortIcon = styled(CaretDown)<{ $isUp: boolean }>`
-  transform: ${({ $isUp }) => `rotate(${$isUp ? '180' : '0'}deg)`};
-  transition: transform 0.2s;
+const SortButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary600};
+  }
 `;
 
 interface FirebaseTableProps {
@@ -149,30 +162,25 @@ export const FirebaseTable = ({
                 const isSortable = header.metadatas.sortable;
 
                 return (
-                  <Th
-                    key={header.key}
-                    action={
-                      isSorted && isSortable ? (
-                        <IconButton
-                          label={`Sort on ${header.metadatas.label}`}
-                          onClick={() => handleSort(header.name)}
-                          variant="ghost"
-                        >
-                          <SortIcon $isUp={isAsc} />
-                        </IconButton>
-                      ) : undefined
-                    }
-                  >
+                  <Th key={header.key}>
                     {isSortable ? (
-                      <Typography
-                        variant="sigma"
-                        textColor="neutral600"
-                        as="button"
+                      <SortButton
                         onClick={() => handleSort(header.name)}
-                        style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+                        aria-label={`Sort by ${header.metadatas.label}`}
                       >
-                        {header.metadatas.label}
-                      </Typography>
+                        <Typography variant="sigma" textColor="neutral600">
+                          {header.metadatas.label}
+                        </Typography>
+                        {isSorted && (
+                          <>
+                            {isAsc ? (
+                              <CaretUp width="10px" height="10px" />
+                            ) : (
+                              <CaretDown width="10px" height="10px" />
+                            )}
+                          </>
+                        )}
+                      </SortButton>
                     ) : (
                       <Typography variant="sigma" textColor="neutral600">
                         {header.metadatas.label}
