@@ -26,8 +26,8 @@ const CellLink = styled(Td)`
 
 interface FirebaseTableRowsProps {
   rows: User[];
-  entriesToDelete?: string[];
-  onSelectRow?: ({ name, value }: { name: string; value: boolean }) => void;
+  entriesToDelete: string[];
+  onSelectRow: ({ name, value }: { name: string; value: boolean }) => void;
   onResetPasswordClick: (data: User) => void;
   onDeleteAccountClick: (data: User) => void;
 }
@@ -51,7 +51,7 @@ export const FirebaseTableRows = ({
   return (
     <Tbody>
       {rowsData.map((data: User) => {
-          const isChecked = entriesToDelete && entriesToDelete.findIndex((id) => id === data.id) !== -1;
+          const isChecked = entriesToDelete.includes(data.id);
 
           return (
             <Tr key={data.uid}>
@@ -63,8 +63,8 @@ export const FirebaseTableRows = ({
                       defaultMessage: `Select {target}`,
                     })}
                     checked={isChecked}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      onSelectRow && onSelectRow({ name: data.id, value: e.target.checked });
+                    onCheckedChange={(checked: boolean | 'indeterminate') => {
+                      onSelectRow({ name: data.id, value: checked === true });
                     }}
                   />
                 </Flex>

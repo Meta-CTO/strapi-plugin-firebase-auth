@@ -5,13 +5,11 @@ import { Page, Layouts } from "@strapi/strapi/admin";
 import { useQueryParams } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
 
-import { Main, Box } from "@strapi/design-system";
 import { Button } from "@strapi/design-system";
 import { Link } from "@strapi/design-system";
 import { ArrowLeft } from "@strapi/icons";
 import { Plus } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
-import styled from "styled-components";
 import { FirebaseTable } from "../../components/DynamicTable/FirebaseTable";
 import { deleteUser, fetchUsers, resetUserPassword } from "../utils/api";
 import { PaginationFooter } from "./PaginationFooter";
@@ -39,16 +37,6 @@ interface ListViewProps {
   data: User[];
   meta: ResponseMeta;
 }
-
-const StyledMain = styled(Main)`
-  overflow-x: hidden;
-  max-width: 100vw;
-
-  /* Prevent all child containers from creating horizontal scroll */
-  & > * {
-    max-width: 100%;
-  }
-`;
 
 // Helper function to map user data
 const mapUserData = (users: any[]): User[] =>
@@ -280,9 +268,8 @@ function ListView({ data, meta }: ListViewProps) {
   const headSubtitle = `Showing ${rowsData?.length || 0} entries`;
 
   return (
-    <StyledMain aria-busy={isLoading}>
+    <Page.Main>
       <Layouts.Header
-        primaryAction={getCreateAction()}
         subtitle={headSubtitle}
         title={HEADER_TITLE}
         navigationAction={
@@ -291,51 +278,46 @@ function ListView({ data, meta }: ListViewProps) {
           </Link>
         }
       />
-      <Layouts.Action
-        endActions={null}
-        startActions={
-          <SearchURLQuery
-            label={formatMessage(
-              {
-                id: "app.component.search.label",
-                defaultMessage: "Search for {target}",
-              },
-              { target: HEADER_TITLE }
-            )}
-            placeholder={formatMessage({
-              id: "app.component.search.placeholder",
-              defaultMessage: "Search...",
-            })}
-          />
-        }
-      />
       <Layouts.Content>
-        <Box>
-          <ResetPassword
-            isOpen={showResetPasswordDialogue.isOpen}
-            onClose={handleCloseResetDialogue}
-            onConfirm={resetPassword}
-            email={showResetPasswordDialogue.email}
-          />
-          <DeleteAccount
-            isOpen={showDeleteAccountDialogue.isOpen}
-            onToggleDialog={handleCloseDeleteDialogue}
-            onConfirm={deleteAccount}
-            email={showDeleteAccountDialogue.email}
-            isSingleRecord={true}
-          />
-          <FirebaseTable
-            action={null}
-            isLoading={isLoading}
-            rows={rowsData}
-            onConfirmDeleteAll={handleDeleteAll}
-            onResetPasswordClick={handleResetPasswordClick}
-            onDeleteAccountClick={handleDeleteAccountClick}
-          />
-          <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
-        </Box>
+        <ResetPassword
+          isOpen={showResetPasswordDialogue.isOpen}
+          onClose={handleCloseResetDialogue}
+          onConfirm={resetPassword}
+          email={showResetPasswordDialogue.email}
+        />
+        <DeleteAccount
+          isOpen={showDeleteAccountDialogue.isOpen}
+          onToggleDialog={handleCloseDeleteDialogue}
+          onConfirm={deleteAccount}
+          email={showDeleteAccountDialogue.email}
+          isSingleRecord={true}
+        />
+        <FirebaseTable
+          action={
+            <SearchURLQuery
+              label={formatMessage(
+                {
+                  id: "app.component.search.label",
+                  defaultMessage: "Search for {target}",
+                },
+                { target: HEADER_TITLE }
+              )}
+              placeholder={formatMessage({
+                id: "app.component.search.placeholder",
+                defaultMessage: "Search...",
+              })}
+            />
+          }
+          createAction={getCreateAction()}
+          isLoading={isLoading}
+          rows={rowsData}
+          onConfirmDeleteAll={handleDeleteAll}
+          onResetPasswordClick={handleResetPasswordClick}
+          onDeleteAccountClick={handleDeleteAccountClick}
+        />
+        <PaginationFooter pageCount={rowsMeta?.pagination?.pageCount || 1} />
       </Layouts.Content>
-    </StyledMain>
+    </Page.Main>
   );
 }
 
