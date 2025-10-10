@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Page, useNotification } from "@strapi/strapi/admin";
-import { EditForm } from "../components/EditForm";
+import { EditUserForm } from "../components/forms";
 import { fetchUserByID } from "./utils/api";
 import { User } from "../../../model/User";
 
@@ -45,5 +45,5 @@ export const EditView = () => {
     return <Page.Error />;
   }
 
-  return <EditForm data={userData} />;
+  return <EditUserForm data={userData} />;
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Flex, Typography, Button } from "@strapi/design-system";
 import { TextInput } from "@strapi/design-system";
 
@@ -12,6 +12,15 @@ interface ResetPasswordProps {
 export const ResetPassword = ({ isOpen, email, onClose, onConfirm }: ResetPasswordProps) => {
   const [newPassword, setNewPassword] = useState("");
   const [isNewPasswordChange, setIsNewPasswordChanged] = useState(false);
+
+  useEffect(() => {
+    // Only reset state when modal closes, not when it opens
+    // This prevents state updates from interfering with modal opening
+    if (!isOpen) {
+      setNewPassword("");
+      setIsNewPasswordChanged(false);
+    }
+  }, [isOpen]);
 
   const resetState = () => {
     setNewPassword("");
@@ -28,12 +37,8 @@ export const ResetPassword = ({ isOpen, email, onClose, onConfirm }: ResetPasswo
     onConfirm(newPassword);
   };
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <Modal.Root open={isOpen} onOpenChange={handleClose}>
+    <Modal.Root open={isOpen} onOpenChange={(open: boolean) => !open && handleClose()}>
       <Modal.Content>
         <Modal.Header>
           <Modal.Title>Reset password</Modal.Title>

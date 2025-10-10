@@ -1,16 +1,15 @@
 import React, { useLayoutEffect, useState, useRef } from "react";
-import PropTypes from "prop-types";
 import { useIntl } from "react-intl";
 import { Search } from "@strapi/icons";
 import { Searchbar, SearchForm, IconButton } from "@strapi/design-system";
-import useQueryParams from "../../hooks/useQueryParams";
+import useQueryParams from "../../../hooks/useQueryParams";
 
 interface SearchURLQuery {
   label: string;
-  placeholder: string;
+  placeholder?: string;
 }
 
-const SearchURLQuery = ({ label, placeholder }: SearchURLQuery) => {
+const SearchURLQuery = ({ label, placeholder = undefined }: SearchURLQuery) => {
   const wrapperRef: any = useRef(null);
   const iconButtonRef = useRef(null);
 
@@ -83,15 +82,4 @@ const SearchURLQuery = ({ label, placeholder }: SearchURLQuery) => {
   );
 };
 
-SearchURLQuery.defaultProps = {
-  placeholder: undefined,
-  trackedEvent: null,
-};
-
-SearchURLQuery.propTypes = {
-  label: PropTypes.string.isRequired,
-  placeholder: PropTypes.string,
-  trackedEvent: PropTypes.string,
-};
-
-export default SearchURLQuery;
+export { SearchURLQuery };

@@ -27,12 +27,8 @@ export const DeleteAccount = ({
     setIsFirebaseIncluded(true);
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <Modal.Root open={isOpen} onOpenChange={onToggleDialog}>
+    <Modal.Root open={isOpen} onOpenChange={(open: boolean) => !open && onToggleDialog()}>
       <Modal.Content>
         <Modal.Header>
           <Modal.Title>Delete Account</Modal.Title>

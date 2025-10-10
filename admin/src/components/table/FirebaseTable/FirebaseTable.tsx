@@ -2,30 +2,44 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { useQueryParams } from "@strapi/strapi/admin";
 
-import { FirebaseTableRows } from "./FirebaseTableRows/FirebaseTableRows";
+import { FirebaseTableRows } from "../FirebaseTableRows/FirebaseTableRows";
 import { tableHeaders } from "./TableHeaders";
-import { User } from "../../../../model/User";
+import { User } from "../../../../../model/User";
 import { Table, Thead, Tr, Th, Typography, Box, Flex, Button, Checkbox } from "@strapi/design-system";
 import { Trash, CaretDown, CaretUp } from "@strapi/icons";
-import { useBulkSelection } from "../../hooks/useBulkSelection";
-import { DeleteAccount } from "../UserManagement/DeleteAccount";
+import { useBulkSelection } from "../../../hooks/useBulkSelection";
+import { DeleteAccount } from "../../user-management/DeleteAccount/DeleteAccount";
 
 const StyledTableContainer = styled.div`
   width: 100%;
   overflow-x: auto;
+  border-radius: ${({ theme }) => theme.borderRadius};
 
   table {
     width: 100%;
+    min-width: max-content; /* Allow table to expand naturally */
+
+    /* Prevent layout shifts during interaction */
+    contain: layout style;
+  }
+
+  /* Prevent browser scroll-into-view behavior on button clicks */
+  td {
+    scroll-margin: 0;
+    scroll-snap-margin: 0;
+  }
+
+  /* Ensure buttons are always clickable */
+  button {
+    scroll-margin: 0;
+    scroll-snap-margin: 0;
+    touch-action: manipulation;
   }
 
   /* Sortable header hover styles */
   th button {
     cursor: pointer;
     transition: background-color 0.2s ease;
-
-    &:hover {
-      background-color: rgba(0, 0, 0, 0.05);
-    }
   }
 
   /* Icon button in sorted column */
@@ -51,9 +65,10 @@ const SortButton = styled.button`
   font: inherit;
   text-align: left;
   width: 100%;
+  transition: opacity 0.2s ease;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.primary600};
+    opacity: 0.8;
   }
 `;
 
@@ -75,6 +90,8 @@ export const FirebaseTable = ({
   onResetPasswordClick,
   onDeleteAccountClick,
 }: FirebaseTableProps) => {
+  // Removed debug logging - handlers are now stable with useCallback in parent
+
   const {
     toggleSelectAll,
     toggleSelectItem,
@@ -152,7 +169,7 @@ export const FirebaseTable = ({
                 <Checkbox
                   aria-label="Select all entries"
                   checked={isAllSelected}
-                  indeterminate={isIndeterminate}
+                  indeterminate={isIndeterminate ? true : undefined}
                   onCheckedChange={toggleSelectAll}
                 />
               </Th>

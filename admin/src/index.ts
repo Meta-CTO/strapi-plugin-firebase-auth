@@ -1,6 +1,5 @@
 import { PLUGIN_ID } from "./pluginId";
-import { Initializer } from "./components/Initializer";
-import { PluginIcon } from "./components/PluginIcon";
+import { Initializer, PluginIcon } from "./components/common";
 import { prefixPluginTranslations } from "./utils/prefixPluginTranslations";
 import { PERMISSIONS } from "./permissions";
 import { getTranslation } from "./utils/getTranslation";

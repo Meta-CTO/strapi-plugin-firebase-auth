@@ -1,22 +1,22 @@
 import React, { useState, useCallback } from "react";
 import {
   Box,
-  TextInput,
   Typography,
   Flex,
   Link,
-  Toggle,
   Divider,
-  Field,
 } from "@strapi/design-system";
 import { useNotification, Page, Layouts } from "@strapi/strapi/admin";
 import { Pencil } from "@strapi/icons";
 import { format } from "date-fns";
 import styled from "styled-components";
 import { useNavigate, useLocation } from "react-router-dom";
-import { User, ProviderItem } from "../../../model/User";
-import { Header } from "./Header";
-import { updateUser } from "../pages/utils/api";
+import { User, ProviderItem } from "../../../../../model/User";
+import { Header } from "../../common/Header/Header";
+import { UserFormFields } from "../shared/UserFormFields/UserFormFields";
+import { UserFormLayout } from "../shared/UserFormLayout/UserFormLayout";
+import { updateUser } from "../../../pages/utils/api";
+import { useUserForm } from "../../../hooks/useUserForm";
 
 const MetaWrapper = styled(Box)`
   width: 100%;
@@ -52,8 +52,7 @@ interface LocationState {
   strapiId?: string | number;
 }
 
-export const EditForm = ({ data }: EditFormProps) => {
-  const [userData, setUserData] = useState<User>(data);
+const EditUserForm = ({ data }: EditFormProps) => {
   const [originalUserData] = useState(data);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -62,24 +61,19 @@ export const EditForm = ({ data }: EditFormProps) => {
   const location = useLocation();
   const locationState = (location.state as LocationState) || {};
 
-  const onTextInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.value,
-    }));
-  }, []);
-
-  const onToggleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setUserData((prevState) => ({
-      ...prevState,
-      [e.target.name]: e.target.checked,
-    }));
-  }, []);
+  const {
+    userData,
+    setUserData,
+    emailError,
+    phoneError,
+    handlers,
+    isSubmitDisabled
+  } = useUserForm(data);
 
   const updateUserHandler = useCallback(async () => {
     setIsLoading(true);
     try {
-      const updatedUser = await updateUser(userData.uid, userData);
+      const updatedUser = await updateUser(userData.uid as string, userData as User);
       if (updatedUser[0]?.status === "rejected") {
         throw new Error("Error updating user");
       }
@@ -112,103 +106,12 @@ export const EditForm = ({ data }: EditFormProps) => {
         initialData={originalUserData}
         modifiedData={userData}
         isLoading={isLoading}
-        isSubmitButtonDisabled={
-          (!userData?.email && !userData?.phoneNumber) ||
-          !!(userData?.password?.length && userData?.password?.length < 6)
-        }
+        isSubmitButtonDisabled={isSubmitDisabled}
       />
       <Layouts.Content>
-        <Flex
-          direction="row"
-          alignItems="stretch"
-          gap={4}
-          width="100%"
-        >
-          <Box
-            background="neutral0"
-            borderColor="neutral150"
-            hasRadius
-            padding={8}
-            shadow="tableShadow"
-            style={{ flex: "9 1 0px", minWidth: 0 }}
-          >
-              <Flex direction="column" gap={4} alignItems="stretch">
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Email</Field.Label>
-                  <TextInput
-                    id="email"
-                    name="email"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.email || ""}
-                  />
-                  {!userData?.email && !userData?.phoneNumber && (
-                    <Field.Error>Email or Phone Number is required</Field.Error>
-                  )}
-                </Field.Root>
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Display Name</Field.Label>
-                  <TextInput
-                    id="displayName"
-                    name="displayName"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.displayName || ""}
-                  />
-                </Field.Root>
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Phone Number</Field.Label>
-                  <TextInput
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.phoneNumber || ""}
-                  />
-                </Field.Root>
-                <Field.Root style={{ width: "100%" }}>
-                  <Field.Label>Password</Field.Label>
-                  <TextInput
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="new-password"
-                    onChange={onTextInputChange}
-                    value={userData.password || ""}
-                  />
-                  {userData?.password?.length && userData?.password?.length < 6 && (
-                    <Field.Error>Password must be at least 6 characters</Field.Error>
-                  )}
-                  <Field.Hint>Leave empty to keep current password</Field.Hint>
-                </Field.Root>
-                <Field.Root maxWidth="320px">
-                  <Field.Label>Disabled</Field.Label>
-                  <Toggle
-                    name="disabled"
-                    onLabel="True"
-                    offLabel="False"
-                    checked={Boolean(userData.disabled)}
-                    onChange={onToggleInputChange}
-                  />
-                </Field.Root>
-                <Field.Root maxWidth="320px">
-                  <Field.Label>Email Verified</Field.Label>
-                  <Toggle
-                    name="emailVerified"
-                    onLabel="True"
-                    offLabel="False"
-                    checked={Boolean(userData.emailVerified)}
-                    onChange={onToggleInputChange}
-                  />
-                </Field.Root>
-              </Flex>
-          </Box>
-
-          <Flex
-            direction="column"
-            gap={4}
-            style={{ flex: "3 1 0px", minWidth: "280px", maxWidth: "380px", alignItems: "stretch" }}
-          >
+        <UserFormLayout
+          sidebar={
+            <>
             <Box
               as="aside"
               background="neutral0"
@@ -333,9 +236,24 @@ export const EditForm = ({ data }: EditFormProps) => {
                 </Box>
               </Box>
             )}
-          </Flex>
-        </Flex>
+            </>
+          }
+        >
+          <UserFormFields
+            userData={userData}
+            onTextInputChange={handlers.onTextInputChange}
+            onPhoneChange={handlers.onPhoneChange}
+            onToggleInputChange={handlers.onToggleInputChange}
+            onEmailBlur={handlers.onEmailBlur}
+            emailError={emailError}
+            phoneError={phoneError}
+            showPasswordHint={true}
+            hasBeenTouched={true}
+          />
+        </UserFormLayout>
       </Layouts.Content>
     </Page.Main>
   );
 };
+
+export default EditUserForm;

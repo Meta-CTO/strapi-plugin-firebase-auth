@@ -6,7 +6,7 @@ import { ArrowLeft } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 import isEqual from "lodash/isEqual";
 import isEmpty from "lodash/isEmpty";
-import { User } from "../../../model/User";
+import { User } from "../../../../../model/User";
 
 interface HeaderProps {
   title: string;

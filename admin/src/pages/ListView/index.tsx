@@ -1,23 +1,24 @@
-import React, { memo, useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useIntl } from "react-intl";
 import get from "lodash/get";
 import { Page, Layouts } from "@strapi/strapi/admin";
 import { useQueryParams } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
 
-import { Button } from "@strapi/design-system";
+import { Button, Box } from "@strapi/design-system";
 import { Link } from "@strapi/design-system";
 import { ArrowLeft } from "@strapi/icons";
 import { Plus } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
-import { FirebaseTable } from "../../components/DynamicTable/FirebaseTable";
+import { FirebaseTable } from "../../components/table";
 import { deleteUser, fetchUsers, resetUserPassword } from "../utils/api";
 import { PaginationFooter } from "./PaginationFooter";
-import SearchURLQuery from "../../components/SearchURLQuery/SearchURLQuery";
+import { SearchURLQuery } from "../../components/search";
 import { User } from "../../../../model/User";
 import { ResponseMeta } from "../../../../model/Meta";
-import { DeleteAccount } from "../../components/UserManagement/DeleteAccount";
-import { ResetPassword } from "../../components/UserManagement/ResetPassword";
+import { DeleteAccount, ResetPassword } from "../../components/user-management";
+
+// Styled Components removed - using native Strapi theming for dark mode support
 
 // Constants
 const HEADER_TITLE = "Firebase Users";
@@ -34,8 +35,8 @@ interface PageTokens {
 }
 
 interface ListViewProps {
-  data: User[];
-  meta: ResponseMeta;
+  data?: User[];  // Made optional - ListView fetches its own data
+  meta?: ResponseMeta;
 }
 
 // Helper function to map user data
@@ -58,14 +59,20 @@ function ListView({ data, meta }: ListViewProps) {
     id: "",
   });
 
-  const [rowsData, setRowsData] = useState<User[]>(data);
-  const [rowsMeta, setRowsMeta] = useState<ResponseMeta>(meta);
+  // Initialize with empty state - ListView fetches its own data
+  const [rowsData, setRowsData] = useState<User[]>([]);
+  const [rowsMeta, setRowsMeta] = useState<ResponseMeta>({
+    pagination: { page: 1, pageCount: 1, pageSize: 10, total: 0 }
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [query] = useQueryParams();
 
   const navigate = useNavigate();
   const { toggleNotification } = useNotification();
   const { formatMessage } = useIntl();
+
+  // Memoize the query key to prevent unnecessary re-renders
+  const queryKey = useMemo(() => JSON.stringify(query.query), [query.query]);
 
   // Pagination token management with proper types
   const setNextPageToken = useCallback((page: string, nextPageToken: string) => {
@@ -108,26 +115,41 @@ function ListView({ data, meta }: ListViewProps) {
   }, [query.query, getNextPageToken, setNextPageToken]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPaginatedData = async () => {
       try {
         setIsLoading(true);
 
         const response = await fetchPaginatedUsers();
-        const mappedData = mapUserData(response.data || []);
 
-        setRowsData(mappedData);
-        setRowsMeta(response.meta);
-      } catch (err) {
-        toggleNotification({
-          type: "warning",
-          message: NOTIFICATION_MESSAGES.LOAD_ERROR,
-        });
+        if (isMounted) {
+          const mappedData = mapUserData(response.data || []);
+          setRowsData(mappedData);
+          setRowsMeta(response.meta);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          toggleNotification({
+            type: "warning",
+            message: NOTIFICATION_MESSAGES.LOAD_ERROR,
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
+
     fetchPaginatedData();
-  }, [query.query, fetchPaginatedUsers, toggleNotification]);
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queryKey]); // Only re-run when query changes
 
   const fetchData = useCallback(async () => {
     try {
@@ -321,4 +343,4 @@ function ListView({ data, meta }: ListViewProps) {
   );
 }
 
-export default memo(ListView);
+export default ListView;

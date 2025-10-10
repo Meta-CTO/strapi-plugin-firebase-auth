@@ -45,6 +45,10 @@ export interface StrapiUser {
   appleEmail: string | null;
   createdAt: string;
   firebaseUserID: string;
+  phoneNumber?: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export type User = FirebaseUser & StrapiUser;

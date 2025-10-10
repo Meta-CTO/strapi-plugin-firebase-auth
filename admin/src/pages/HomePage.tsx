@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Page, Layouts } from "@strapi/strapi/admin";
+import { Page } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
 import { Box, Typography, Button, Flex } from "@strapi/design-system";
-import { fetchUsers } from "./utils/api";
 import ListView from "./ListView";
-import { User } from "../../../model/User";
-import { ResponseMeta } from "../../../model/Meta";
 import { WarningCircle } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 import { getFirebaseConfig } from "../pages/Settings/api";
@@ -16,17 +13,13 @@ const StyledPageMain = styled(Page.Main)`
   max-width: 100vw;
 `;
 
-const INITIAL_USERS_DATA = {
-  data: [],
-  meta: { pagination: { page: 0, pageCount: 0, pageSize: 0, total: 0 } },
-};
+const ContentContainer = styled.div`
+  padding-right: 70px;
+  width: 100%;
+`;
 
 export const HomePage = () => {
   const { toggleNotification } = useNotification();
-  const [usersData, setUsersData] = useState<{
-    data: User[];
-    meta: ResponseMeta;
-  }>(INITIAL_USERS_DATA);
   const [isNotConfigured, setIsNotConfigured] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -44,8 +37,9 @@ export const HomePage = () => {
         }
 
         setIsNotConfigured(false);
-        const result = await fetchUsers();
-        setUsersData(result);
+        // Don't fetch users here - let ListView handle it
+        // const result = await fetchUsers();
+        // setUsersData(result);
       } catch (err) {
         setIsNotConfigured(true);
         toggleNotification({
@@ -58,7 +52,7 @@ export const HomePage = () => {
     };
 
     loadData();
-  }, []);
+  }, [toggleNotification]);
 
   if (isLoading) {
     return <Page.Loading />;
@@ -67,28 +61,28 @@ export const HomePage = () => {
   return (
     <StyledPageMain>
       <Page.Title>Firebase Users</Page.Title>
-      <Box padding={10}>
-        {!isNotConfigured ? (
+      {!isNotConfigured ? (
+        <ContentContainer>
           <Flex direction="column" alignItems="stretch" gap={4}>
-            <ListView data={usersData.data} meta={usersData.meta} />
+            <ListView />
           </Flex>
-        ) : (
-          <Flex direction="column" marginTop={10}>
-            <WarningCircle />
-            <Box marginTop={1}>
-              <Typography>Firebase is not configured, please configure Firebase</Typography>
-            </Box>
-            <Button
-              marginTop={3}
-              onClick={() => {
-                navigate("/settings/firebase-authentication");
-              }}
-            >
-              Configure firebase
-            </Button>
-          </Flex>
-        )}
-      </Box>
+        </ContentContainer>
+      ) : (
+        <Flex direction="column" marginTop={10}>
+          <WarningCircle />
+          <Box marginTop={1}>
+            <Typography>Firebase is not configured, please configure Firebase</Typography>
+          </Box>
+          <Button
+            marginTop={3}
+            onClick={() => {
+              navigate("/settings/firebase-authentication");
+            }}
+          >
+            Configure firebase
+          </Button>
+        </Flex>
+      )}
     </StyledPageMain>
   );
 };
