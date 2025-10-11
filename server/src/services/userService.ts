@@ -29,17 +29,26 @@ export default ({ strapi }) => {
   create: async (payload) => {
     try {
       ensureFirebaseInitialized();
-      const userRecord = await strapi.firebase
-        .auth()
-        .getUserByEmail(payload.email)
-        .catch(async (e) => {
-          if (e.code === "auth/user-not-found") {
-            console.log("user not found, creating user");
-            const response = await strapi.firebase.auth().createUser(payload);
 
-            return response.toJSON();
-          }
-        });
+      // Support lookup by email OR phone number
+      let getUserPromise;
+      if (payload.email) {
+        getUserPromise = strapi.firebase.auth().getUserByEmail(payload.email);
+      } else if (payload.phoneNumber) {
+        getUserPromise = strapi.firebase.auth().getUserByPhoneNumber(payload.phoneNumber);
+      } else {
+        throw new errors.ApplicationError('Either email or phoneNumber is required');
+      }
+
+      const userRecord = await getUserPromise.catch(async (e) => {
+        if (e.code === "auth/user-not-found") {
+          console.log("user not found, creating user");
+          const response = await strapi.firebase.auth().createUser(payload);
+
+          return response.toJSON();
+        }
+        throw e;
+      });
 
       if (userRecord) {
         return userRecord;

@@ -3,21 +3,56 @@ import { processMeData } from "../utils/fetch-me";
 import { generateReferralCode } from "../utils";
 import { promiseHandler } from "../utils/promiseHandler";
 
-const createFakeEmail = async () => {
-  let randomString = generateReferralCode(8).toLowerCase();
-  const fakeEmail = `${randomString}@maz.com`;
-  let anotherUserWithTheSameReferralCode = await strapi.db.query("plugin::users-permissions.user").findOne({
-    where: { email: fakeEmail },
-  });
+// Default email pattern - matches the default in server/config/index.ts
+const DEFAULT_EMAIL_PATTERN = '{randomString}@phone-user.firebase.local';
 
-  while (anotherUserWithTheSameReferralCode) {
-    randomString = generateReferralCode(8);
-    anotherUserWithTheSameReferralCode = await strapi.db.query("plugin::users-permissions.user").findOne({
-      where: { email: fakeEmail },
-    });
+/**
+ * Generate a fake email for phone-only users based on configured pattern
+ * @param phoneNumber - Optional phone number (e.g., "+1-234-567-8900")
+ * @param pattern - Optional email pattern template with tokens
+ * @returns Generated unique email address
+ * @throws Error if unable to generate unique email after MAX_RETRIES attempts
+ */
+const createFakeEmail = async (phoneNumber?: string, pattern?: string) => {
+  const MAX_RETRIES = 3;
+  let retryCount = 0;
+
+  const emailPattern = pattern || DEFAULT_EMAIL_PATTERN;
+
+  while (retryCount < MAX_RETRIES) {
+    const randomString = generateReferralCode(8).toLowerCase();
+    const timestamp = Date.now().toString();
+    const phoneDigits = phoneNumber ? phoneNumber.replace(/[^0-9]/g, '') : '';
+
+    let fakeEmail = emailPattern
+      .replace('{randomString}', randomString)
+      .replace('{timestamp}', timestamp)
+      .replace('{phoneNumber}', phoneDigits);
+
+    const existingUser = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({
+        where: { email: fakeEmail },
+      });
+
+    if (!existingUser) {
+      return fakeEmail;
+    }
+
+    retryCount++;
   }
 
-  return fakeEmail;
+  throw new errors.ValidationError(
+    `[Firebase Auth Plugin] Failed to generate unique email after ${MAX_RETRIES} attempts.\n` +
+    `Pattern used: "${emailPattern}"\n` +
+    `Phone number: "${phoneNumber || 'N/A'}"\n\n` +
+    `This usually means your emailPattern doesn't include enough uniqueness.\n` +
+    `Make sure your pattern includes {randomString} or {timestamp} tokens.\n\n` +
+    `Valid pattern examples:\n` +
+    `  - "phone_{phoneNumber}_{randomString}@myapp.local"\n` +
+    `  - "user_{timestamp}@temp.local"\n` +
+    `  - "{randomString}@phone-user.firebase.local"`
+  );
 };
 
 export default ({ strapi }) => ({
@@ -190,8 +225,22 @@ export default ({ strapi }) => ({
         userPayload.appleEmail = decodedToken.email;
       }
     } else {
+      // Phone-only user - handle email based on plugin configuration
       userPayload.username = userPayload.phoneNumber;
-      userPayload.email = profileMetaData?.email || (await createFakeEmail());
+
+      const emailRequired = strapi.plugin("firebase-authentication").config("emailRequired");
+      const emailPattern = strapi.plugin("firebase-authentication").config("emailPattern");
+
+      if (profileMetaData?.email) {
+        // Use email from profileMetaData if provided
+        userPayload.email = profileMetaData.email;
+      } else if (emailRequired) {
+        // Generate fake email using configured pattern
+        userPayload.email = await createFakeEmail(userPayload.phoneNumber, emailPattern);
+      } else {
+        // Allow null email
+        userPayload.email = null;
+      }
     }
 
     return strapi.query("plugin::users-permissions.user").create({ data: userPayload });

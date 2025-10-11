@@ -35,8 +35,8 @@ const CreateUserForm = () => {
         type: "success",
         message: "User created successfully",
       });
-      // Navigate to edit page after creation
-      navigate(`/plugins/${PLUGIN_ID}/${createdUser.uid}`);
+      // Navigate to user list sorted by creation date (newest first)
+      navigate(`/plugins/${PLUGIN_ID}?sort=createdAt:DESC`);
     } catch (error) {
       console.error("Error creating user:", error);
       const errorMessage = error instanceof Error ? error.message : "An error occurred while creating the user";

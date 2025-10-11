@@ -138,16 +138,16 @@ export const FirebaseTableRows = ({
             <Td key={data.createdAt}>
               <TypographyMaxWidth ellipsis textColor="neutral800">
                 {data.createdAt
-                  ? format(new Date(data.createdAt), "yyyy/MM/dd kk:mm")
+                  ? format(new Date(data.createdAt), "yyyy/MM/dd HH:mm z")
                   : data.metadata?.creationTime
-                    ? format(new Date(data.metadata.creationTime), "yyyy/MM/dd kk:mm")
+                    ? format(new Date(data.metadata.creationTime), "yyyy/MM/dd HH:mm z")
                     : "-"}
               </TypographyMaxWidth>
             </Td>
             <Td key={data.metadata?.lastSignInTime || "lastSignInTime"}>
               <TypographyMaxWidth ellipsis textColor="neutral800">
                 {data.metadata?.lastSignInTime
-                  ? format(new Date(data.metadata.lastSignInTime), "yyyy/MM/dd kk:mm")
+                  ? format(new Date(data.metadata.lastSignInTime), "yyyy/MM/dd HH:mm z")
                   : "-"}
               </TypographyMaxWidth>
             </Td>

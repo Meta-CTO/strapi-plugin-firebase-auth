@@ -177,7 +177,7 @@ const EditUserForm = ({ data }: EditFormProps) => {
                       Last Sign In Time
                     </Typography>
                     <Typography variant="sigma" textColor="neutral600">
-                      {format(new Date(userData.metadata.lastSignInTime), "yyyy/MM/dd kk:mm")}
+                      {format(new Date(userData.metadata.lastSignInTime), "yyyy/MM/dd HH:mm z")}
                     </Typography>
                   </MetaWrapper>
                 )}
@@ -188,9 +188,9 @@ const EditUserForm = ({ data }: EditFormProps) => {
                     </Typography>
                     <Typography variant="sigma" textColor="neutral600">
                       {userData.metadata?.creationTime
-                        ? format(new Date(userData.metadata.creationTime), "yyyy/MM/dd kk:mm")
+                        ? format(new Date(userData.metadata.creationTime), "yyyy/MM/dd HH:mm z")
                         : userData.createdAt
-                        ? format(new Date(userData.createdAt), "yyyy/MM/dd kk:mm")
+                        ? format(new Date(userData.createdAt), "yyyy/MM/dd HH:mm z")
                         : "-"}
                     </Typography>
                   </MetaWrapper>

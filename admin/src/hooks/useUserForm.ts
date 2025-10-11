@@ -62,8 +62,12 @@ export const useUserForm = (initialData: Partial<User> = {}): UseUserFormReturn 
     }));
   }, []);
 
+  // Check for empty or whitespace-only strings (consistent with validation.ts)
+  const isEmailEmpty = !userData?.email || userData.email.trim() === '';
+  const isPhoneEmpty = !userData?.phoneNumber || userData.phoneNumber.trim() === '';
+
   const isSubmitDisabled =
-    (!userData?.email && !userData?.phoneNumber) ||
+    (isEmailEmpty && isPhoneEmpty) ||
     !!(userData?.password?.length && userData?.password?.length < 6) ||
     !!emailError ||
     !!phoneError;
