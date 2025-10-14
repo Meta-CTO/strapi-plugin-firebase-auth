@@ -11,7 +11,7 @@ import {
 } from "react-icons/ai";
 import React from "react";
 import { MdPassword } from "react-icons/md";
-import { Flex } from "@strapi/design-system";
+import { Flex, Tooltip } from "@strapi/design-system";
 
 const providerIconMapping: { [key: string]: any } = {
   password: <MdPassword size={24} />,
@@ -26,20 +26,26 @@ const providerIconMapping: { [key: string]: any } = {
   anonymous: <AiOutlineUserAdd size={24} />,
 };
 
+const providerNameMapping: { [key: string]: string } = {
+  password: "Password",
+  "google.com": "Google",
+  "apple.com": "Apple",
+  "facebook.com": "Facebook",
+  "twitter.com": "Twitter",
+  "github.com": "GitHub",
+  "yahoo.com": "Yahoo",
+  "hotmail.com": "Hotmail",
+  phone: "Phone",
+  anonymous: "Anonymous",
+};
+
 export const MapProviderToIcon = ({ providerData }: any) => {
   return (
     <Flex gap={2}>
       {providerData?.map(({ providerId }: any) => (
-        <span
-          key={providerId}
-          title={providerId}
-          style={{
-            cursor: 'help',
-            display: 'inline-block'
-          }}
-        >
-          {providerIconMapping[providerId] || providerId}
-        </span>
+        <Tooltip description={providerNameMapping[providerId] || providerId} key={providerId}>
+          <div>{providerIconMapping[providerId] || providerId}</div>
+        </Tooltip>
       ))}
     </Flex>
   );

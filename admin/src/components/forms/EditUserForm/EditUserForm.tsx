@@ -156,7 +156,7 @@ const EditUserForm = ({ data }: EditFormProps) => {
                       <Link
                         onClick={() => {
                           navigate(
-                            `/content-manager/collectionType/plugin::users-permissions.user/${locationState.strapiId}`
+                            `/content-manager/collection-types/plugin::users-permissions.user/${locationState.strapiId}`
                           );
                         }}
                         style={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
@@ -217,7 +217,7 @@ const EditUserForm = ({ data }: EditFormProps) => {
                       startIcon={<Pencil />}
                       onClick={() =>
                         navigate(
-                          `/content-manager/collectionType/plugin::users-permissions.user/${userData.localUser?.id}`
+                          `/content-manager/collection-types/plugin::users-permissions.user/${userData.localUser?.id}`
                         )
                       }
                       style={{ cursor: "pointer" }}

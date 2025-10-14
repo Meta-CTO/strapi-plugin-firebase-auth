@@ -101,7 +101,7 @@ export const FirebaseTableRows = ({
                 <Box
                   onClick={() => {
                     navigate(
-                      `/content-manager/collectionType/plugin::users-permissions.user/${data.strapiDocumentId || data.strapiId}`,
+                      `/content-manager/collection-types/plugin::users-permissions.user/${data.strapiDocumentId || data.strapiId}`,
                       { state: { from: location.pathname } }
                     );
                   }}

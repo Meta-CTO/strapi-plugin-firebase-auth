@@ -55,6 +55,60 @@ const createFakeEmail = async (phoneNumber?: string, pattern?: string) => {
   );
 };
 
+/**
+ * Generate a valid username from a phone number
+ * Username must be 5-20 characters and contain only letters, numbers, dots, underscores, and hyphens
+ * @param phoneNumber - Phone number (e.g., "+5543999662203")
+ * @returns Valid unique username
+ * @throws Error if unable to generate unique username after MAX_RETRIES attempts
+ */
+const generateUsernameFromPhone = async (phoneNumber: string): Promise<string> => {
+  const MAX_RETRIES = 10;
+
+  // Strip all non-numeric characters
+  const phoneDigits = phoneNumber.replace(/[^0-9]/g, '');
+
+  // Truncate to 20 characters if needed (username max length)
+  let username = phoneDigits.substring(0, 20);
+
+  // Ensure minimum length of 5 characters
+  if (username.length < 5) {
+    // Pad with random digits if phone number is too short
+    const randomDigits = Math.random().toString().substring(2, 7 - username.length);
+    username = username + randomDigits;
+  }
+
+  // Try to use phone digits as username first
+  const existingUser = await strapi.db
+    .query("plugin::users-permissions.user")
+    .findOne({ where: { username } });
+
+  if (!existingUser) {
+    return username;
+  }
+
+  // Username collision - try adding random suffixes
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // Take first 16 digits + underscore + 3 random characters = max 20 chars
+    const phonePart = phoneDigits.substring(0, 16);
+    const randomPart = Math.random().toString(36).substring(2, 5);
+    const collisionUsername = `${phonePart}_${randomPart}`;
+
+    const existingCollisionUser = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({ where: { username: collisionUsername } });
+
+    if (!existingCollisionUser) {
+      return collisionUsername;
+    }
+  }
+
+  throw new errors.ValidationError(
+    `[Firebase Auth Plugin] Failed to generate unique username from phone number after ${MAX_RETRIES} attempts.\n` +
+    `Phone number: "${phoneNumber}"`
+  );
+};
+
 export default ({ strapi }) => ({
   async getUserAttributes() {
     return strapi.plugins["users-permissions"].contentTypes["user"].attributes;
@@ -225,8 +279,8 @@ export default ({ strapi }) => ({
         userPayload.appleEmail = decodedToken.email;
       }
     } else {
-      // Phone-only user - handle email based on plugin configuration
-      userPayload.username = userPayload.phoneNumber;
+      // Phone-only user - generate valid username from phone number
+      userPayload.username = await generateUsernameFromPhone(userPayload.phoneNumber);
 
       const emailRequired = strapi.plugin("firebase-authentication").config("emailRequired");
       const emailPattern = strapi.plugin("firebase-authentication").config("emailPattern");
