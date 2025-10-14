@@ -302,7 +302,7 @@ export default ({ strapi }) => {
   },
   resetPasswordStrapiUser: async (entityId, payload) => {
     try {
-      return strapi
+      return strapi.db
         .query("plugin::users-permissions.user")
         .update({ where: { firebaseUserID: entityId }, data: payload });
     } catch (e) {
@@ -313,7 +313,7 @@ export default ({ strapi }) => {
     try {
       ensureFirebaseInitialized();
       const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
-      const strapiPromise = strapi
+      const strapiPromise = strapi.db
         .query("plugin::users-permissions.user")
         .update({ where: { firebaseUserID: entityId }, data: payload });
 
@@ -326,7 +326,7 @@ export default ({ strapi }) => {
     try {
       ensureFirebaseInitialized();
       const firebasePromise = strapi.firebase.auth().deleteUser(entityId);
-      const strapiPromise = strapi
+      const strapiPromise = strapi.db
         .query("plugin::users-permissions.user")
         .delete({ where: { firebaseUserID: entityId } });
       return Promise.allSettled([firebasePromise, strapiPromise]);
@@ -345,7 +345,7 @@ export default ({ strapi }) => {
   },
   deleteStrapiUser: async (entityId) => {
     try {
-      const response = await strapi
+      const response = await strapi.db
         .query("plugin::users-permissions.user")
         .delete({ where: { firebaseUserID: entityId } });
       return response;

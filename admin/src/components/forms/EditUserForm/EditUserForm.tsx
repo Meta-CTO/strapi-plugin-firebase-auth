@@ -17,6 +17,7 @@ import { UserFormFields } from "../shared/UserFormFields/UserFormFields";
 import { UserFormLayout } from "../shared/UserFormLayout/UserFormLayout";
 import { updateUser } from "../../../pages/utils/api";
 import { useUserForm } from "../../../hooks/useUserForm";
+import { PasswordResetButton } from "../../PasswordResetButton";
 
 const MetaWrapper = styled(Box)`
   width: 100%;
@@ -196,6 +197,37 @@ const EditUserForm = ({ data }: EditFormProps) => {
                   </MetaWrapper>
                 )}
               </Flex>
+            </Box>
+
+            <Box marginTop={5} marginBottom={5} />
+
+            {/* Password Reset Button */}
+            <Box
+              as="aside"
+              background="neutral0"
+              borderColor="neutral150"
+              hasRadius
+              paddingBottom={4}
+              paddingLeft={4}
+              paddingRight={4}
+              paddingTop={4}
+              shadow="tableShadow"
+            >
+              <Typography variant="sigma" textColor="neutral600" marginBottom={2}>
+                Account Actions
+              </Typography>
+              <PasswordResetButton
+                user={userData as User}
+                fullWidth
+                onClick={() => {
+                  // Placeholder - will be implemented in Phase 2
+                  console.log("Password reset clicked for user:", userData.uid);
+                  toggleNotification({
+                    type: "info",
+                    message: "Password reset modal will be implemented in Phase 2",
+                  });
+                }}
+              />
             </Box>
 
             <Box marginTop={5} marginBottom={5} />

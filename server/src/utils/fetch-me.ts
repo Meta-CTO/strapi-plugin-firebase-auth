@@ -12,7 +12,8 @@ export const fetchUser = async (currentUser, populate: string[] = ["*"]) => {
       populate.push(relation);
     }
   });
-  return strapi.entityService.findOne("plugin::users-permissions.user", currentUser.id, {
+  return strapi.db.query("plugin::users-permissions.user").findOne({
+    where: { id: currentUser.id },
     populate,
   });
 };

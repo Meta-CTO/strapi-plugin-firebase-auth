@@ -23,6 +23,22 @@
     },
     "firebase_web_api_key": {
       "type": "string"
+    },
+    "passwordRequirementsRegex": {
+      "type": "string",
+      "default": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+    },
+    "passwordRequirementsMessage": {
+      "type": "text",
+      "default": "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character."
+    },
+    "passwordResetUrl": {
+      "type": "string",
+      "default": "http://localhost:3000/reset-password"
+    },
+    "passwordResetEmailSubject": {
+      "type": "string",
+      "default": "Reset Your Password"
     }
   }
 }

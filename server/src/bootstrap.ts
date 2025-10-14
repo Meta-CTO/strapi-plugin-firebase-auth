@@ -13,6 +13,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
 
   try {
     console.log("🔥 Firebase plugin bootstrap starting...");
+
     await strapi.plugin("firebase-authentication").service("settingsService").init();
 
     // @ts-ignore - firebase property is added dynamically

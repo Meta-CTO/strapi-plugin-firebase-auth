@@ -111,7 +111,7 @@ const generateUsernameFromPhone = async (phoneNumber: string): Promise<string> =
 
 export default ({ strapi }) => ({
   async getUserAttributes() {
-    return strapi.plugins["users-permissions"].contentTypes["user"].attributes;
+    return strapi.plugin("users-permissions").contentType("user").attributes;
   },
   delete: async (entityId) => {
     await strapi.firebase.auth().deleteUser(entityId);
@@ -155,25 +155,25 @@ export default ({ strapi }) => ({
     return await strapi.firebase.auth().verifyIdToken(idToken);
   },
 
-  overrideFirebaseAccess: async (ctx) => {
-    if (!ctx.request.body || !ctx.request.body.overrideUserId) {
-      return ctx.badRequest(null, [{ messages: [{ id: "unauthorized" }] }]);
+  overrideFirebaseAccess: async (overrideUserId: string, populate?: string[]) => {
+    if (!overrideUserId) {
+      throw new errors.ValidationError("Override user ID is required");
     }
 
-    const overrideUserId = ctx.request.body.overrideUserId;
+    const user = await strapi.plugin("users-permissions").service("user").fetch(overrideUserId);
 
-    const user = await strapi.plugins["users-permissions"].services.user.fetch(overrideUserId);
+    if (!user) {
+      throw new errors.NotFoundError("User not found");
+    }
 
-    const jwt = await strapi.plugins["users-permissions"].services.jwt.issue({
+    const jwt = await strapi.plugin("users-permissions").service("jwt").issue({
       id: user.id,
     });
 
-    ctx.body = {
-      user: await processMeData(user),
+    return {
+      user: await processMeData(user, populate),
       jwt,
     };
-
-    return ctx.body;
   },
 
   async checkIfUserExists(decodedToken) {
@@ -237,7 +237,7 @@ export default ({ strapi }) => ({
   },
 
   generateJWTForCurrentUser: async (user) => {
-    return strapi.plugins["users-permissions"].services.jwt.issue({
+    return strapi.plugin("users-permissions").service("jwt").issue({
       id: user.id,
     });
   },
@@ -297,7 +297,7 @@ export default ({ strapi }) => ({
       }
     }
 
-    return strapi.query("plugin::users-permissions.user").create({ data: userPayload });
+    return strapi.db.query("plugin::users-permissions.user").create({ data: userPayload });
   },
 
   updateUserIDToken: async (user, idToken, decodedToken) => {
@@ -309,57 +309,49 @@ export default ({ strapi }) => ({
     });
   },
 
-  validateFirebaseToken: async (ctx) => {
+  validateFirebaseToken: async (idToken: string, profileMetaData?: any, populate?: string[]) => {
     console.log("validateFirebaseToken 🤣");
-    const { profileMetaData } = ctx.request.body;
-    const { error } = await promiseHandler(
-      strapi
-        .plugin("firebase-authentication")
-        .service("firebaseService")
-        .validateExchangeTokenPayload(ctx.request.body)
-    );
-    if (error) {
-      ctx.status = 400;
-      return { error: error.message };
-    }
 
-    const { idToken } = ctx.request.body;
-    const populate = ctx.request.query.populate || [];
-
+    // Validate the token first
     const decodedToken = await strapi
+      .plugin("firebase-authentication")
+      .service("firebaseService")
+      .validateExchangeTokenPayload({ idToken });
+
+    // Decode the token to get user details
+    const decodedTokenData = await strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
       .decodeIDToken(idToken);
 
-    let user;
-
-    user = await strapi
+    // Check if user exists
+    let user = await strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
-      .checkIfUserExists(decodedToken, profileMetaData);
-
-    let jwt;
+      .checkIfUserExists(decodedTokenData, profileMetaData);
 
     if (!user) {
-      // create strapi user
+      // Create Strapi user if doesn't exist
       user = await strapi
         .plugin("firebase-authentication")
         .service("firebaseService")
-        .createStrapiUser(decodedToken, idToken, profileMetaData);
+        .createStrapiUser(decodedTokenData, idToken, profileMetaData);
     }
 
-    jwt = await strapi
+    // Generate JWT
+    const jwt = await strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
       .generateJWTForCurrentUser(user);
 
+    // Update user's idToken (fire and forget)
     strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
-      .updateUserIDToken(user, idToken, decodedToken);
+      .updateUserIDToken(user, idToken, decodedTokenData);
 
     return {
-      user: await processMeData(user, populate),
+      user: await processMeData(user, populate || []),
       jwt,
     };
   },
@@ -405,9 +397,8 @@ export default ({ strapi }) => ({
    * 5. Looks up or creates Strapi user
    * 6. Generates and returns Strapi JWT token
    */
-  emailLogin: async (ctx) => {
+  emailLogin: async (email: string, password: string, populate?: string[]) => {
     console.log("emailLogin endpoint called");
-    const { email, password } = ctx.request.body;
 
     if (!email || !password) {
       throw new errors.ValidationError("Email and password are required");
@@ -463,7 +454,6 @@ export default ({ strapi }) => ({
 
       // We now have the idToken from Firebase
       const { idToken, refreshToken, localId } = data;
-      const populate = ctx.request.query.populate || [];
 
       // Decode the token to get user details
       const decodedToken = await strapi
@@ -499,7 +489,7 @@ export default ({ strapi }) => ({
 
       // Return same format as validateFirebaseToken
       return {
-        user: await processMeData(user, populate),
+        user: await processMeData(user, populate || []),
         jwt,
       };
     } catch (error) {

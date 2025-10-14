@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Flex, Checkbox, Typography, Button, Tbody, Tr, Td } from "@strapi/design-system";
+import { Box, Flex, Checkbox, Typography, Button, Tbody, Tr, Td, Tooltip } from "@strapi/design-system";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIntl } from "react-intl";
 import { RxCross2, RxCheck } from "react-icons/rx";
@@ -8,6 +8,7 @@ import { MapProviderToIcon } from "../../../utils/provider";
 import { User } from "../../../../../model/User";
 import { Key, Trash } from "@strapi/icons";
 import { format } from "date-fns";
+import { hasPasswordProvider, getPasswordResetTooltip } from "../../../utils/hasPasswordProvider";
 
 const TypographyMaxWidth = styled(Typography)`
   max-width: 300px;
@@ -165,31 +166,57 @@ export const FirebaseTableRows = ({
               }}
             >
               <Flex gap={2} justifyContent="center" alignItems="center">
-                <Button
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                    // Critical: Prevent all default behaviors and event propagation
-                    e.preventDefault();
-                    e.stopPropagation();
+                {/* Password Reset Button with conditional logic */}
+                {hasPasswordProvider(data) ? (
+                  <Button
+                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      // Critical: Prevent all default behaviors and event propagation
+                      e.preventDefault();
+                      e.stopPropagation();
 
-                    // Prevent focus from triggering scroll-into-view
-                    e.currentTarget.blur();
+                      // Prevent focus from triggering scroll-into-view
+                      e.currentTarget.blur();
 
-                    onResetPasswordClick(data);
-                  }}
-                  variant="secondary"
-                  size="S"
-                  type="button"
-                  tabIndex={-1}
-                  style={{
-                    display: "inline-flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "0.25rem 0.75rem",
-                    minWidth: "5.5rem",
-                  }}
-                >
-                  <Key aria-hidden style={{ display: "block" }} />
-                </Button>
+                      onResetPasswordClick(data);
+                    }}
+                    variant="secondary"
+                    size="S"
+                    type="button"
+                    tabIndex={-1}
+                    style={{
+                      display: "inline-flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: "0.25rem 0.75rem",
+                      minWidth: "5.5rem",
+                    }}
+                  >
+                    <Key aria-hidden style={{ display: "block" }} />
+                  </Button>
+                ) : (
+                  <Tooltip label={getPasswordResetTooltip(data)}>
+                    <Box>
+                      <Button
+                        disabled
+                        variant="secondary"
+                        size="S"
+                        type="button"
+                        tabIndex={-1}
+                        style={{
+                          display: "inline-flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          padding: "0.25rem 0.75rem",
+                          minWidth: "5.5rem",
+                          opacity: 0.5,
+                          cursor: "not-allowed",
+                        }}
+                      >
+                        <Key aria-hidden style={{ display: "block" }} />
+                      </Button>
+                    </Box>
+                  </Tooltip>
+                )}
                 <Button
                   onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                     // Critical: Prevent all default behaviors and event propagation
