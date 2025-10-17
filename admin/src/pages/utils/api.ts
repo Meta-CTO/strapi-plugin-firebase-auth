@@ -157,8 +157,8 @@ const getFirebaseConfig = async () => {
     const { get } = getFetchClient();
     const { data: config } = await get(url, {
       headers: {
-        'Strapi-Response-Format': 'v5', // Ensure Strapi v5 response format
-      }
+        "Strapi-Response-Format": "v5", // Ensure Strapi v5 response format
+      },
     });
     return config;
   } catch (e) {

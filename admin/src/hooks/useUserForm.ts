@@ -23,19 +23,22 @@ export const useUserForm = (initialData: Partial<User> = {}): UseUserFormReturn 
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [hasBeenTouched, setHasBeenTouched] = useState(false);
 
-  const onTextInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const onTextInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
 
-    setUserData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+      setUserData((prevState) => ({
+        ...prevState,
+        [name]: value,
+      }));
 
-    // Clear error when user starts typing in email field
-    if (name === 'email' && emailError) {
-      setEmailError(null);
-    }
-  }, [emailError]);
+      // Clear error when user starts typing in email field
+      if (name === "email" && emailError) {
+        setEmailError(null);
+      }
+    },
+    [emailError]
+  );
 
   const onEmailBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -47,7 +50,7 @@ export const useUserForm = (initialData: Partial<User> = {}): UseUserFormReturn 
   const onPhoneChange = useCallback((value: string | undefined) => {
     setUserData((prevState) => ({
       ...prevState,
-      phoneNumber: value || '',
+      phoneNumber: value || "",
     }));
 
     // Validate phone in real-time
@@ -63,8 +66,8 @@ export const useUserForm = (initialData: Partial<User> = {}): UseUserFormReturn 
   }, []);
 
   // Check for empty or whitespace-only strings (consistent with validation.ts)
-  const isEmailEmpty = !userData?.email || userData.email.trim() === '';
-  const isPhoneEmpty = !userData?.phoneNumber || userData.phoneNumber.trim() === '';
+  const isEmailEmpty = !userData?.email || userData.email.trim() === "";
+  const isPhoneEmpty = !userData?.phoneNumber || userData.phoneNumber.trim() === "";
 
   const isSubmitDisabled =
     (isEmailEmpty && isPhoneEmpty) ||
@@ -82,8 +85,8 @@ export const useUserForm = (initialData: Partial<User> = {}): UseUserFormReturn 
       onTextInputChange,
       onEmailBlur,
       onPhoneChange,
-      onToggleInputChange
+      onToggleInputChange,
     },
-    isSubmitDisabled
+    isSubmitDisabled,
   };
 };

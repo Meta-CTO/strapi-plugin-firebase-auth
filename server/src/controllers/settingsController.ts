@@ -75,7 +75,8 @@ export default {
       // Return public configuration fields (no sensitive data)
       ctx.body = {
         passwordRequirementsRegex: configObject.passwordRequirementsRegex || "^.{6,}$",
-        passwordRequirementsMessage: configObject.passwordRequirementsMessage || "Password must be at least 6 characters long",
+        passwordRequirementsMessage:
+          configObject.passwordRequirementsMessage || "Password must be at least 6 characters long",
         passwordResetUrl: configObject.passwordResetUrl || "http://localhost:3000/reset-password",
         passwordResetEmailSubject: configObject.passwordResetEmailSubject || "Reset Your Password",
       };

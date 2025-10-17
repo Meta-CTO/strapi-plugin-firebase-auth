@@ -11,7 +11,7 @@ interface PaginationFooter {
 
 export const PaginationFooter = ({ pageCount = 0 }: PaginationFooter) => {
   const [{ query }, setQuery] = useQueryParams();
-  const pageSize = (query as any)?.pageSize || '10';
+  const pageSize = (query as any)?.pageSize || "10";
 
   const handlePageSizeChange = (value: string) => {
     setQuery({ pageSize: value, page: 1 });

@@ -15,7 +15,7 @@ export const hasPasswordProvider = (user: User | null): boolean => {
   }
 
   // Check if any provider is "password"
-  return user.providerData.some(provider => provider.providerId === "password");
+  return user.providerData.some((provider) => provider.providerId === "password");
 };
 
 /**
@@ -33,17 +33,17 @@ export const getPasswordResetTooltip = (user: User | null): string => {
     return "User has no authentication providers";
   }
 
-  const providers = user.providerData.map(p => p.providerId).join(", ");
+  const providers = user.providerData.map((p) => p.providerId).join(", ");
 
-  if (user.providerData.some(p => p.providerId === "phone")) {
+  if (user.providerData.some((p) => p.providerId === "phone")) {
     return `This user authenticates with phone number only. Password reset is not available.`;
   }
 
-  if (user.providerData.some(p => p.providerId === "google.com")) {
+  if (user.providerData.some((p) => p.providerId === "google.com")) {
     return `This user authenticates with Google. Please use Google's account recovery.`;
   }
 
-  if (user.providerData.some(p => p.providerId === "apple.com")) {
+  if (user.providerData.some((p) => p.providerId === "apple.com")) {
     return `This user authenticates with Apple. Please use Apple's account recovery.`;
   }
 

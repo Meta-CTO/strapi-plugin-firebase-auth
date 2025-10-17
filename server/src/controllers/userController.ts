@@ -77,8 +77,8 @@ export default {
 
     // Use config values or simple defaults
     const passwordRegex = configObject?.passwordRequirementsRegex || "^.{6,}$";
-    const passwordMessage = configObject?.passwordRequirementsMessage ||
-      "Password must be at least 6 characters long";
+    const passwordMessage =
+      configObject?.passwordRequirementsMessage || "Password must be at least 6 characters long";
 
     // Validate password using dynamic config
     if (!password) {

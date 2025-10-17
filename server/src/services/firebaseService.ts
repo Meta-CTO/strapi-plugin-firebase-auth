@@ -4,7 +4,7 @@ import { generateReferralCode } from "../utils";
 import { promiseHandler } from "../utils/promiseHandler";
 
 // Default email pattern - matches the default in server/config/index.ts
-const DEFAULT_EMAIL_PATTERN = '{randomString}@phone-user.firebase.local';
+const DEFAULT_EMAIL_PATTERN = "{randomString}@phone-user.firebase.local";
 
 /**
  * Generate a fake email for phone-only users based on configured pattern
@@ -22,18 +22,16 @@ const createFakeEmail = async (phoneNumber?: string, pattern?: string) => {
   while (retryCount < MAX_RETRIES) {
     const randomString = generateReferralCode(8).toLowerCase();
     const timestamp = Date.now().toString();
-    const phoneDigits = phoneNumber ? phoneNumber.replace(/[^0-9]/g, '') : '';
+    const phoneDigits = phoneNumber ? phoneNumber.replace(/[^0-9]/g, "") : "";
 
     let fakeEmail = emailPattern
-      .replace('{randomString}', randomString)
-      .replace('{timestamp}', timestamp)
-      .replace('{phoneNumber}', phoneDigits);
+      .replace("{randomString}", randomString)
+      .replace("{timestamp}", timestamp)
+      .replace("{phoneNumber}", phoneDigits);
 
-    const existingUser = await strapi.db
-      .query("plugin::users-permissions.user")
-      .findOne({
-        where: { email: fakeEmail },
-      });
+    const existingUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+      where: { email: fakeEmail },
+    });
 
     if (!existingUser) {
       return fakeEmail;
@@ -44,14 +42,14 @@ const createFakeEmail = async (phoneNumber?: string, pattern?: string) => {
 
   throw new errors.ValidationError(
     `[Firebase Auth Plugin] Failed to generate unique email after ${MAX_RETRIES} attempts.\n` +
-    `Pattern used: "${emailPattern}"\n` +
-    `Phone number: "${phoneNumber || 'N/A'}"\n\n` +
-    `This usually means your emailPattern doesn't include enough uniqueness.\n` +
-    `Make sure your pattern includes {randomString} or {timestamp} tokens.\n\n` +
-    `Valid pattern examples:\n` +
-    `  - "phone_{phoneNumber}_{randomString}@myapp.local"\n` +
-    `  - "user_{timestamp}@temp.local"\n` +
-    `  - "{randomString}@phone-user.firebase.local"`
+      `Pattern used: "${emailPattern}"\n` +
+      `Phone number: "${phoneNumber || "N/A"}"\n\n` +
+      `This usually means your emailPattern doesn't include enough uniqueness.\n` +
+      `Make sure your pattern includes {randomString} or {timestamp} tokens.\n\n` +
+      `Valid pattern examples:\n` +
+      `  - "phone_{phoneNumber}_{randomString}@myapp.local"\n` +
+      `  - "user_{timestamp}@temp.local"\n` +
+      `  - "{randomString}@phone-user.firebase.local"`
   );
 };
 
@@ -66,7 +64,7 @@ const generateUsernameFromPhone = async (phoneNumber: string): Promise<string> =
   const MAX_RETRIES = 10;
 
   // Strip all non-numeric characters
-  const phoneDigits = phoneNumber.replace(/[^0-9]/g, '');
+  const phoneDigits = phoneNumber.replace(/[^0-9]/g, "");
 
   // Truncate to 20 characters if needed (username max length)
   let username = phoneDigits.substring(0, 20);
@@ -74,7 +72,9 @@ const generateUsernameFromPhone = async (phoneNumber: string): Promise<string> =
   // Ensure minimum length of 5 characters
   if (username.length < 5) {
     // Pad with random digits if phone number is too short
-    const randomDigits = Math.random().toString().substring(2, 7 - username.length);
+    const randomDigits = Math.random()
+      .toString()
+      .substring(2, 7 - username.length);
     username = username + randomDigits;
   }
 
@@ -105,7 +105,7 @@ const generateUsernameFromPhone = async (phoneNumber: string): Promise<string> =
 
   throw new errors.ValidationError(
     `[Firebase Auth Plugin] Failed to generate unique username from phone number after ${MAX_RETRIES} attempts.\n` +
-    `Phone number: "${phoneNumber}"`
+      `Phone number: "${phoneNumber}"`
   );
 };
 
@@ -397,11 +397,11 @@ export default ({ strapi }) => ({
     if (!config || !config.firebaseWebApiKey) {
       throw new errors.ApplicationError(
         "Email/password authentication is not available. Web API Key is not configured.\n\n" +
-        "To enable email/password authentication:\n" +
-        "1. Go to Firebase Console > Project Settings > General\n" +
-        "2. Copy your Web API Key\n" +
-        "3. Add it in Strapi Admin > Settings > Firebase Authentication > Optional Settings\n\n" +
-        "Alternatively, use Firebase Client SDK for authentication and exchange the ID token."
+          "To enable email/password authentication:\n" +
+          "1. Go to Firebase Console > Project Settings > General\n" +
+          "2. Copy your Web API Key\n" +
+          "3. Add it in Strapi Admin > Settings > Firebase Authentication > Optional Settings\n\n" +
+          "Alternatively, use Firebase Client SDK for authentication and exchange the ID token."
       );
     }
 
@@ -511,25 +511,19 @@ export default ({ strapi }) => ({
 
     const resetUrl = config?.passwordResetUrl;
     if (!resetUrl) {
-      throw new errors.ApplicationError(
-        "Password reset URL is not configured"
-      );
+      throw new errors.ApplicationError("Password reset URL is not configured");
     }
 
     // Validate URL security in production
-    if (process.env.NODE_ENV === 'production' && !resetUrl.startsWith('https://')) {
-      throw new errors.ApplicationError(
-        "Password reset URL must use HTTPS in production"
-      );
+    if (process.env.NODE_ENV === "production" && !resetUrl.startsWith("https://")) {
+      throw new errors.ApplicationError("Password reset URL must use HTTPS in production");
     }
 
     // Validate URL format
     try {
       new URL(resetUrl);
     } catch (error) {
-      throw new errors.ApplicationError(
-        "Password reset URL is not a valid URL format"
-      );
+      throw new errors.ApplicationError("Password reset URL is not a valid URL format");
     }
 
     try {
@@ -547,19 +541,19 @@ export default ({ strapi }) => ({
       if (firebaseUser) {
         // Found in Firebase, now find corresponding Strapi user using Query Engine API
         strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-          where: { firebaseUserID: firebaseUser.uid }
+          where: { firebaseUserID: firebaseUser.uid },
         });
 
         // Fallback: try by email
         if (!strapiUser) {
           strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-            where: { email: email }
+            where: { email: email },
           });
         }
       } else {
         // Not in Firebase, check Strapi only
         strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-          where: { email: email }
+          where: { email: email },
         });
       }
 
@@ -571,7 +565,7 @@ export default ({ strapi }) => ({
       // Generate 1-hour JWT using numeric id for auth middleware compatibility
       const jwtService = strapi.plugin("users-permissions").service("jwt");
       const token = jwtService.issue(
-        { id: strapiUser.id },  // Use numeric id, not documentId
+        { id: strapiUser.id }, // Use numeric id, not documentId
         { expiresIn: "1h" }
       );
 
@@ -586,13 +580,13 @@ export default ({ strapi }) => ({
 
       // Security: Always return same message
       return {
-        message: "If an account with that email exists, a password reset link has been sent."
+        message: "If an account with that email exists, a password reset link has been sent.",
       };
     } catch (error) {
       strapi.log.error("forgotPassword error:", error);
       // Security: Don't reveal internal errors
       return {
-        message: "If an account with that email exists, a password reset link has been sent."
+        message: "If an account with that email exists, a password reset link has been sent.",
       };
     }
   },
@@ -631,8 +625,8 @@ export default ({ strapi }) => ({
 
     // Validate password against configured regex (with schema default fallback)
     const passwordRegex = config?.passwordRequirementsRegex || "^.{6,}$";
-    const passwordMessage = config?.passwordRequirementsMessage ||
-      "Password must be at least 6 characters long";
+    const passwordMessage =
+      config?.passwordRequirementsMessage || "Password must be at least 6 characters long";
 
     const regex = new RegExp(passwordRegex);
     if (!regex.test(password)) {
@@ -642,7 +636,7 @@ export default ({ strapi }) => ({
     try {
       // Get Strapi user using Query Engine API with numeric id from JWT
       const strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-        where: { id: decoded.id }  // Use numeric id from JWT
+        where: { id: decoded.id }, // Use numeric id from JWT
       });
 
       if (!strapiUser) {
@@ -655,15 +649,13 @@ export default ({ strapi }) => ({
           password,
         });
       } else {
-        throw new errors.ValidationError(
-          "User is not linked to Firebase authentication"
-        );
+        throw new errors.ValidationError("User is not linked to Firebase authentication");
       }
 
       // Generate fresh JWT for auto-login using numeric id
       const jwtService = strapi.plugin("users-permissions").service("jwt");
       const jwt = jwtService.issue({
-        id: strapiUser.id,  // Use numeric id for consistency
+        id: strapiUser.id, // Use numeric id for consistency
       });
 
       // Return user + JWT (same format as validateFirebaseToken)

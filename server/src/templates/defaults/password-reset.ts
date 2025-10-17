@@ -1,7 +1,7 @@
-import { EmailTemplate } from '../types';
+import { EmailTemplate } from "../types";
 
 export const passwordResetTemplate: EmailTemplate = {
-  subject: 'Reset Your Password - <%= appName %>',
+  subject: "Reset Your Password - <%= appName %>",
 
   html: `
 <!DOCTYPE html>

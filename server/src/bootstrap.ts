@@ -34,8 +34,8 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   await strapi.admin.services.permission.actionProvider.registerMany(actions);
 
   // Register content-api permissions for public access
-  if (strapi.plugin('users-permissions')) {
-    const userPermissionsService = strapi.plugin('users-permissions').service('users-permissions');
+  if (strapi.plugin("users-permissions")) {
+    const userPermissionsService = strapi.plugin("users-permissions").service("users-permissions");
 
     // Register firebase-authentication content-api routes
     userPermissionsService.initialize();

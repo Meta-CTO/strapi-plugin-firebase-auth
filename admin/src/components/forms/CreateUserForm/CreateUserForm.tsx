@@ -14,14 +14,7 @@ const CreateUserForm = () => {
   const { toggleNotification } = useNotification();
   const navigate = useNavigate();
 
-  const {
-    userData,
-    emailError,
-    phoneError,
-    hasBeenTouched,
-    handlers,
-    isSubmitDisabled
-  } = useUserForm();
+  const { userData, emailError, phoneError, hasBeenTouched, handlers, isSubmitDisabled } = useUserForm();
 
   const createUserHandler = useCallback(async () => {
     setIsLoading(true);
@@ -39,7 +32,8 @@ const CreateUserForm = () => {
       navigate(`/plugins/${PLUGIN_ID}?sort=createdAt:DESC`);
     } catch (error) {
       console.error("Error creating user:", error);
-      const errorMessage = error instanceof Error ? error.message : "An error occurred while creating the user";
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred while creating the user";
       toggleNotification({
         type: "danger",
         message: errorMessage,

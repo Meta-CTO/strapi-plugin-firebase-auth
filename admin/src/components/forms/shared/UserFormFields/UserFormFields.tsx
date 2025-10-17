@@ -1,7 +1,7 @@
 import React from "react";
 import { TextInput, Toggle, Field } from "@strapi/design-system";
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 import styled from "styled-components";
 import { User } from "../../../../../../model/User";
 
@@ -21,7 +21,9 @@ const StyledPhoneInputWrapper = styled.div`
       background: ${({ theme }) => theme.colors.neutral0};
       color: ${({ theme }) => theme.colors.neutral800};
       font-size: 14px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans",
+        "Droid Sans", "Helvetica Neue", sans-serif;
       transition: all 0.2s;
 
       &:hover {
@@ -100,7 +102,9 @@ const StyledPhoneInputWrapper = styled.div`
         background: ${({ theme }) => theme.colors.neutral0};
         color: ${({ theme }) => theme.colors.neutral800};
         font-size: 14px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans",
+          "Droid Sans", "Helvetica Neue", sans-serif;
 
         &:focus {
           border-color: ${({ theme }) => theme.colors.primary600};
@@ -120,7 +124,9 @@ const StyledPhoneInputWrapper = styled.div`
       cursor: pointer;
       font-size: 14px;
       color: ${({ theme }) => theme.colors.neutral800};
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans",
+        "Droid Sans", "Helvetica Neue", sans-serif;
 
       &:hover {
         background: ${({ theme }) => theme.colors.neutral100};
@@ -171,7 +177,12 @@ export const UserFormFields = ({
     <>
       <Field.Root
         style={{ width: "50%" }}
-        error={emailError || (hasBeenTouched && !userData?.email && !userData?.phoneNumber ? "Email or Phone Number is required" : undefined)}
+        error={
+          emailError ||
+          (hasBeenTouched && !userData?.email && !userData?.phoneNumber
+            ? "Email or Phone Number is required"
+            : undefined)
+        }
       >
         <Field.Label>Email</Field.Label>
         <TextInput
@@ -200,29 +211,29 @@ export const UserFormFields = ({
         <Field.Label>Phone Number</Field.Label>
         <StyledPhoneInputWrapper>
           <PhoneInput
-            value={userData.phoneNumber || ''}
-            onChange={(phone) => onPhoneChange('+' + phone)}
-            country={'us'}
+            value={userData.phoneNumber || ""}
+            onChange={(phone) => onPhoneChange("+" + phone)}
+            country={"us"}
             enableSearch={true}
             searchPlaceholder="Search countries..."
             searchStyle={{
-              width: '100%',
-              padding: '8px'
+              width: "100%",
+              padding: "8px",
             }}
             inputProps={{
-              placeholder: '+1 (555) 000-0000'
+              placeholder: "+1 (555) 000-0000",
             }}
             containerStyle={{
-              width: '100%'
+              width: "100%",
             }}
             inputStyle={{
-              width: '100%'
+              width: "100%",
             }}
             buttonStyle={{
-              borderRight: 'none'
+              borderRight: "none",
             }}
             dropdownStyle={{
-              width: '300px'
+              width: "300px",
             }}
           />
         </StyledPhoneInputWrapper>

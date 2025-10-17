@@ -31,4 +31,4 @@ export interface TemplateVariables {
   supportEmail?: string;
 }
 
-export type TemplateType = 'passwordReset'; // Add more as needed
+export type TemplateType = "passwordReset"; // Add more as needed

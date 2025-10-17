@@ -1,1 +1,1 @@
-export { passwordResetTemplate } from './password-reset';
+export { passwordResetTemplate } from "./password-reset";

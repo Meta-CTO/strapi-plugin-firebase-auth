@@ -35,7 +35,7 @@ interface PageTokens {
 }
 
 interface ListViewProps {
-  data?: User[];  // Made optional - ListView fetches its own data
+  data?: User[]; // Made optional - ListView fetches its own data
   meta?: ResponseMeta;
 }
 
@@ -62,7 +62,7 @@ function ListView({ data, meta }: ListViewProps) {
   // Initialize with empty state - ListView fetches its own data
   const [rowsData, setRowsData] = useState<User[]>([]);
   const [rowsMeta, setRowsMeta] = useState<ResponseMeta>({
-    pagination: { page: 1, pageCount: 1, pageSize: 10, total: 0 }
+    pagination: { page: 1, pageCount: 1, pageSize: 10, total: 0 },
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -243,7 +243,11 @@ function ListView({ data, meta }: ListViewProps) {
   }, [navigate]);
 
   const getCreateAction = useCallback(
-    () => <Button onClick={handleNavigateToCreate} startIcon={<Plus />}>Create</Button>,
+    () => (
+      <Button onClick={handleNavigateToCreate} startIcon={<Plus />}>
+        Create
+      </Button>
+    ),
     [handleNavigateToCreate]
   );
 

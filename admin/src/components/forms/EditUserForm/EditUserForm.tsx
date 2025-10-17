@@ -1,11 +1,5 @@
 import React, { useState, useCallback } from "react";
-import {
-  Box,
-  Typography,
-  Flex,
-  Link,
-  Divider,
-} from "@strapi/design-system";
+import { Box, Typography, Flex, Link, Divider } from "@strapi/design-system";
 import { useNotification, Page, Layouts } from "@strapi/strapi/admin";
 import { Pencil } from "@strapi/icons";
 import { format } from "date-fns";
@@ -62,14 +56,7 @@ const EditUserForm = ({ data }: EditFormProps) => {
   const location = useLocation();
   const locationState = (location.state as LocationState) || {};
 
-  const {
-    userData,
-    setUserData,
-    emailError,
-    phoneError,
-    handlers,
-    isSubmitDisabled
-  } = useUserForm(data);
+  const { userData, setUserData, emailError, phoneError, handlers, isSubmitDisabled } = useUserForm(data);
 
   const updateUserHandler = useCallback(async () => {
     setIsLoading(true);
@@ -113,161 +100,159 @@ const EditUserForm = ({ data }: EditFormProps) => {
         <UserFormLayout
           sidebar={
             <>
-            <Box
-              as="aside"
-              background="neutral0"
-              borderColor="neutral150"
-              hasRadius
-              paddingBottom={2}
-              paddingLeft={4}
-              paddingRight={4}
-              paddingTop={2}
-              shadow="tableShadow"
-            >
-              {userData.providerData?.map((provider: ProviderItem, index: number) => (
-                <Flex
-                  key={index}
-                  paddingTop={2}
-                  paddingBottom={2}
-                  direction="column"
-                  alignItems="flex-start"
-                  gap={2}
-                >
-                  <Flex gap={1}>
-                    <Typography variant="sigma" textColor="neutral600">
-                      Provider Id:
-                    </Typography>
-                    <Typography variant="sigma" textColor="neutral600">
-                      {provider.providerId}
-                    </Typography>
-                  </Flex>
-                  <Flex gap={1}>
-                    <Typography variant="sigma" textColor="neutral600">
-                      UID:
-                    </Typography>
-                    <Typography variant="sigma" textColor="neutral600">
-                      {provider.uid}
-                    </Typography>
-                  </Flex>
-                  {locationState?.strapiId && (
-                    <Flex gap={1}>
-                      <Typography variant="sigma" textColor="neutral600">
-                        Strapi ID:
-                      </Typography>
-                      <Link
-                        onClick={() => {
-                          navigate(
-                            `/content-manager/collection-types/plugin::users-permissions.user/${locationState.strapiId}`
-                          );
-                        }}
-                        style={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
-                      >
-                        <Typography variant="sigma">
-                          {locationState.strapiId}
-                        </Typography>
-                      </Link>
-                    </Flex>
-                  )}
-                </Flex>
-              ))}
-              <Divider />
-              <Flex paddingTop={2} paddingBottom={2} direction="column" alignItems="flex-start">
-                {userData.metadata?.lastSignInTime && (
-                  <MetaWrapper>
-                    <Typography variant="sigma" textColor="neutral600">
-                      Last Sign In Time
-                    </Typography>
-                    <Typography variant="sigma" textColor="neutral600">
-                      {format(new Date(userData.metadata.lastSignInTime), "yyyy/MM/dd HH:mm z")}
-                    </Typography>
-                  </MetaWrapper>
-                )}
-                {(userData.metadata?.creationTime || userData.createdAt) && (
-                  <MetaWrapper>
-                    <Typography variant="sigma" textColor="neutral600">
-                      Creation Time
-                    </Typography>
-                    <Typography variant="sigma" textColor="neutral600">
-                      {userData.metadata?.creationTime
-                        ? format(new Date(userData.metadata.creationTime), "yyyy/MM/dd HH:mm z")
-                        : userData.createdAt
-                        ? format(new Date(userData.createdAt), "yyyy/MM/dd HH:mm z")
-                        : "-"}
-                    </Typography>
-                  </MetaWrapper>
-                )}
-              </Flex>
-            </Box>
-
-            <Box marginTop={5} marginBottom={5} />
-
-            {/* Password Reset Button */}
-            <Box
-              as="aside"
-              background="neutral0"
-              borderColor="neutral150"
-              hasRadius
-              paddingBottom={4}
-              paddingLeft={4}
-              paddingRight={4}
-              paddingTop={4}
-              shadow="tableShadow"
-            >
-              <Typography variant="sigma" textColor="neutral600" marginBottom={2}>
-                Account Actions
-              </Typography>
-              <PasswordResetButton
-                user={userData as User}
-                fullWidth
-                onClick={() => {
-                  // Placeholder - will be implemented in Phase 2
-                  console.log("Password reset clicked for user:", userData.uid);
-                  toggleNotification({
-                    type: "info",
-                    message: "Password reset modal will be implemented in Phase 2",
-                  });
-                }}
-              />
-            </Box>
-
-            <Box marginTop={5} marginBottom={5} />
-            {userData.localUser && (
               <Box
                 as="aside"
                 background="neutral0"
                 borderColor="neutral150"
                 hasRadius
-                paddingBottom={1}
-                paddingLeft={2}
-                paddingRight={2}
-                paddingTop={1}
+                paddingBottom={2}
+                paddingLeft={4}
+                paddingRight={4}
+                paddingTop={2}
                 shadow="tableShadow"
               >
-                <Box paddingTop={2} paddingBottom={2}>
-                  <DetailsButtonWrapper>
-                    <Link
-                      startIcon={<Pencil />}
-                      onClick={() =>
-                        navigate(
-                          `/content-manager/collection-types/plugin::users-permissions.user/${userData.localUser?.id}`
-                        )
-                      }
-                      style={{ cursor: "pointer" }}
-                    >
-                      Details
-                    </Link>
-                  </DetailsButtonWrapper>
-                  <ContentWrapper>
-                    <Typography variant="sigma" textColor="neutral600">
-                      local user:
-                    </Typography>
-                    <Typography variant="sigma" textColor="neutral600">
-                      {userData.localUser.username}
-                    </Typography>
-                  </ContentWrapper>
-                </Box>
+                {userData.providerData?.map((provider: ProviderItem, index: number) => (
+                  <Flex
+                    key={index}
+                    paddingTop={2}
+                    paddingBottom={2}
+                    direction="column"
+                    alignItems="flex-start"
+                    gap={2}
+                  >
+                    <Flex gap={1}>
+                      <Typography variant="sigma" textColor="neutral600">
+                        Provider Id:
+                      </Typography>
+                      <Typography variant="sigma" textColor="neutral600">
+                        {provider.providerId}
+                      </Typography>
+                    </Flex>
+                    <Flex gap={1}>
+                      <Typography variant="sigma" textColor="neutral600">
+                        UID:
+                      </Typography>
+                      <Typography variant="sigma" textColor="neutral600">
+                        {provider.uid}
+                      </Typography>
+                    </Flex>
+                    {locationState?.strapiId && (
+                      <Flex gap={1}>
+                        <Typography variant="sigma" textColor="neutral600">
+                          Strapi ID:
+                        </Typography>
+                        <Link
+                          onClick={() => {
+                            navigate(
+                              `/content-manager/collection-types/plugin::users-permissions.user/${locationState.strapiId}`
+                            );
+                          }}
+                          style={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
+                        >
+                          <Typography variant="sigma">{locationState.strapiId}</Typography>
+                        </Link>
+                      </Flex>
+                    )}
+                  </Flex>
+                ))}
+                <Divider />
+                <Flex paddingTop={2} paddingBottom={2} direction="column" alignItems="flex-start">
+                  {userData.metadata?.lastSignInTime && (
+                    <MetaWrapper>
+                      <Typography variant="sigma" textColor="neutral600">
+                        Last Sign In Time
+                      </Typography>
+                      <Typography variant="sigma" textColor="neutral600">
+                        {format(new Date(userData.metadata.lastSignInTime), "yyyy/MM/dd HH:mm z")}
+                      </Typography>
+                    </MetaWrapper>
+                  )}
+                  {(userData.metadata?.creationTime || userData.createdAt) && (
+                    <MetaWrapper>
+                      <Typography variant="sigma" textColor="neutral600">
+                        Creation Time
+                      </Typography>
+                      <Typography variant="sigma" textColor="neutral600">
+                        {userData.metadata?.creationTime
+                          ? format(new Date(userData.metadata.creationTime), "yyyy/MM/dd HH:mm z")
+                          : userData.createdAt
+                            ? format(new Date(userData.createdAt), "yyyy/MM/dd HH:mm z")
+                            : "-"}
+                      </Typography>
+                    </MetaWrapper>
+                  )}
+                </Flex>
               </Box>
-            )}
+
+              <Box marginTop={5} marginBottom={5} />
+
+              {/* Password Reset Button */}
+              <Box
+                as="aside"
+                background="neutral0"
+                borderColor="neutral150"
+                hasRadius
+                paddingBottom={4}
+                paddingLeft={4}
+                paddingRight={4}
+                paddingTop={4}
+                shadow="tableShadow"
+              >
+                <Typography variant="sigma" textColor="neutral600" marginBottom={2}>
+                  Account Actions
+                </Typography>
+                <PasswordResetButton
+                  user={userData as User}
+                  fullWidth
+                  onClick={() => {
+                    // Placeholder - will be implemented in Phase 2
+                    console.log("Password reset clicked for user:", userData.uid);
+                    toggleNotification({
+                      type: "info",
+                      message: "Password reset modal will be implemented in Phase 2",
+                    });
+                  }}
+                />
+              </Box>
+
+              <Box marginTop={5} marginBottom={5} />
+              {userData.localUser && (
+                <Box
+                  as="aside"
+                  background="neutral0"
+                  borderColor="neutral150"
+                  hasRadius
+                  paddingBottom={1}
+                  paddingLeft={2}
+                  paddingRight={2}
+                  paddingTop={1}
+                  shadow="tableShadow"
+                >
+                  <Box paddingTop={2} paddingBottom={2}>
+                    <DetailsButtonWrapper>
+                      <Link
+                        startIcon={<Pencil />}
+                        onClick={() =>
+                          navigate(
+                            `/content-manager/collection-types/plugin::users-permissions.user/${userData.localUser?.id}`
+                          )
+                        }
+                        style={{ cursor: "pointer" }}
+                      >
+                        Details
+                      </Link>
+                    </DetailsButtonWrapper>
+                    <ContentWrapper>
+                      <Typography variant="sigma" textColor="neutral600">
+                        local user:
+                      </Typography>
+                      <Typography variant="sigma" textColor="neutral600">
+                        {userData.localUser.username}
+                      </Typography>
+                    </ContentWrapper>
+                  </Box>
+                </Box>
+              )}
             </>
           }
         >

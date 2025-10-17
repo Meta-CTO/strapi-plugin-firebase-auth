@@ -8,12 +8,7 @@ interface UserFormLayoutProps {
 
 export const UserFormLayout = ({ children, sidebar }: UserFormLayoutProps) => {
   return (
-    <Flex
-      direction="row"
-      alignItems="stretch"
-      gap={4}
-      width="100%"
-    >
+    <Flex direction="row" alignItems="stretch" gap={4} width="100%">
       <Box
         background="neutral0"
         borderColor="neutral150"

@@ -49,7 +49,7 @@ export default {
   default: ({ env }) => ({
     firebaseJsonEncryptionKey: env("FIREBASE_JSON_ENCRYPTION_KEY", "your-key-here"),
     emailRequired: true,
-    emailPattern: '{randomString}@phone-user.firebase.local',
+    emailPattern: "{randomString}@phone-user.firebase.local",
   }),
   validator(config: FirebaseAuthConfig) {
     if (!config.firebaseJsonEncryptionKey) {
@@ -58,27 +58,26 @@ export default {
 
     // Validate emailPattern when emailRequired is true
     if (config.emailRequired) {
-      if (!config.emailPattern || config.emailPattern.trim() === '') {
+      if (!config.emailPattern || config.emailPattern.trim() === "") {
         throw new Error(
-          '[Firebase Auth Plugin] emailPattern is required when emailRequired is true.\n' +
-          'Available tokens: {randomString}, {phoneNumber}, {timestamp}\n' +
-          'Example: "phone_{phoneNumber}_{randomString}@myapp.local"'
+          "[Firebase Auth Plugin] emailPattern is required when emailRequired is true.\n" +
+            "Available tokens: {randomString}, {phoneNumber}, {timestamp}\n" +
+            'Example: "phone_{phoneNumber}_{randomString}@myapp.local"'
         );
       }
 
       // Ensure pattern includes uniqueness tokens
       const hasUniqueness =
-        config.emailPattern.includes('{randomString}') ||
-        config.emailPattern.includes('{timestamp}');
+        config.emailPattern.includes("{randomString}") || config.emailPattern.includes("{timestamp}");
 
       if (!hasUniqueness) {
         throw new Error(
-          '[Firebase Auth Plugin] emailPattern must include {randomString} or {timestamp} for uniqueness.\n' +
-          `Your pattern: "${config.emailPattern}"\n` +
-          'Valid examples:\n' +
-          '  - "phone_{phoneNumber}_{randomString}@myapp.local"\n' +
-          '  - "user_{timestamp}@temp.local"\n' +
-          '  - "{randomString}@phone-user.firebase.local"'
+          "[Firebase Auth Plugin] emailPattern must include {randomString} or {timestamp} for uniqueness.\n" +
+            `Your pattern: "${config.emailPattern}"\n` +
+            "Valid examples:\n" +
+            '  - "phone_{phoneNumber}_{randomString}@myapp.local"\n' +
+            '  - "user_{timestamp}@temp.local"\n' +
+            '  - "{randomString}@phone-user.firebase.local"'
         );
       }
     }

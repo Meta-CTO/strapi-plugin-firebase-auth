@@ -7,18 +7,22 @@ export const restartServer = async () => {
   await post(url);
 };
 
-export const saveFirebaseConfig = async (json: string, firebaseWebApiKey?: string, passwordConfig?: {
-  passwordRequirementsRegex?: string;
-  passwordRequirementsMessage?: string;
-  passwordResetUrl?: string;
-  passwordResetEmailSubject?: string;
-}) => {
+export const saveFirebaseConfig = async (
+  json: string,
+  firebaseWebApiKey?: string,
+  passwordConfig?: {
+    passwordRequirementsRegex?: string;
+    passwordRequirementsMessage?: string;
+    passwordResetUrl?: string;
+    passwordResetEmailSubject?: string;
+  }
+) => {
   const url = `/${PLUGIN_ID}/settings/firebase-config`;
   const { post } = getFetchClient();
   const { data } = await post(url, {
     firebaseConfigJson: json,
     firebaseWebApiKey,
-    ...passwordConfig
+    ...passwordConfig,
   });
   return data;
 };

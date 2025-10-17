@@ -3,7 +3,13 @@ import { JSONInput, Flex, Box, Button, Typography, TextInput, Textarea } from "@
 
 import { Page } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
-import { delFirebaseConfig, getFirebaseConfig, restartServer, saveFirebaseConfig, savePasswordSettings } from "./api";
+import {
+  delFirebaseConfig,
+  getFirebaseConfig,
+  restartServer,
+  saveFirebaseConfig,
+  savePasswordSettings,
+} from "./api";
 import { Trash } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 
@@ -15,7 +21,9 @@ function SettingsPage() {
   const [showOptionalSettings, setShowOptionalSettings] = useState<boolean>(false);
   // Password reset configuration fields
   const [passwordRequirementsRegex, setPasswordRequirementsRegex] = useState<string>("^.{6,}$");
-  const [passwordRequirementsMessage, setPasswordRequirementsMessage] = useState<string>("Password must be at least 6 characters long");
+  const [passwordRequirementsMessage, setPasswordRequirementsMessage] = useState<string>(
+    "Password must be at least 6 characters long"
+  );
   const [passwordResetUrl, setPasswordResetUrl] = useState<string>("http://localhost:3000/reset-password");
   const [passwordResetEmailSubject, setPasswordResetEmailSubject] = useState<string>("Reset Your Password");
   const [loading, setLoading] = useState(true);
@@ -37,7 +45,9 @@ function SettingsPage() {
         setFirebaseWebApiKey(data?.firebaseWebApiKey || "");
         // Load password reset configuration fields
         setPasswordRequirementsRegex(data?.passwordRequirementsRegex || "^.{6,}$");
-        setPasswordRequirementsMessage(data?.passwordRequirementsMessage || "Password must be at least 6 characters long");
+        setPasswordRequirementsMessage(
+          data?.passwordRequirementsMessage || "Password must be at least 6 characters long"
+        );
         setPasswordResetUrl(data?.passwordResetUrl || "http://localhost:3000/reset-password");
         setPasswordResetEmailSubject(data?.passwordResetEmailSubject || "Reset Your Password");
       })
@@ -175,10 +185,14 @@ function SettingsPage() {
         <Box style={{ width: "100%" }}>
           {/* Section 1: Firebase Authentication Configuration */}
           <Box marginBottom={6} padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow">
-            <Typography variant="alpha" as="h2" style={{ display: 'block', marginBottom: '8px' }}>
+            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
               🔐 Firebase Authentication
             </Typography>
-            <Typography variant="omega" textColor="neutral600" style={{ display: 'block', marginBottom: '24px' }}>
+            <Typography
+              variant="omega"
+              textColor="neutral600"
+              style={{ display: "block", marginBottom: "24px" }}
+            >
               Configure your Firebase service account (API key optional)
             </Typography>
 
@@ -187,7 +201,11 @@ function SettingsPage() {
               return !firebaseJsonValue || !firebaseJsonValue.firebaseConfigJson ? (
                 <>
                   <Box>
-                    <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '8px' }}>
+                    <Typography
+                      variant="omega"
+                      fontWeight="bold"
+                      style={{ display: "block", marginBottom: "8px" }}
+                    >
                       Firebase Service Account JSON *
                     </Typography>
                     <JSONInput
@@ -216,18 +234,24 @@ function SettingsPage() {
                     {showOptionalSettings && (
                       <Box padding={3} background="neutral100" borderRadius="4px">
                         <Typography variant="omega" marginBottom={3}>
-                          The Web API Key is only needed if you want to use the emailLogin endpoint.
-                          Most users should authenticate with Firebase Client SDK instead.
+                          The Web API Key is only needed if you want to use the emailLogin endpoint. Most
+                          users should authenticate with Firebase Client SDK instead.
                         </Typography>
 
                         <Box marginTop={3}>
-                          <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '8px' }}>
+                          <Typography
+                            variant="omega"
+                            fontWeight="bold"
+                            style={{ display: "block", marginBottom: "8px" }}
+                          >
                             Firebase Web API Key (Optional)
                           </Typography>
                           <TextInput
                             name="firebaseWebApiKey"
                             value={firebaseWebApiKey}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFirebaseWebApiKey(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                              setFirebaseWebApiKey(e.target.value)
+                            }
                             placeholder="AIzaSy... (your Web API Key)"
                             hint="Only required for email/password login endpoint"
                           />
@@ -240,13 +264,18 @@ function SettingsPage() {
                           <ol style={{ marginLeft: 20, marginTop: 8 }}>
                             <li>
                               <Typography variant="omega">
-                                Go to <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">Firebase Console</a>
+                                Go to{" "}
+                                <a
+                                  href="https://console.firebase.google.com"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Firebase Console
+                                </a>
                               </Typography>
                             </li>
                             <li>
-                              <Typography variant="omega">
-                                Select your project
-                              </Typography>
+                              <Typography variant="omega">Select your project</Typography>
                             </li>
                             <li>
                               <Typography variant="omega">
@@ -268,9 +297,9 @@ function SettingsPage() {
 
                         <Box marginTop={3} padding={2} background="warning100" borderRadius="4px">
                           <Typography variant="omega" textColor="warning700">
-                            ⚠️ <strong>Recommendation:</strong> Instead of using emailLogin endpoint, authenticate users
-                            on the client side using Firebase SDK and exchange the ID token. This is more secure and doesn't
-                            require the Web API Key configuration.
+                            ⚠️ <strong>Recommendation:</strong> Instead of using emailLogin endpoint,
+                            authenticate users on the client side using Firebase SDK and exchange the ID
+                            token. This is more secure and doesn't require the Web API Key configuration.
                           </Typography>
                         </Box>
                       </Box>
@@ -295,18 +324,16 @@ function SettingsPage() {
 
                   {/* Setup Instructions - Inside the Firebase section */}
                   <Box marginTop={6} paddingTop={4} style={{ borderTop: "1px solid #eaeaef" }}>
-                    <Typography variant="beta" marginBottom={3}>How to setup Firebase Service Account JSON:</Typography>
-                    <Box
-                      padding={3}
-                      background="warning100"
-                      borderRadius="4px"
-                      marginBottom={4}
-                    >
+                    <Typography variant="beta" marginBottom={3}>
+                      How to setup Firebase Service Account JSON:
+                    </Typography>
+                    <Box padding={3} background="warning100" borderRadius="4px" marginBottom={4}>
                       <Typography variant="omega" fontWeight="bold" textColor="warning700">
                         ⚠️ Security Warning
                       </Typography>
                       <Typography variant="omega" textColor="warning700" marginTop={1}>
-                        The Service Account JSON contains sensitive credentials with full admin access to your Firebase project. Never commit this file to version control or share it publicly.
+                        The Service Account JSON contains sensitive credentials with full admin access to your
+                        Firebase project. Never commit this file to version control or share it publicly.
                       </Typography>
                     </Box>
                     <Box marginLeft={4}>
@@ -325,7 +352,9 @@ function SettingsPage() {
                           </Typography>
                         </li>
                         <li style={{ marginTop: 16 }}>
-                          <Typography>Click the <strong>"Generate New Private Key"</strong> button</Typography>
+                          <Typography>
+                            Click the <strong>"Generate New Private Key"</strong> button
+                          </Typography>
                         </li>
                         <li style={{ marginTop: 16 }}>
                           <Typography>
@@ -334,38 +363,42 @@ function SettingsPage() {
                         </li>
                         <li style={{ marginTop: 16 }}>
                           <Typography>
-                            A JSON file will be downloaded (e.g., <code>your-project-firebase-adminsdk-xxxxx.json</code>)
+                            A JSON file will be downloaded (e.g.,{" "}
+                            <code>your-project-firebase-adminsdk-xxxxx.json</code>)
                           </Typography>
                         </li>
                         <li style={{ marginTop: 16 }}>
                           <Typography>
-                            Open the downloaded JSON file, copy its <strong>entire contents</strong>, and paste it in the "Firebase Service Account JSON" field above
+                            Open the downloaded JSON file, copy its <strong>entire contents</strong>, and
+                            paste it in the "Firebase Service Account JSON" field above
                           </Typography>
                         </li>
                         <li style={{ marginTop: 16 }}>
-                          <Typography>Click <strong>Submit</strong> to save your configuration</Typography>
+                          <Typography>
+                            Click <strong>Submit</strong> to save your configuration
+                          </Typography>
                         </li>
                         <li style={{ marginTop: 16 }}>
                           <Typography>
-                            <em>(Optional)</em> If you need email/password authentication, expand "Optional: Email/Password Authentication" and add your Web API Key
+                            <em>(Optional)</em> If you need email/password authentication, expand "Optional:
+                            Email/Password Authentication" and add your Web API Key
                           </Typography>
                         </li>
                       </ol>
                     </Box>
-                    <Box
-                      marginTop={4}
-                      padding={3}
-                      background="neutral100"
-                      borderRadius="4px"
-                    >
+                    <Box marginTop={4} padding={3} background="neutral100" borderRadius="4px">
                       <Typography variant="omega" fontWeight="bold">
                         📝 Note: Service Account JSON vs Web App Config
                       </Typography>
                       <Typography variant="omega" marginTop={2}>
-                        <strong>Service Account JSON</strong> (what you need here): Contains <code>private_key</code>, <code>client_email</code>, etc. Used for server-side Firebase Admin SDK operations. Download from <strong>Service Accounts tab</strong>.
+                        <strong>Service Account JSON</strong> (what you need here): Contains{" "}
+                        <code>private_key</code>, <code>client_email</code>, etc. Used for server-side
+                        Firebase Admin SDK operations. Download from <strong>Service Accounts tab</strong>.
                       </Typography>
                       <Typography variant="omega" marginTop={2}>
-                        <strong>Web App Config</strong> (NOT what you need): Contains <code>apiKey</code>, <code>authDomain</code>, etc. Used for client-side web apps. Found in SDK snippet - this is the wrong file!
+                        <strong>Web App Config</strong> (NOT what you need): Contains <code>apiKey</code>,{" "}
+                        <code>authDomain</code>, etc. Used for client-side web apps. Found in SDK snippet -
+                        this is the wrong file!
                       </Typography>
                     </Box>
                   </Box>
@@ -378,7 +411,8 @@ function SettingsPage() {
                         ✅ Firebase Configured
                       </Typography>
                       <Typography variant="omega" textColor="success700">
-                        Project: <strong>
+                        Project:{" "}
+                        <strong>
                           {firebaseJsonValue?.firebaseConfigJson &&
                             (() => {
                               try {
@@ -416,41 +450,49 @@ function SettingsPage() {
 
           {/* Section 2: Password Reset Configuration - Always Visible */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
-            <Typography variant="alpha" as="h2" style={{ display: 'block', marginBottom: '8px' }}>
+            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
               🔑 Password Reset Settings
             </Typography>
-            <Typography variant="omega" textColor="neutral600" style={{ display: 'block', marginBottom: '24px' }}>
+            <Typography
+              variant="omega"
+              textColor="neutral600"
+              style={{ display: "block", marginBottom: "24px" }}
+            >
               Configure password requirements and email settings for password reset functionality
             </Typography>
 
             <Box marginBottom={3}>
-              <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '8px' }}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
                 Password Requirements (Regex)
               </Typography>
               <TextInput
                 name="passwordRequirementsRegex"
                 value={passwordRequirementsRegex}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordRequirementsRegex(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPasswordRequirementsRegex(e.target.value)
+                }
                 placeholder="^.{6,}$"
                 hint="Regular expression to validate password strength. Default: ^.{6,}$ (min 6 characters)"
               />
             </Box>
 
             <Box marginBottom={3}>
-              <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '8px' }}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
                 Password Requirements Message
               </Typography>
               <Textarea
                 name="passwordRequirementsMessage"
                 value={passwordRequirementsMessage}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPasswordRequirementsMessage(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setPasswordRequirementsMessage(e.target.value)
+                }
                 placeholder="Password must be at least 6 characters long"
                 hint="Error message shown when password doesn't meet requirements"
               />
             </Box>
 
             <Box marginBottom={3}>
-              <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '8px' }}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
                 Password Reset URL *
               </Typography>
               <TextInput
@@ -464,13 +506,15 @@ function SettingsPage() {
             </Box>
 
             <Box marginBottom={3}>
-              <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '8px' }}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
                 Reset Email Subject
               </Typography>
               <TextInput
                 name="passwordResetEmailSubject"
                 value={passwordResetEmailSubject}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordResetEmailSubject(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setPasswordResetEmailSubject(e.target.value)
+                }
                 placeholder="Reset Your Password"
                 hint="Subject line for password reset emails"
               />
@@ -478,21 +522,27 @@ function SettingsPage() {
 
             {/* Helper Section for Common Patterns */}
             <Box marginTop={4} padding={3} background="neutral100" borderRadius="4px">
-              <Typography variant="omega" fontWeight="bold" style={{ display: 'block', marginBottom: '12px' }}>
+              <Typography
+                variant="omega"
+                fontWeight="bold"
+                style={{ display: "block", marginBottom: "12px" }}
+              >
                 Common Password Patterns:
               </Typography>
               <Box marginLeft={2}>
-                <Typography variant="omega" style={{ display: 'block', marginBottom: '8px' }}>
-                  • <code>{'^.{6,}$'}</code> - Minimum 6 characters (simple)
+                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                  • <code>{"^.{6,}$"}</code> - Minimum 6 characters (simple)
                 </Typography>
-                <Typography variant="omega" style={{ display: 'block', marginBottom: '8px' }}>
-                  • <code>{'^.{8,}$'}</code> - Minimum 8 characters
+                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                  • <code>{"^.{8,}$"}</code> - Minimum 8 characters
                 </Typography>
-                <Typography variant="omega" style={{ display: 'block', marginBottom: '8px' }}>
-                  • <code>{'^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$'}</code> - At least 8 chars with letters and numbers
+                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                  • <code>{"^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"}</code> - At least 8 chars with letters
+                  and numbers
                 </Typography>
-                <Typography variant="omega" style={{ display: 'block' }}>
-                  • <code>{'^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$'}</code> - Complex (upper, lower, number, special)
+                <Typography variant="omega" style={{ display: "block" }}>
+                  • <code>{"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"}</code> -
+                  Complex (upper, lower, number, special)
                 </Typography>
               </Box>
             </Box>
@@ -504,11 +554,7 @@ function SettingsPage() {
               }}
               justifyContent="flex-end"
             >
-              <Button
-                size="L"
-                variant="secondary"
-                onClick={handleSavePasswordSettings}
-              >
+              <Button size="L" variant="secondary" onClick={handleSavePasswordSettings}>
                 Save Password Settings
               </Button>
             </Flex>

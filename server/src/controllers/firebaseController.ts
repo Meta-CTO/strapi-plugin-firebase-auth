@@ -113,10 +113,7 @@ const firebaseController = {
   async forgotPassword(ctx) {
     strapi.log.debug("forgotPassword endpoint called");
     try {
-      ctx.body = await strapi
-        .plugin(pluginName)
-        .service("firebaseService")
-        .forgotPassword(ctx);
+      ctx.body = await strapi.plugin(pluginName).service("firebaseService").forgotPassword(ctx);
     } catch (error) {
       strapi.log.error("forgotPassword controller error:", error);
       if (error.name === "ValidationError") {
@@ -138,10 +135,7 @@ const firebaseController = {
   async resetPassword(ctx) {
     strapi.log.debug("resetPassword endpoint called");
     try {
-      ctx.body = await strapi
-        .plugin(pluginName)
-        .service("firebaseService")
-        .resetPassword(ctx);
+      ctx.body = await strapi.plugin(pluginName).service("firebaseService").resetPassword(ctx);
     } catch (error) {
       strapi.log.error("resetPassword controller error:", error);
       if (error.name === "ValidationError" || error.name === "UnauthorizedError") {

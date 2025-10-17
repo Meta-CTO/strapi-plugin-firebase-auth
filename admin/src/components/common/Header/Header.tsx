@@ -29,9 +29,7 @@ export const Header = ({
 }: HeaderProps) => {
   const navigate = useNavigate();
 
-  const didChangeData =
-    !isEqual(initialData, modifiedData) ||
-    (isCreatingEntry && !isEmpty(modifiedData));
+  const didChangeData = !isEqual(initialData, modifiedData) || (isCreatingEntry && !isEmpty(modifiedData));
 
   const primaryAction = (
     <Flex>

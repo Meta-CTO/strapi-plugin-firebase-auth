@@ -51,7 +51,7 @@ export const DeleteAccount = ({
                   <Typography>Delete user from:</Typography>
                   <Flex direction="row" alignItems="center" gap={4}>
                     <Checkbox
-                      onCheckedChange={(checked: boolean | 'indeterminate') =>
+                      onCheckedChange={(checked: boolean | "indeterminate") =>
                         setIsStrapiIncluded(checked === true)
                       }
                       checked={isStrapiIncluded}
@@ -59,7 +59,7 @@ export const DeleteAccount = ({
                       Strapi
                     </Checkbox>
                     <Checkbox
-                      onCheckedChange={(checked: boolean | 'indeterminate') =>
+                      onCheckedChange={(checked: boolean | "indeterminate") =>
                         setIsFirebaseIncluded(checked === true)
                       }
                       checked={isFirebaseIncluded}

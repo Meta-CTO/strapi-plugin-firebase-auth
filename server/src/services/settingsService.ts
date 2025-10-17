@@ -13,7 +13,7 @@ import {
   DEFAULT_PASSWORD_RESET_URL,
   DEFAULT_PASSWORD_MESSAGE,
   DEFAULT_PASSWORD_REGEX,
-  DEFAULT_RESET_EMAIL_SUBJECT
+  DEFAULT_RESET_EMAIL_SUBJECT,
 } from "../constants";
 
 const { ValidationError, ApplicationError } = errors;
@@ -24,9 +24,7 @@ export default ({ strapi }) => {
     async init() {
       try {
         strapi.log.info("Starting Firebase initialization...");
-        const res = await strapi.db
-          .query(CONFIG_CONTENT_TYPE)
-          .findOne({ where: {} });
+        const res = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
         strapi.log.debug("Found config:", !!res);
 
         if (!res) {
@@ -109,9 +107,7 @@ export default ({ strapi }) => {
     async getFirebaseConfigJson() {
       const key = encryptionKey;
       try {
-        const configObject = await strapi.db
-          .query(CONFIG_CONTENT_TYPE)
-          .findOne({ where: {} });
+        const configObject = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
 
         if (!configObject || !configObject["firebase_config_json"]) {
           return null;
@@ -130,9 +126,10 @@ export default ({ strapi }) => {
           firebaseWebApiKey: configObject["firebase_web_api_key"] || null, // May be null if not configured
           // Include password reset configuration fields
           passwordRequirementsRegex: configObject["passwordRequirementsRegex"] || DEFAULT_PASSWORD_REGEX,
-          passwordRequirementsMessage: configObject["passwordRequirementsMessage"] || DEFAULT_PASSWORD_MESSAGE,
+          passwordRequirementsMessage:
+            configObject["passwordRequirementsMessage"] || DEFAULT_PASSWORD_MESSAGE,
           passwordResetUrl: configObject["passwordResetUrl"] || DEFAULT_PASSWORD_RESET_URL,
-          passwordResetEmailSubject: configObject["passwordResetEmailSubject"] || DEFAULT_RESET_EMAIL_SUBJECT
+          passwordResetEmailSubject: configObject["passwordResetEmailSubject"] || DEFAULT_RESET_EMAIL_SUBJECT,
         };
       } catch (error) {
         strapi.log.error("Firebase config error:", error);
@@ -174,7 +171,7 @@ export default ({ strapi }) => {
           passwordRequirementsRegex = DEFAULT_PASSWORD_REGEX,
           passwordRequirementsMessage = DEFAULT_PASSWORD_MESSAGE,
           passwordResetUrl = DEFAULT_PASSWORD_RESET_URL,
-          passwordResetEmailSubject = DEFAULT_RESET_EMAIL_SUBJECT
+          passwordResetEmailSubject = DEFAULT_RESET_EMAIL_SUBJECT,
         } = requestBody;
 
         if (!requestBody) throw new ValidationError(ERROR_MESSAGES.MISSING_DATA);
@@ -183,12 +180,12 @@ export default ({ strapi }) => {
         try {
           const parsedConfig = JSON.parse(firebaseConfigJsonString);
           const requiredFields = REQUIRED_FIELDS.SERVICE_ACCOUNT;
-          const missingFields = requiredFields.filter(field => !parsedConfig[field]);
+          const missingFields = requiredFields.filter((field) => !parsedConfig[field]);
 
           if (missingFields.length > 0) {
             throw new ValidationError(
-              `${VALIDATION_MESSAGES.INVALID_SERVICE_ACCOUNT} ${missingFields.join(', ')}. ` +
-              VALIDATION_MESSAGES.SERVICE_ACCOUNT_HELP
+              `${VALIDATION_MESSAGES.INVALID_SERVICE_ACCOUNT} ${missingFields.join(", ")}. ` +
+                VALIDATION_MESSAGES.SERVICE_ACCOUNT_HELP
             );
           }
 
@@ -204,37 +201,31 @@ export default ({ strapi }) => {
         }
 
         const hash = await this.encryptJson(encryptionKey, firebaseConfigJsonString);
-        const isExist = await strapi.db
-          .query(CONFIG_CONTENT_TYPE)
-          .findOne({ where: {} });
+        const isExist = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
         let res: any;
         if (!isExist) {
-          res = await strapi.db
-            .query(CONFIG_CONTENT_TYPE)
-            .create({
-              data: {
-                firebase_config_json: { firebaseConfigJson: hash },
-                firebase_web_api_key: firebaseWebApiKey,
-                passwordRequirementsRegex,
-                passwordRequirementsMessage,
-                passwordResetUrl,
-                passwordResetEmailSubject
-              },
-            });
+          res = await strapi.db.query(CONFIG_CONTENT_TYPE).create({
+            data: {
+              firebase_config_json: { firebaseConfigJson: hash },
+              firebase_web_api_key: firebaseWebApiKey,
+              passwordRequirementsRegex,
+              passwordRequirementsMessage,
+              passwordResetUrl,
+              passwordResetEmailSubject,
+            },
+          });
         } else {
-          res = await strapi.db
-            .query(CONFIG_CONTENT_TYPE)
-            .update({
-              where: { id: isExist.id },
-              data: {
-                firebase_config_json: { firebaseConfigJson: hash },
-                firebase_web_api_key: firebaseWebApiKey,
-                passwordRequirementsRegex,
-                passwordRequirementsMessage,
-                passwordResetUrl,
-                passwordResetEmailSubject
-              },
-            });
+          res = await strapi.db.query(CONFIG_CONTENT_TYPE).update({
+            where: { id: isExist.id },
+            data: {
+              firebase_config_json: { firebaseConfigJson: hash },
+              firebase_web_api_key: firebaseWebApiKey,
+              passwordRequirementsRegex,
+              passwordRequirementsMessage,
+              passwordResetUrl,
+              passwordResetEmailSubject,
+            },
+          });
         }
         await strapi.plugin("firebase-authentication").service("settingsService").init();
         const firebaseConfigHash = res["firebase_config_json"].firebaseConfigJson;
@@ -243,7 +234,8 @@ export default ({ strapi }) => {
         res["firebase_web_api_key"] = firebaseWebApiKey;
         // Include password reset fields in the response
         res["passwordRequirementsRegex"] = res["passwordRequirementsRegex"] || passwordRequirementsRegex;
-        res["passwordRequirementsMessage"] = res["passwordRequirementsMessage"] || passwordRequirementsMessage;
+        res["passwordRequirementsMessage"] =
+          res["passwordRequirementsMessage"] || passwordRequirementsMessage;
         res["passwordResetUrl"] = res["passwordResetUrl"] || passwordResetUrl;
         res["passwordResetEmailSubject"] = res["passwordResetEmailSubject"] || passwordResetEmailSubject;
         return res;
@@ -256,19 +248,15 @@ export default ({ strapi }) => {
     delFirebaseConfigJson: async () => {
       try {
         strapi.log.debug("delFirebaseConfigJson called");
-        const isExist = await strapi.db
-          .query(CONFIG_CONTENT_TYPE)
-          .findOne({ where: {} });
+        const isExist = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
         strapi.log.debug("Config exists:", isExist);
         if (!isExist) {
           strapi.log.info(ERROR_MESSAGES.DELETION_NO_CONFIG);
           return null;
         }
-        const res = await strapi.db
-          .query(CONFIG_CONTENT_TYPE)
-          .delete({
-            where: { id: isExist.id }
-          });
+        const res = await strapi.db.query(CONFIG_CONTENT_TYPE).delete({
+          where: { id: isExist.id },
+        });
         strapi.log.debug("Delete result:", res);
         await strapi.plugin("firebase-authentication").service("settingsService").init();
         strapi.log.info(SUCCESS_MESSAGES.FIREBASE_CONFIG_DELETED);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, Flex, Typography, Button, TextInput, Tabs, Alert } from "@strapi/design-system";
 
-type ResetMode = 'direct' | 'email';
+type ResetMode = "direct" | "email";
 
 interface ResetPasswordProps {
   isOpen: boolean;
@@ -22,9 +22,9 @@ export const ResetPassword = ({
   onDirectReset,
   onSendResetEmail,
   passwordRegex = "^.{6,}$",
-  passwordMessage = "Password must be at least 6 characters long"
+  passwordMessage = "Password must be at least 6 characters long",
 }: ResetPasswordProps) => {
-  const [mode, setMode] = useState<ResetMode>('direct');
+  const [mode, setMode] = useState<ResetMode>("direct");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -42,7 +42,7 @@ export const ResetPassword = ({
     setPassword("");
     setEmailSent(false);
     setError("");
-    setMode('direct');
+    setMode("direct");
     setIsPasswordChanged(false);
     setIsLoading(false);
   };
@@ -124,9 +124,11 @@ export const ResetPassword = ({
                         setPassword(e.target.value);
                         setError(""); // Clear error when typing
                       }}
-                      error={isPasswordChanged && password && !validatePassword(password)
-                        ? passwordMessage
-                        : undefined}
+                      error={
+                        isPasswordChanged && password && !validatePassword(password)
+                          ? passwordMessage
+                          : undefined
+                      }
                       required
                     />
                     {isPasswordChanged && password && !validatePassword(password) && (
@@ -142,8 +144,7 @@ export const ResetPassword = ({
                 <Flex direction="column" gap={3} paddingTop={4}>
                   {!emailSent ? (
                     <Typography>
-                      Send a password reset email to <strong>{email}</strong>.
-                      The link will expire in 1 hour.
+                      Send a password reset email to <strong>{email}</strong>. The link will expire in 1 hour.
                     </Typography>
                   ) : (
                     <Alert variant="success" title="Email Sent">
@@ -167,12 +168,12 @@ export const ResetPassword = ({
           </Button>
           {!emailSent && (
             <Button
-              variant={mode === 'direct' ? "danger-light" : "success"}
+              variant={mode === "direct" ? "danger-light" : "success"}
               loading={isLoading}
-              disabled={mode === 'direct' && !validatePassword(password)}
-              onClick={mode === 'direct' ? handleDirectReset : handleSendEmail}
+              disabled={mode === "direct" && !validatePassword(password)}
+              onClick={mode === "direct" ? handleDirectReset : handleSendEmail}
             >
-              {mode === 'direct' ? "Set Password" : "Send Reset Email"}
+              {mode === "direct" ? "Set Password" : "Send Reset Email"}
             </Button>
           )}
         </Dialog.Footer>

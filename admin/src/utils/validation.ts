@@ -1,11 +1,11 @@
-import validator from 'validator';
+import validator from "validator";
 
 export function validateEmail(email: string | null | undefined): {
   isValid: boolean;
   error: string | null;
 } {
   // Empty is valid (field is optional if phone provided)
-  if (!email || email.trim() === '') {
+  if (!email || email.trim() === "") {
     return { isValid: true, error: null };
   }
 
@@ -14,7 +14,7 @@ export function validateEmail(email: string | null | undefined): {
   if (!validator.isEmail(trimmed)) {
     return {
       isValid: false,
-      error: 'Please enter a valid email address',
+      error: "Please enter a valid email address",
     };
   }
 
@@ -26,7 +26,7 @@ export function validatePhoneNumber(phone: string | null | undefined): {
   error: string | null;
 } {
   // Empty is valid (field is optional if email provided)
-  if (!phone || phone.trim() === '') {
+  if (!phone || phone.trim() === "") {
     return { isValid: true, error: null };
   }
 
@@ -35,17 +35,20 @@ export function validatePhoneNumber(phone: string | null | undefined): {
   // Just check it starts with + (E.164 format)
   const trimmed = phone.trim();
 
-  if (!trimmed.startsWith('+')) {
+  if (!trimmed.startsWith("+")) {
     return {
       isValid: false,
-      error: 'Phone number must be in international format (E.164)',
+      error: "Phone number must be in international format (E.164)",
     };
   }
 
   return { isValid: true, error: null };
 }
 
-export function validateUserForm(email?: string, phoneNumber?: string): {
+export function validateUserForm(
+  email?: string,
+  phoneNumber?: string
+): {
   isValid: boolean;
   errors: { email?: string; phoneNumber?: string; general?: string };
 } {
@@ -53,7 +56,7 @@ export function validateUserForm(email?: string, phoneNumber?: string): {
 
   // At least one required
   if (!email && !phoneNumber) {
-    errors.general = 'Email or Phone Number is required';
+    errors.general = "Email or Phone Number is required";
     return { isValid: false, errors };
   }
 

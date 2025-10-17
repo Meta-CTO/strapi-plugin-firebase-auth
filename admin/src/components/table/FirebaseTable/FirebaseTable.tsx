@@ -107,8 +107,8 @@ export const FirebaseTable = ({
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
 
   // Parse sort from query params
-  const sort = query?.sort ?? '';
-  const [sortBy, sortOrder] = sort.split(':');
+  const sort = query?.sort ?? "";
+  const [sortBy, sortOrder] = sort.split(":");
 
   const handleBulkDelete = async (isStrapiIncluded: boolean, isFirebaseIncluded: boolean) => {
     // For bulk delete, we use onConfirmDeleteAll which handles both strapi and firebase deletion
@@ -125,9 +125,9 @@ export const FirebaseTable = ({
 
   const handleSort = (headerName: string) => {
     const isSorted = sortBy === headerName;
-    const isAsc = sortOrder === 'ASC';
+    const isAsc = sortOrder === "ASC";
     setQuery({
-      sort: `${headerName}:${isSorted && isAsc ? 'DESC' : 'ASC'}`,
+      sort: `${headerName}:${isSorted && isAsc ? "DESC" : "ASC"}`,
     });
   };
 
@@ -175,7 +175,7 @@ export const FirebaseTable = ({
               </Th>
               {tableHeaders.map((header) => {
                 const isSorted = sortBy === header.name;
-                const isAsc = sortOrder === 'ASC';
+                const isAsc = sortOrder === "ASC";
                 const isSortable = header.metadatas.sortable;
 
                 return (

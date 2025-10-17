@@ -24,7 +24,8 @@ export const EditView = () => {
         setUserData(user);
       } catch (error) {
         console.error("Error fetching user:", error);
-        const errorMessage = error instanceof Error ? error.message : "An error occurred while fetching user data";
+        const errorMessage =
+          error instanceof Error ? error.message : "An error occurred while fetching user data";
         toggleNotification({
           type: "danger",
           message: errorMessage,
