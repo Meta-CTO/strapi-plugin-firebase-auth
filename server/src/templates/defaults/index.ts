@@ -1,0 +1,1 @@
+export { passwordResetTemplate } from './password-reset';

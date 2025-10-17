@@ -1,30 +1,50 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Flex, Typography, Button } from "@strapi/design-system";
-import { TextInput } from "@strapi/design-system";
+import { Dialog, Flex, Typography, Button, TextInput, Tabs, Alert } from "@strapi/design-system";
+
+type ResetMode = 'direct' | 'email';
 
 interface ResetPasswordProps {
   isOpen: boolean;
   email: string;
+  userId: string;
   onClose: () => void;
-  onConfirm: (newPassword: string) => void;
+  onDirectReset: (password: string) => Promise<void>;
+  onSendResetEmail: () => Promise<void>;
+  passwordRegex?: string;
+  passwordMessage?: string;
 }
 
-export const ResetPassword = ({ isOpen, email, onClose, onConfirm }: ResetPasswordProps) => {
-  const [newPassword, setNewPassword] = useState("");
-  const [isNewPasswordChange, setIsNewPasswordChanged] = useState(false);
+export const ResetPassword = ({
+  isOpen,
+  email,
+  userId,
+  onClose,
+  onDirectReset,
+  onSendResetEmail,
+  passwordRegex = "^.{6,}$",
+  passwordMessage = "Password must be at least 6 characters long"
+}: ResetPasswordProps) => {
+  const [mode, setMode] = useState<ResetMode>('direct');
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [error, setError] = useState("");
+  const [isPasswordChanged, setIsPasswordChanged] = useState(false);
 
   useEffect(() => {
-    // Only reset state when modal closes, not when it opens
-    // This prevents state updates from interfering with modal opening
+    // Reset state when modal closes
     if (!isOpen) {
-      setNewPassword("");
-      setIsNewPasswordChanged(false);
+      resetState();
     }
   }, [isOpen]);
 
   const resetState = () => {
-    setNewPassword("");
-    setIsNewPasswordChanged(false);
+    setPassword("");
+    setEmailSent(false);
+    setError("");
+    setMode('direct');
+    setIsPasswordChanged(false);
+    setIsLoading(false);
   };
 
   const handleClose = () => {
@@ -32,59 +52,131 @@ export const ResetPassword = ({ isOpen, email, onClose, onConfirm }: ResetPasswo
     onClose();
   };
 
-  const handleConfirm = () => {
-    resetState();
-    onConfirm(newPassword);
+  const validatePassword = (password: string): boolean => {
+    if (!password) return false;
+    try {
+      const regex = new RegExp(passwordRegex);
+      return regex.test(password);
+    } catch (e) {
+      // Invalid regex, fallback to length check
+      console.error("Invalid password regex:", e);
+      return password.length >= 6;
+    }
+  };
+
+  const handleDirectReset = async () => {
+    if (!validatePassword(password)) return;
+
+    try {
+      setIsLoading(true);
+      setError("");
+      await onDirectReset(password);
+      handleClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to reset password");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      await onSendResetEmail();
+      setEmailSent(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to send reset email");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Modal.Root open={isOpen} onOpenChange={(open: boolean) => !open && handleClose()}>
-      <Modal.Content>
-        <Modal.Header>
-          <Modal.Title>Reset password</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Flex direction="column" alignItems="stretch" gap={4}>
-            <Typography>Send a password reset email.</Typography>
-            <Flex direction="column" alignItems="stretch" gap={1}>
-              <Typography variant="sigma">User account</Typography>
+    <Dialog.Root open={isOpen} onOpenChange={(open: boolean) => !open && handleClose()}>
+      <Dialog.Content>
+        <Dialog.Header>Reset Password</Dialog.Header>
+        <Dialog.Body>
+          <Flex direction="column" gap={4}>
+            <Flex direction="column" gap={1}>
+              <Typography variant="sigma">User email</Typography>
               <Typography>{email}</Typography>
             </Flex>
-            <TextInput
-              type="password"
-              label="New password"
-              aria-label="Password"
-              value={newPassword}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setIsNewPasswordChanged(true);
-                setNewPassword(e.target.value);
-              }}
-              required
-              error={
-                !isNewPasswordChange
-                  ? ""
-                  : !newPassword
-                    ? "Password is required"
-                    : newPassword.length < 6
-                      ? "Password must contain at least 6 characters"
-                      : ""
-              }
-            />
+
+            <Tabs.Root value={mode} onValueChange={(val: string) => setMode(val as ResetMode)}>
+              <Tabs.List>
+                <Tabs.Trigger value="direct">Set Password Directly</Tabs.Trigger>
+                <Tabs.Trigger value="email">Send Reset Email</Tabs.Trigger>
+              </Tabs.List>
+
+              <Tabs.Content value="direct">
+                <Flex direction="column" gap={3} paddingTop={4}>
+                  <Typography>
+                    Set a new password for this user. The user will not be notified of this change.
+                  </Typography>
+                  <Flex direction="column" gap={1}>
+                    <TextInput
+                      type="password"
+                      label="New password"
+                      value={password}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setIsPasswordChanged(true);
+                        setPassword(e.target.value);
+                        setError(""); // Clear error when typing
+                      }}
+                      error={isPasswordChanged && password && !validatePassword(password)
+                        ? passwordMessage
+                        : undefined}
+                      required
+                    />
+                    {isPasswordChanged && password && !validatePassword(password) && (
+                      <Typography variant="pi" textColor="danger500">
+                        {passwordMessage}
+                      </Typography>
+                    )}
+                  </Flex>
+                </Flex>
+              </Tabs.Content>
+
+              <Tabs.Content value="email">
+                <Flex direction="column" gap={3} paddingTop={4}>
+                  {!emailSent ? (
+                    <Typography>
+                      Send a password reset email to <strong>{email}</strong>.
+                      The link will expire in 1 hour.
+                    </Typography>
+                  ) : (
+                    <Alert variant="success" title="Email Sent">
+                      Password reset email has been sent to {email}
+                    </Alert>
+                  )}
+                </Flex>
+              </Tabs.Content>
+            </Tabs.Root>
+
+            {error && (
+              <Alert variant="danger" title="Error">
+                {error}
+              </Alert>
+            )}
           </Flex>
-        </Modal.Body>
-        <Modal.Footer>
+        </Dialog.Body>
+        <Dialog.Footer>
           <Button onClick={handleClose} variant="tertiary">
-            Cancel
+            {emailSent ? "Close" : "Cancel"}
           </Button>
-          <Button
-            variant="danger-light"
-            disabled={newPassword === "" || newPassword.length < 6}
-            onClick={handleConfirm}
-          >
-            Reset password
-          </Button>
-        </Modal.Footer>
-      </Modal.Content>
-    </Modal.Root>
+          {!emailSent && (
+            <Button
+              variant={mode === 'direct' ? "danger-light" : "success"}
+              loading={isLoading}
+              disabled={mode === 'direct' && !validatePassword(password)}
+              onClick={mode === 'direct' ? handleDirectReset : handleSendEmail}
+            >
+              {mode === 'direct' ? "Set Password" : "Send Reset Email"}
+            </Button>
+          )}
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 };

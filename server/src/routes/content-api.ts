@@ -6,6 +6,7 @@ export default {
       path: "/",
       handler: "firebaseController.validateToken",
       config: {
+        auth: false,  // Public endpoint - this IS the authentication endpoint
         policies: [],
       },
     },
@@ -14,6 +15,34 @@ export default {
       path: "/emailLogin",
       handler: "firebaseController.emailLogin",
       config: {
+        auth: false,  // Public endpoint - email/password login
+        policies: [],
+      },
+    },
+    {
+      method: "POST",
+      path: "/forgotPassword",
+      handler: "firebaseController.forgotPassword",
+      config: {
+        auth: false,  // Public endpoint - no authentication required
+        policies: [],
+      },
+    },
+    {
+      method: "POST",
+      path: "/resetPassword",
+      handler: "firebaseController.resetPassword",
+      config: {
+        auth: false,  // Public endpoint - uses JWT from Authorization header
+        policies: [],
+      },
+    },
+    {
+      method: "GET",
+      path: "/config",
+      handler: "settingsController.getPublicConfig",
+      config: {
+        auth: false,  // Public endpoint - frontend needs this for validation
         policies: [],
       },
     },

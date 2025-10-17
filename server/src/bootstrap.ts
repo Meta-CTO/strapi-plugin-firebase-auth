@@ -12,22 +12,22 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   ];
 
   try {
-    console.log("🔥 Firebase plugin bootstrap starting...");
+    strapi.log.info("Firebase plugin bootstrap starting...");
 
     await strapi.plugin("firebase-authentication").service("settingsService").init();
 
     // @ts-ignore - firebase property is added dynamically
     if (strapi.firebase) {
-      console.log("✅ Firebase successfully initialized");
-      console.log("   - Admin SDK available at: strapi.firebase");
+      strapi.log.info("Firebase successfully initialized");
+      strapi.log.info("   - Admin SDK available at: strapi.firebase");
     } else {
-      console.warn("⚠️  Firebase not initialized - no config found in database");
-      console.warn("   - Upload Firebase service account JSON via plugin settings");
+      strapi.log.warn("Firebase not initialized - no config found in database");
+      strapi.log.warn("   - Upload Firebase service account JSON via plugin settings");
     }
   } catch (error) {
-    console.error("❌ Firebase initialization failed during bootstrap:");
-    console.error("   Error:", error.message);
-    console.error("   Stack:", error.stack);
+    strapi.log.error("Firebase initialization failed during bootstrap:");
+    strapi.log.error("   Error:", error.message);
+    strapi.log.error("   Stack:", error.stack);
     // Don't throw - allow Strapi to start even if Firebase config not uploaded yet
   }
 

@@ -68,9 +68,35 @@ export default {
   },
   resetPassword: async (ctx) => {
     const { destination } = ctx.request.query;
-    if (!ctx.request.body.password || ctx.request.body.password.length < 6) {
-      throw new errors.ValidationError("Password maybe empty or less than 6");
+    const { password } = ctx.request.body;
+
+    // Fetch password configuration from database
+    const configObject = await strapi.db
+      .query("plugin::firebase-authentication.firebase-authentication-configuration")
+      .findOne({ where: {} });
+
+    // Use config values or simple defaults
+    const passwordRegex = configObject?.passwordRequirementsRegex || "^.{6,}$";
+    const passwordMessage = configObject?.passwordRequirementsMessage ||
+      "Password must be at least 6 characters long";
+
+    // Validate password using dynamic config
+    if (!password) {
+      throw new errors.ValidationError("Password is required");
     }
+
+    try {
+      const regex = new RegExp(passwordRegex);
+      if (!regex.test(password)) {
+        throw new errors.ValidationError(passwordMessage);
+      }
+    } catch (e) {
+      // If regex is invalid, fall back to length check
+      if (password.length < 6) {
+        throw new errors.ValidationError("Password must be at least 6 characters long");
+      }
+    }
+
     switch (destination) {
       case STRAPI_DESTINATION:
         ctx.body = await strapi
@@ -96,6 +122,23 @@ export default {
             password: ctx.request.body.password,
           });
         break;
+    }
+  },
+
+  sendResetEmail: async (ctx) => {
+    const userId = ctx.params.id;
+
+    if (!userId) {
+      throw new errors.ValidationError("User ID is required");
+    }
+
+    try {
+      ctx.body = await strapi
+        .plugin("firebase-authentication")
+        .service("userService")
+        .sendPasswordResetEmail(userId);
+    } catch (error) {
+      throw new errors.ApplicationError(error.message || "Failed to send password reset email");
     }
   },
 };

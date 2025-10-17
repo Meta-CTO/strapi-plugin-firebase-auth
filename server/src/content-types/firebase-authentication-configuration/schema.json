@@ -22,7 +22,10 @@
       "type": "json"
     },
     "firebase_web_api_key": {
-      "type": "string"
+      "type": "string",
+      "required": false,
+      "configurable": true,
+      "description": "Optional: Only required for the emailLogin endpoint. Most users should use Firebase Client SDK instead."
     },
     "passwordRequirementsRegex": {
       "type": "string",

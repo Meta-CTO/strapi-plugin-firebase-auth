@@ -11,7 +11,7 @@ import { ArrowLeft } from "@strapi/icons";
 import { Plus } from "@strapi/icons";
 import { useNavigate } from "react-router-dom";
 import { FirebaseTable } from "../../components/table";
-import { deleteUser, fetchUsers, resetUserPassword } from "../utils/api";
+import { deleteUser, fetchUsers, resetUserPassword, sendResetEmail, getFirebaseConfig } from "../utils/api";
 import { PaginationFooter } from "./PaginationFooter";
 import { SearchURLQuery } from "../../components/search";
 import { User } from "../../../../model/User";
@@ -65,6 +65,14 @@ function ListView({ data, meta }: ListViewProps) {
     pagination: { page: 1, pageCount: 1, pageSize: 10, total: 0 }
   });
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Password configuration state
+  const [passwordConfig, setPasswordConfig] = useState({
+    passwordRequirementsRegex: "^.{6,}$",
+    passwordRequirementsMessage: "Password must be at least 6 characters long",
+    passwordResetUrl: "http://localhost:3000/reset-password",
+    passwordResetEmailSubject: "Reset Your Password",
+  });
   const [query] = useQueryParams();
 
   const navigate = useNavigate();
@@ -113,6 +121,20 @@ function ListView({ data, meta }: ListViewProps) {
 
     return response;
   }, [query.query, getNextPageToken, setNextPageToken]);
+
+  // Fetch password configuration on component mount
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await getFirebaseConfig();
+        setPasswordConfig(config);
+      } catch (error) {
+        console.error("Failed to fetch Firebase config:", error);
+        // Keep default values if fetch fails
+      }
+    };
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -304,8 +326,26 @@ function ListView({ data, meta }: ListViewProps) {
         <ResetPassword
           isOpen={showResetPasswordDialogue.isOpen}
           onClose={handleCloseResetDialogue}
-          onConfirm={resetPassword}
+          onDirectReset={resetPassword}
           email={showResetPasswordDialogue.email}
+          userId={showResetPasswordDialogue.id}
+          passwordRegex={passwordConfig.passwordRequirementsRegex}
+          passwordMessage={passwordConfig.passwordRequirementsMessage}
+          onSendResetEmail={async () => {
+            try {
+              await sendResetEmail(showResetPasswordDialogue.id);
+              toggleNotification({
+                type: "success",
+                message: "Password reset email sent successfully",
+              });
+            } catch (err) {
+              toggleNotification({
+                type: "danger",
+                message: "Failed to send password reset email",
+              });
+              throw err;
+            }
+          }}
         />
         <DeleteAccount
           isOpen={showDeleteAccountDialogue.isOpen}

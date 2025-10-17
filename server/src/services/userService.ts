@@ -42,7 +42,7 @@ export default ({ strapi }) => {
 
       const userRecord = await getUserPromise.catch(async (e) => {
         if (e.code === "auth/user-not-found") {
-          console.log("user not found, creating user");
+          strapi.log.debug("user not found, creating user");
           const response = await strapi.firebase.auth().createUser(payload);
 
           return response.toJSON();
@@ -356,12 +356,95 @@ export default ({ strapi }) => {
   deleteMany: async (entityIDs) => {
     try {
       ensureFirebaseInitialized();
-      const response = await strapi.firebase.auth().deleteUsers(JSON.parse(entityIDs));
+
+      // Validate and parse entityIDs safely
+      let parsedIDs;
+      if (typeof entityIDs === 'string') {
+        try {
+          parsedIDs = JSON.parse(entityIDs);
+        } catch (parseError) {
+          throw new errors.ValidationError('Invalid JSON format for entity IDs');
+        }
+      } else if (Array.isArray(entityIDs)) {
+        parsedIDs = entityIDs;
+      } else {
+        throw new errors.ValidationError('Entity IDs must be a JSON string or array');
+      }
+
+      // Validate that all IDs are strings
+      if (!Array.isArray(parsedIDs) || !parsedIDs.every(id => typeof id === 'string')) {
+        throw new errors.ValidationError('Entity IDs must be an array of strings');
+      }
+
+      // Validate that we have at least one ID
+      if (parsedIDs.length === 0) {
+        throw new errors.ValidationError('At least one entity ID is required');
+      }
+
+      const response = await strapi.firebase.auth().deleteUsers(parsedIDs);
       return response;
     } catch (e) {
-      throw new errors.ApplicationError(e.message.toString());
+      if (e instanceof errors.ValidationError) {
+        throw e;
+      }
+      strapi.log.error('deleteMany error:', e);
+      throw new errors.ApplicationError(e.message?.toString() || 'Failed to delete users');
     }
   },
   async setSocialMetaData() {},
+
+  sendPasswordResetEmail: async (entityId) => {
+    try {
+      ensureFirebaseInitialized();
+
+      // Get the user to get their email
+      const user = await strapi.firebase.auth().getUser(entityId);
+
+      if (!user.email) {
+        throw new errors.ApplicationError("User does not have an email address");
+      }
+
+      // Get the password reset URL from configuration
+      const config = await strapi.db
+        .query("plugin::firebase-authentication.firebase-authentication-configuration")
+        .findOne({ where: {} });
+
+      const passwordResetUrl = config?.passwordResetUrl || "http://localhost:3000/reset-password";
+
+      let resetLink;
+      try {
+        // Generate password reset link using Firebase Admin SDK with timeout
+        const actionCodeSettings = {
+          url: passwordResetUrl,
+          handleCodeInApp: true,
+        };
+
+        // Create a promise that rejects after 10 seconds with proper typing
+        const timeoutPromise = new Promise<string>((_, reject) => {
+          setTimeout(() => reject(new Error("Firebase generatePasswordResetLink timeout after 10 seconds")), 10000);
+        });
+
+        // Race between the Firebase call and the timeout
+        resetLink = await Promise.race([
+          strapi.firebase.auth().generatePasswordResetLink(user.email, actionCodeSettings),
+          timeoutPromise
+        ]);
+      } catch (firebaseError: any) {
+        strapi.log.error(`Failed to generate Firebase reset link: ${firebaseError.message}`);
+        // Use a fallback reset link if Firebase fails
+        resetLink = `${passwordResetUrl}?email=${encodeURIComponent(user.email)}&error=firebase_link_generation_failed`;
+      }
+
+      // Use the new email service
+      const emailService = strapi
+        .plugin('firebase-authentication')
+        .service('emailService');
+
+      return await emailService.sendPasswordResetEmail(user, resetLink);
+    } catch (e: any) {
+      strapi.log.error(`sendPasswordResetEmail error: ${e.message}`);
+      throw new errors.ApplicationError(e.message?.toString() || "Failed to send password reset email");
+    }
+  },
   };
 };

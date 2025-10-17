@@ -120,33 +120,23 @@ export default ({ strapi }) => ({
 
   validateExchangeTokenPayload: async (requestPayload) => {
     const { idToken } = requestPayload;
-    console.log("Validating idToken:", idToken?.substring(0, 20) + "...");
+    strapi.log.debug("Validating idToken:", idToken?.substring(0, 20) + "...");
 
     if (!idToken || idToken.length === 0) {
       throw new errors.ValidationError("idToken is missing!");
     }
 
     try {
-      try {
-        const decodedToken = await strapi.firebase.auth().verifyIdToken(idToken);
-        if (!decodedToken) {
-          throw new Error("Token verification returned null");
-        }
-        return decodedToken;
-      } catch (error) {
-        console.error("Firebase token verification failed:", {
-          error: error.message,
-          stack: error.stack,
-        });
-        throw new errors.UnauthorizedError(`Firebase authentication failed: ${error.message}`);
+      const decodedToken = await strapi.firebase.auth().verifyIdToken(idToken);
+      if (!decodedToken) {
+        throw new Error("Token verification returned null");
       }
+      return decodedToken;
     } catch (error) {
-      console.error("Firebase token verification failed:", {
+      strapi.log.error("Firebase token verification failed:", {
         error: error.message,
         stack: error.stack,
       });
-
-      // Throw a more specific error
       throw new errors.UnauthorizedError(`Firebase authentication failed: ${error.message}`);
     }
   },
@@ -310,32 +300,26 @@ export default ({ strapi }) => ({
   },
 
   validateFirebaseToken: async (idToken: string, profileMetaData?: any, populate?: string[]) => {
-    console.log("validateFirebaseToken 🤣");
+    strapi.log.debug("validateFirebaseToken called");
 
-    // Validate the token first
+    // Validate and decode the token in one operation
     const decodedToken = await strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
       .validateExchangeTokenPayload({ idToken });
 
-    // Decode the token to get user details
-    const decodedTokenData = await strapi
-      .plugin("firebase-authentication")
-      .service("firebaseService")
-      .decodeIDToken(idToken);
-
     // Check if user exists
     let user = await strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
-      .checkIfUserExists(decodedTokenData, profileMetaData);
+      .checkIfUserExists(decodedToken, profileMetaData);
 
     if (!user) {
       // Create Strapi user if doesn't exist
       user = await strapi
         .plugin("firebase-authentication")
         .service("firebaseService")
-        .createStrapiUser(decodedTokenData, idToken, profileMetaData);
+        .createStrapiUser(decodedToken, idToken, profileMetaData);
     }
 
     // Generate JWT
@@ -348,7 +332,7 @@ export default ({ strapi }) => ({
     strapi
       .plugin("firebase-authentication")
       .service("firebaseService")
-      .updateUserIDToken(user, idToken, decodedTokenData);
+      .updateUserIDToken(user, idToken, decodedToken);
 
     return {
       user: await processMeData(user, populate || []),
@@ -398,7 +382,7 @@ export default ({ strapi }) => ({
    * 6. Generates and returns Strapi JWT token
    */
   emailLogin: async (email: string, password: string, populate?: string[]) => {
-    console.log("emailLogin endpoint called");
+    strapi.log.debug("emailLogin endpoint called");
 
     if (!email || !password) {
       throw new errors.ValidationError("Email and password are required");
@@ -411,7 +395,14 @@ export default ({ strapi }) => ({
       .getFirebaseConfigJson();
 
     if (!config || !config.firebaseWebApiKey) {
-      throw new errors.ApplicationError("Firebase Web API key is not configured");
+      throw new errors.ApplicationError(
+        "Email/password authentication is not available. Web API Key is not configured.\n\n" +
+        "To enable email/password authentication:\n" +
+        "1. Go to Firebase Console > Project Settings > General\n" +
+        "2. Copy your Web API Key\n" +
+        "3. Add it in Strapi Admin > Settings > Firebase Authentication > Optional Settings\n\n" +
+        "Alternatively, use Firebase Client SDK for authentication and exchange the ID token."
+      );
     }
 
     try {
@@ -436,7 +427,7 @@ export default ({ strapi }) => ({
       if (!response.ok) {
         // Handle Firebase errors
         const errorMessage = data.error?.message || "Authentication failed";
-        console.error("Firebase authentication error:", errorMessage);
+        strapi.log.error("Firebase authentication error:", errorMessage);
 
         // Return specific error messages
         if (errorMessage === "EMAIL_NOT_FOUND") {
@@ -455,11 +446,11 @@ export default ({ strapi }) => ({
       // We now have the idToken from Firebase
       const { idToken, refreshToken, localId } = data;
 
-      // Decode the token to get user details
+      // Validate and decode the token using the same method for consistency
       const decodedToken = await strapi
         .plugin("firebase-authentication")
         .service("firebaseService")
-        .decodeIDToken(idToken);
+        .validateExchangeTokenPayload({ idToken });
 
       // Check if user exists in Strapi
       let user = await strapi
@@ -493,11 +484,199 @@ export default ({ strapi }) => ({
         jwt,
       };
     } catch (error) {
-      console.error("emailLogin error:", error);
+      strapi.log.error("emailLogin error:", error);
       if (error instanceof errors.ValidationError || error instanceof errors.ApplicationError) {
         throw error;
       }
       throw new errors.ApplicationError("Authentication failed");
+    }
+  },
+
+  /**
+   * Forgot password flow - sends reset email
+   * Public endpoint that generates a JWT token and sends a password reset email
+   */
+  forgotPassword: async (ctx) => {
+    const { email } = ctx.request.body;
+
+    if (!email) {
+      throw new errors.ValidationError("Email is required");
+    }
+
+    // Get reset URL from config
+    const config = await strapi
+      .plugin("firebase-authentication")
+      .service("settingsService")
+      .getFirebaseConfigJson();
+
+    const resetUrl = config?.passwordResetUrl;
+    if (!resetUrl) {
+      throw new errors.ApplicationError(
+        "Password reset URL is not configured"
+      );
+    }
+
+    // Validate URL security in production
+    if (process.env.NODE_ENV === 'production' && !resetUrl.startsWith('https://')) {
+      throw new errors.ApplicationError(
+        "Password reset URL must use HTTPS in production"
+      );
+    }
+
+    // Validate URL format
+    try {
+      new URL(resetUrl);
+    } catch (error) {
+      throw new errors.ApplicationError(
+        "Password reset URL is not a valid URL format"
+      );
+    }
+
+    try {
+      // Priority 1: Try to find user in Firebase
+      let firebaseUser;
+      try {
+        firebaseUser = await strapi.firebase.auth().getUserByEmail(email);
+      } catch (fbError) {
+        // Firebase user not found, that's okay
+        strapi.log.debug("User not found in Firebase, checking Strapi...");
+      }
+
+      // Priority 2: Find in Strapi if not in Firebase
+      let strapiUser;
+      if (firebaseUser) {
+        // Found in Firebase, now find corresponding Strapi user using Query Engine API
+        strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+          where: { firebaseUserID: firebaseUser.uid }
+        });
+
+        // Fallback: try by email
+        if (!strapiUser) {
+          strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+            where: { email: email }
+          });
+        }
+      } else {
+        // Not in Firebase, check Strapi only
+        strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+          where: { email: email }
+        });
+      }
+
+      if (!strapiUser) {
+        // Security: Don't reveal if email exists or not
+        return { message: "If an account with that email exists, a password reset link has been sent." };
+      }
+
+      // Generate 1-hour JWT using numeric id for auth middleware compatibility
+      const jwtService = strapi.plugin("users-permissions").service("jwt");
+      const token = jwtService.issue(
+        { id: strapiUser.id },  // Use numeric id, not documentId
+        { expiresIn: "1h" }
+      );
+
+      // Build reset link
+      const resetLink = `${resetUrl}?token=${token}`;
+
+      // Send email using our three-tier fallback system
+      await strapi
+        .plugin("firebase-authentication")
+        .service("emailService")
+        .sendPasswordResetEmail(strapiUser, resetLink);
+
+      // Security: Always return same message
+      return {
+        message: "If an account with that email exists, a password reset link has been sent."
+      };
+    } catch (error) {
+      strapi.log.error("forgotPassword error:", error);
+      // Security: Don't reveal internal errors
+      return {
+        message: "If an account with that email exists, a password reset link has been sent."
+      };
+    }
+  },
+
+  /**
+   * Reset password with authenticated JWT
+   * Public endpoint that validates a JWT token and resets the user's password
+   */
+  resetPassword: async (ctx) => {
+    const { password } = ctx.request.body;
+    const populate = ctx.request.query.populate || [];
+
+    if (!password) {
+      throw new errors.ValidationError("Password is required");
+    }
+
+    // Verify JWT from Authorization header
+    const token = ctx.request.header.authorization?.replace("Bearer ", "");
+    if (!token) {
+      throw new errors.UnauthorizedError("Authorization token is required");
+    }
+
+    let decoded;
+    try {
+      const jwtService = strapi.plugin("users-permissions").service("jwt");
+      decoded = await jwtService.verify(token);
+    } catch (error) {
+      throw new errors.UnauthorizedError("Invalid or expired token");
+    }
+
+    // Get configuration
+    const config = await strapi
+      .plugin("firebase-authentication")
+      .service("settingsService")
+      .getFirebaseConfigJson();
+
+    // Validate password against configured regex (with schema default fallback)
+    const passwordRegex = config?.passwordRequirementsRegex || "^.{6,}$";
+    const passwordMessage = config?.passwordRequirementsMessage ||
+      "Password must be at least 6 characters long";
+
+    const regex = new RegExp(passwordRegex);
+    if (!regex.test(password)) {
+      throw new errors.ValidationError(passwordMessage);
+    }
+
+    try {
+      // Get Strapi user using Query Engine API with numeric id from JWT
+      const strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+        where: { id: decoded.id }  // Use numeric id from JWT
+      });
+
+      if (!strapiUser) {
+        throw new errors.NotFoundError("User not found");
+      }
+
+      // Update Firebase password if user has firebaseUserID
+      if (strapiUser.firebaseUserID) {
+        await strapi.firebase.auth().updateUser(strapiUser.firebaseUserID, {
+          password,
+        });
+      } else {
+        throw new errors.ValidationError(
+          "User is not linked to Firebase authentication"
+        );
+      }
+
+      // Generate fresh JWT for auto-login using numeric id
+      const jwtService = strapi.plugin("users-permissions").service("jwt");
+      const jwt = jwtService.issue({
+        id: strapiUser.id,  // Use numeric id for consistency
+      });
+
+      // Return user + JWT (same format as validateFirebaseToken)
+      return {
+        user: await processMeData(strapiUser, populate),
+        jwt,
+      };
+    } catch (error) {
+      strapi.log.error("resetPassword error:", error);
+      if (error instanceof errors.ValidationError || error instanceof errors.UnauthorizedError) {
+        throw error;
+      }
+      throw new errors.ApplicationError("Failed to reset password");
     }
   },
 });

@@ -1,16 +1,17 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const strapi: any;
 import { pluginName } from "../firebaseAuthentication/types";
+import { ERROR_MESSAGES } from "../constants";
 
 const firebaseController = {
   async validateToken(ctx) {
-    console.log("validateToken 🤣");
+    strapi.log.debug("validateToken called");
     try {
       const { idToken, profileMetaData } = ctx.request.body || {};
       const populate = ctx.request.query.populate || [];
 
       if (!idToken) {
-        return ctx.badRequest("idToken is required");
+        return ctx.badRequest(ERROR_MESSAGES.TOKEN_MISSING);
       }
 
       const result = await strapi
@@ -20,7 +21,7 @@ const firebaseController = {
 
       ctx.body = result;
     } catch (error) {
-      console.error("validateToken controller error:", error);
+      strapi.log.error("validateToken controller error:", error);
       if (error.name === "ValidationError") {
         return ctx.badRequest(error.message);
       }
@@ -79,7 +80,7 @@ const firebaseController = {
    * - `500`: Server errors (missing configuration, Firebase API issues)
    */
   async emailLogin(ctx) {
-    console.log("emailLogin controller");
+    strapi.log.debug("emailLogin controller");
     try {
       const { email, password } = ctx.request.body || {};
       const populate = ctx.request.query.populate || [];
@@ -91,12 +92,60 @@ const firebaseController = {
 
       ctx.body = result;
     } catch (error) {
-      console.error("emailLogin controller error:", error);
+      strapi.log.error("emailLogin controller error:", error);
       // Set appropriate status code for different error types
       if (error.name === "ValidationError") {
         ctx.status = 400;
       } else if (error.name === "ApplicationError") {
         ctx.status = 500;
+      } else {
+        ctx.status = 500;
+      }
+      ctx.body = { error: error.message };
+    }
+  },
+
+  /**
+   * Forgot password - sends reset email
+   * POST /api/firebase-authentication/forgotPassword
+   * Public endpoint - no authentication required
+   */
+  async forgotPassword(ctx) {
+    strapi.log.debug("forgotPassword endpoint called");
+    try {
+      ctx.body = await strapi
+        .plugin(pluginName)
+        .service("firebaseService")
+        .forgotPassword(ctx);
+    } catch (error) {
+      strapi.log.error("forgotPassword controller error:", error);
+      if (error.name === "ValidationError") {
+        ctx.status = 400;
+      } else if (error.name === "NotFoundError") {
+        ctx.status = 404;
+      } else {
+        ctx.status = 500;
+      }
+      ctx.body = { error: error.message };
+    }
+  },
+
+  /**
+   * Reset password - authenticated with 1hr JWT
+   * POST /api/firebase-authentication/resetPassword
+   * Public endpoint - uses JWT from Authorization header
+   */
+  async resetPassword(ctx) {
+    strapi.log.debug("resetPassword endpoint called");
+    try {
+      ctx.body = await strapi
+        .plugin(pluginName)
+        .service("firebaseService")
+        .resetPassword(ctx);
+    } catch (error) {
+      strapi.log.error("resetPassword controller error:", error);
+      if (error.name === "ValidationError" || error.name === "UnauthorizedError") {
+        ctx.status = 401;
       } else {
         ctx.status = 500;
       }

@@ -143,6 +143,40 @@ const resetUserPassword = async (idToUpdate: string, payload: { password: string
   return user;
 };
 
+const sendResetEmail = async (userId: string) => {
+  const url = `${PLUGIN_ID}/users/sendResetEmail/${userId}`;
+  const { put } = getFetchClient();
+  const { data: result } = await put(url, {});
+
+  return result;
+};
+
+const getFirebaseConfig = async () => {
+  const url = `/${PLUGIN_ID}/config`;
+  try {
+    const { get } = getFetchClient();
+    const { data: config } = await get(url, {
+      headers: {
+        'Strapi-Response-Format': 'v5', // Ensure Strapi v5 response format
+      }
+    });
+    return config;
+  } catch (e) {
+    // Return default config if endpoint fails
+    return {
+      passwordRequirementsRegex: "^.{6,}$",
+      passwordRequirementsMessage: "Password must be at least 6 characters long",
+      passwordResetUrl: "http://localhost:3000/reset-password",
+      passwordResetEmailSubject: "Reset Your Password",
+    };
+  }
+};
+
+const sendPasswordResetEmail = async (userId: string) => {
+  // This is an alias for sendResetEmail for consistency
+  return sendResetEmail(userId);
+};
+
 export {
   fetchUsers,
   fetchUserByID,
@@ -152,4 +186,7 @@ export {
   fetchStrapiUsers,
   fetchStrapiUserById,
   resetUserPassword,
+  sendResetEmail,
+  getFirebaseConfig,
+  sendPasswordResetEmail,
 };

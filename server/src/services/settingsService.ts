@@ -3,66 +3,76 @@ import { Context, DefaultContext } from "koa";
 import admin, { ServiceAccount } from "firebase-admin";
 import checkValidJson from "../utils/check-valid-json";
 import CryptoJS from "crypto-js";
+import {
+  CONFIG_CONTENT_TYPE,
+  CONFIG_KEYS,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  VALIDATION_MESSAGES,
+  REQUIRED_FIELDS,
+  DEFAULT_PASSWORD_RESET_URL,
+  DEFAULT_PASSWORD_MESSAGE,
+  DEFAULT_PASSWORD_REGEX,
+  DEFAULT_RESET_EMAIL_SUBJECT
+} from "../constants";
 
 const { ValidationError, ApplicationError } = errors;
 export default ({ strapi }) => {
-  const encryptionKey = strapi.config.get(
-    "plugin::firebase-authentication.FIREBASE_JSON_ENCRYPTION_KEY"
-  );
+  const encryptionKey = strapi.config.get(CONFIG_KEYS.ENCRYPTION_KEY);
 
   return {
     async init() {
       try {
-        console.log("Starting Firebase initialization...");
+        strapi.log.info("Starting Firebase initialization...");
         const res = await strapi.db
-          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .query(CONFIG_CONTENT_TYPE)
           .findOne({ where: {} });
-        console.log("Found config:", !!res);
+        strapi.log.debug("Found config:", !!res);
 
         if (!res) {
-          console.log("No config found, checking for existing Firebase app...");
+          strapi.log.debug("No config found, checking for existing Firebase app...");
           if (strapi.firebase) {
-            console.log("Deleting existing Firebase app...");
+            strapi.log.debug("Deleting existing Firebase app...");
             await strapi.firebase.app().delete();
           }
           return;
         }
 
         const jsonObject = res["firebase_config_json"];
-        console.log("Config JSON present:", !!jsonObject?.firebaseConfigJson);
+        strapi.log.debug("Config JSON present:", !!jsonObject?.firebaseConfigJson);
 
         if (!jsonObject || !jsonObject.firebaseConfigJson) {
-          console.log("No valid JSON config, checking for existing Firebase app...");
+          strapi.log.debug("No valid JSON config, checking for existing Firebase app...");
           if (strapi.firebase) {
-            console.log("Deleting existing Firebase app...");
+            strapi.log.debug("Deleting existing Firebase app...");
             await strapi.firebase.app().delete();
           }
           return;
         }
 
-        console.log("Decrypting JSON config...");
+        strapi.log.debug("Decrypting JSON config...");
         const firebaseConfigJson = await this.decryptJson(encryptionKey, jsonObject.firebaseConfigJson);
 
-        console.log("Validating service account...");
+        strapi.log.debug("Validating service account...");
         const serviceAccount = checkValidJson(firebaseConfigJson);
         if (!serviceAccount) {
-          console.log("Invalid service account JSON");
+          strapi.log.warn("Invalid service account JSON");
           return;
         }
 
-        console.log("Initializing Firebase app...");
+        strapi.log.info("Initializing Firebase app...");
 
         // Check if Firebase app already exists and delete it
         try {
           const existingApp = admin.app();
           if (existingApp) {
-            console.log("Deleting existing Firebase app before re-initialization...");
+            strapi.log.debug("Deleting existing Firebase app before re-initialization...");
             await existingApp.delete();
-            console.log("Existing app deleted");
+            strapi.log.debug("Existing app deleted");
           }
         } catch (error) {
           // App doesn't exist, which is fine - continue with initialization
-          console.log("No existing Firebase app found, proceeding with initialization");
+          strapi.log.debug("No existing Firebase app found, proceeding with initialization");
         }
 
         // Initialize Firebase
@@ -71,17 +81,17 @@ export default ({ strapi }) => {
             credential: admin.credential.cert(serviceAccount as ServiceAccount),
           });
           strapi.firebase = admin;
-          console.log("✅ Firebase initialization complete - admin instance attached to strapi.firebase");
+          strapi.log.info("Firebase initialization complete - admin instance attached to strapi.firebase");
         } catch (initError) {
-          console.error("❌ Failed to initialize Firebase:", initError);
+          strapi.log.error("Failed to initialize Firebase:", initError);
           throw initError;
         }
       } catch (error) {
-        console.error("Firebase bootstrap error:", error);
+        strapi.log.error("Firebase bootstrap error:", error);
       }
     },
     /**
-     * Retrieves and decrypts the Firebase configuration including Web API key
+     * Retrieves and decrypts the Firebase configuration including Web API key and password reset settings
      *
      * @returns Firebase configuration object or null if not configured
      *
@@ -91,12 +101,16 @@ export default ({ strapi }) => {
      * Returns an object containing:
      * - `firebaseConfigJson`: Decrypted Firebase service account JSON string
      * - `firebaseWebApiKey`: Firebase Web API key for Identity Toolkit API calls
+     * - `passwordRequirementsRegex`: Regex pattern for password validation
+     * - `passwordRequirementsMessage`: Error message for invalid passwords
+     * - `passwordResetUrl`: URL for password reset page
+     * - `passwordResetEmailSubject`: Subject line for reset emails
      */
     async getFirebaseConfigJson() {
       const key = encryptionKey;
       try {
         const configObject = await strapi.db
-          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .query(CONFIG_CONTENT_TYPE)
           .findOne({ where: {} });
 
         if (!configObject || !configObject["firebase_config_json"]) {
@@ -113,10 +127,15 @@ export default ({ strapi }) => {
         const firebaseConfigJson = await this.decryptJson(key, hashedJson);
         return {
           firebaseConfigJson,
-          firebaseWebApiKey: configObject["firebase_web_api_key"]
+          firebaseWebApiKey: configObject["firebase_web_api_key"] || null, // May be null if not configured
+          // Include password reset configuration fields
+          passwordRequirementsRegex: configObject["passwordRequirementsRegex"] || DEFAULT_PASSWORD_REGEX,
+          passwordRequirementsMessage: configObject["passwordRequirementsMessage"] || DEFAULT_PASSWORD_MESSAGE,
+          passwordResetUrl: configObject["passwordResetUrl"] || DEFAULT_PASSWORD_RESET_URL,
+          passwordResetEmailSubject: configObject["passwordResetEmailSubject"] || DEFAULT_RESET_EMAIL_SUBJECT
         };
       } catch (error) {
-        console.error("Firebase config error:", error);
+        strapi.log.error("Firebase config error:", error);
         throw new errors.ApplicationError("Error retrieving Firebase config", {
           error: error.message,
         });
@@ -124,7 +143,7 @@ export default ({ strapi }) => {
     },
 
     /**
-     * Stores and encrypts Firebase configuration including Web API key
+     * Stores and encrypts Firebase configuration including Web API key and password reset settings
      *
      * @param ctx - Koa context object containing the configuration in request body
      * @returns The saved configuration object with decrypted values
@@ -136,69 +155,84 @@ export default ({ strapi }) => {
      * Expects request body to contain:
      * - `firebaseConfigJson`: Firebase service account JSON as string
      * - `firebaseWebApiKey`: Firebase Web API key for REST API calls
+     * - `passwordRequirementsRegex`: Regex pattern for password validation
+     * - `passwordRequirementsMessage`: Error message for invalid passwords
+     * - `passwordResetUrl`: URL for password reset page
+     * - `passwordResetEmailSubject`: Subject line for reset emails
      *
      * The service account JSON is encrypted using AES before storage,
-     * while the Web API key is stored in plain text.
+     * while the Web API key and password settings are stored in plain text.
      */
     async setFirebaseConfigJson(ctx: DefaultContext | Context) {
       try {
-        console.log("setFirebaseConfigJson", ctx.request);
+        strapi.log.debug("setFirebaseConfigJson", ctx.request);
         const { body: requestBody } = ctx.request;
         const firebaseConfigJsonString = requestBody.firebaseConfigJson;
-        const firebaseWebApiKey = requestBody.firebaseWebApiKey;
+        const firebaseWebApiKey = requestBody.firebaseWebApiKey || null; // Make Web API Key optional
+        // Extract password reset configuration fields
+        const {
+          passwordRequirementsRegex = DEFAULT_PASSWORD_REGEX,
+          passwordRequirementsMessage = DEFAULT_PASSWORD_MESSAGE,
+          passwordResetUrl = DEFAULT_PASSWORD_RESET_URL,
+          passwordResetEmailSubject = DEFAULT_RESET_EMAIL_SUBJECT
+        } = requestBody;
 
-        if (!requestBody) throw new ValidationError("data is missing");
+        if (!requestBody) throw new ValidationError(ERROR_MESSAGES.MISSING_DATA);
 
         // Validate Service Account JSON structure
         try {
           const parsedConfig = JSON.parse(firebaseConfigJsonString);
-          const requiredFields = ['private_key', 'client_email', 'project_id', 'type'];
+          const requiredFields = REQUIRED_FIELDS.SERVICE_ACCOUNT;
           const missingFields = requiredFields.filter(field => !parsedConfig[field]);
 
           if (missingFields.length > 0) {
             throw new ValidationError(
-              `Invalid Service Account JSON. Missing required fields: ${missingFields.join(', ')}. ` +
-              `Please download the correct JSON from Firebase Console → Service Accounts → Generate New Private Key. ` +
-              `Do NOT use the Web App Config (SDK snippet) - that is a different file!`
+              `${VALIDATION_MESSAGES.INVALID_SERVICE_ACCOUNT} ${missingFields.join(', ')}. ` +
+              VALIDATION_MESSAGES.SERVICE_ACCOUNT_HELP
             );
           }
 
           // Additional check: if it has apiKey or authDomain, it's the wrong JSON
           if (parsedConfig.apiKey || parsedConfig.authDomain) {
-            throw new ValidationError(
-              `You uploaded a Web App Config (SDK snippet) instead of a Service Account JSON. ` +
-              `Please go to Firebase Console → Service Accounts tab → Generate New Private Key to download the correct file.`
-            );
+            throw new ValidationError(VALIDATION_MESSAGES.WRONG_JSON_TYPE);
           }
         } catch (parseError) {
           if (parseError instanceof ValidationError) {
             throw parseError;
           }
-          throw new ValidationError("Invalid JSON format. Please ensure you copied the entire JSON content correctly.");
+          throw new ValidationError(ERROR_MESSAGES.INVALID_JSON);
         }
 
         const hash = await this.encryptJson(encryptionKey, firebaseConfigJsonString);
         const isExist = await strapi.db
-          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .query(CONFIG_CONTENT_TYPE)
           .findOne({ where: {} });
         let res: any;
         if (!isExist) {
           res = await strapi.db
-            .query("plugin::firebase-authentication.firebase-authentication-configuration")
+            .query(CONFIG_CONTENT_TYPE)
             .create({
               data: {
                 firebase_config_json: { firebaseConfigJson: hash },
-                firebase_web_api_key: firebaseWebApiKey
+                firebase_web_api_key: firebaseWebApiKey,
+                passwordRequirementsRegex,
+                passwordRequirementsMessage,
+                passwordResetUrl,
+                passwordResetEmailSubject
               },
             });
         } else {
           res = await strapi.db
-            .query("plugin::firebase-authentication.firebase-authentication-configuration")
+            .query(CONFIG_CONTENT_TYPE)
             .update({
               where: { id: isExist.id },
               data: {
                 firebase_config_json: { firebaseConfigJson: hash },
-                firebase_web_api_key: firebaseWebApiKey
+                firebase_web_api_key: firebaseWebApiKey,
+                passwordRequirementsRegex,
+                passwordRequirementsMessage,
+                passwordResetUrl,
+                passwordResetEmailSubject
               },
             });
         }
@@ -207,36 +241,41 @@ export default ({ strapi }) => {
         const firebaseConfigJsonValue = await this.decryptJson(encryptionKey, firebaseConfigHash);
         res["firebase_config_json"].firebaseConfigJson = firebaseConfigJsonValue;
         res["firebase_web_api_key"] = firebaseWebApiKey;
+        // Include password reset fields in the response
+        res["passwordRequirementsRegex"] = res["passwordRequirementsRegex"] || passwordRequirementsRegex;
+        res["passwordRequirementsMessage"] = res["passwordRequirementsMessage"] || passwordRequirementsMessage;
+        res["passwordResetUrl"] = res["passwordResetUrl"] || passwordResetUrl;
+        res["passwordResetEmailSubject"] = res["passwordResetEmailSubject"] || passwordResetEmailSubject;
         return res;
       } catch (error) {
-        throw new ApplicationError("some thing went wrong", {
+        throw new ApplicationError(ERROR_MESSAGES.SOMETHING_WENT_WRONG, {
           error: error.message,
         });
       }
     },
     delFirebaseConfigJson: async () => {
       try {
-        console.log("delFirebaseConfigJson 🤣");
+        strapi.log.debug("delFirebaseConfigJson called");
         const isExist = await strapi.db
-          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .query(CONFIG_CONTENT_TYPE)
           .findOne({ where: {} });
-        console.log("isExist 🤣", isExist);
+        strapi.log.debug("Config exists:", isExist);
         if (!isExist) {
-          console.log("No Firebase configs exists for deletion");
+          strapi.log.info(ERROR_MESSAGES.DELETION_NO_CONFIG);
           return null;
         }
         const res = await strapi.db
-          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .query(CONFIG_CONTENT_TYPE)
           .delete({
             where: { id: isExist.id }
           });
-        console.log("res 🤣", res);
+        strapi.log.debug("Delete result:", res);
         await strapi.plugin("firebase-authentication").service("settingsService").init();
-        console.log("res 🤣", res);
+        strapi.log.info(SUCCESS_MESSAGES.FIREBASE_CONFIG_DELETED);
         return res;
       } catch (error) {
-        console.log("error 🤣", error);
-        throw new ApplicationError("some thing went wrong", {
+        strapi.log.error("delFirebaseConfigJson error:", error);
+        throw new ApplicationError(ERROR_MESSAGES.SOMETHING_WENT_WRONG, {
           error: error,
         });
       }
@@ -251,7 +290,7 @@ export default ({ strapi }) => {
     },
     async restart() {
       strapi.log.info("*".repeat(100));
-      strapi.log.info("SERVER IS RESTARTING");
+      strapi.log.info(SUCCESS_MESSAGES.SERVER_RESTARTING);
       setImmediate(() => strapi.reload());
       strapi.log.info("*".repeat(100));
     },
