@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const strapi: any;
+import { Context } from "koa";
 import { pluginName } from "../firebaseAuthentication/types";
 import { ERROR_MESSAGES } from "../constants";
 
@@ -144,6 +145,27 @@ const firebaseController = {
         ctx.status = 500;
       }
       ctx.body = { error: error.message };
+    }
+  },
+
+  async requestMagicLink(ctx: Context) {
+    try {
+      const result = await strapi
+        .plugin("firebase-authentication")
+        .service("firebaseService")
+        .requestMagicLink(ctx);
+
+      ctx.body = result;
+    } catch (error) {
+      if (error.name === "ValidationError" || error.name === "ApplicationError") {
+        throw error;
+      }
+      // Log internal errors but don't expose them
+      strapi.log.error("requestMagicLink controller error:", error);
+      ctx.body = {
+        success: false,
+        message: "An error occurred while processing your request",
+      };
     }
   },
 };

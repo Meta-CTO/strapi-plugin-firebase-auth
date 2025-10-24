@@ -211,6 +211,129 @@ class EmailService {
       "Email service is not configured. Please configure Strapi email plugin or provide custom sendPasswordResetEmail function in plugin config."
     );
   }
+
+  /**
+   * Send magic link email with three-tier fallback system
+   * Tier 1: Strapi Email Plugin (if configured)
+   * Tier 2: Custom Hook Function (if provided in config)
+   * Tier 3: Development Console Logging (dev mode only)
+   */
+  async sendMagicLinkEmail(
+    email: string,
+    magicLink: string,
+    config: any
+  ): Promise<{ success: boolean; message: string }> {
+    // Build template variables
+    const expiryHours = config?.magicLinkExpiryHours || 1;
+    const expiresIn = expiryHours === 1 ? "1 hour" : `${expiryHours} hours`;
+
+    const variables: Partial<TemplateVariables> = {
+      user: {
+        email,
+        uid: "", // Magic links don't require existing user
+      },
+      magicLink,
+      expiresIn,
+    };
+
+    // Get configuration for building complete variables
+    const pluginConfig: any = strapi.config.get("plugin::firebase-authentication");
+    const appConfig: any = pluginConfig?.app || {};
+
+    // Build complete template variables for compilation
+    const completeVariables: TemplateVariables = {
+      ...variables,
+      appName: appConfig?.name || "Your Application",
+      appUrl: appConfig?.url || process.env.PUBLIC_URL || "http://localhost:3000",
+      supportEmail: appConfig?.supportEmail,
+      year: new Date().getFullYear(),
+      expiresIn: variables.expiresIn || "1 hour",
+    } as TemplateVariables;
+
+    // TIER 1: Try Strapi email plugin
+    try {
+      // Send the email without timeout since Ethereal/SMTP can be slow
+      await this.sendTemplatedEmail(email, "magicLink", variables);
+
+      strapi.log.info(`✅ Magic link email sent via Strapi email plugin to ${email}`);
+      return {
+        success: true,
+        message: `Magic link email sent to ${email}`,
+      };
+    } catch (tier1Error: any) {
+      strapi.log.debug(`Strapi email plugin failed: ${tier1Error.message}. Trying fallback options...`);
+    }
+
+    // TIER 2: Try custom hook function
+    const customSender = pluginConfig?.sendMagicLinkEmail;
+    if (customSender && typeof customSender === "function") {
+      try {
+        // Get template service and template
+        const templateService = strapi.plugin("firebase-authentication").service("templateService");
+        const template = await templateService.getTemplate("magicLink");
+
+        // Compile the templates
+        const compiledSubject = _.template(template.subject)(completeVariables);
+        const compiledHtml = template.html ? _.template(template.html)(completeVariables) : undefined;
+        const compiledText = template.text ? _.template(template.text)(completeVariables) : undefined;
+
+        // Call custom sender
+        await customSender({
+          to: email,
+          subject: compiledSubject,
+          html: compiledHtml,
+          text: compiledText,
+          magicLink,
+          variables: completeVariables,
+        });
+
+        strapi.log.info(`✅ Magic link email sent via custom hook to ${email}`);
+        return {
+          success: true,
+          message: `Magic link email sent to ${email}`,
+        };
+      } catch (tier2Error: any) {
+        strapi.log.error(`Custom hook failed: ${tier2Error.message}. Continuing to next fallback...`);
+      }
+    }
+
+    // TIER 3: Development fallback
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        // Get template for console display
+        const templateService = strapi.plugin("firebase-authentication").service("templateService");
+        const template = await templateService.getTemplate("magicLink");
+        const compiledSubject = _.template(template.subject)(completeVariables);
+
+        // Log to console with nice formatting
+        // NOTE: This output appears in the SERVER TERMINAL where Strapi is running,
+        // not in the browser console. Check your terminal for the magic link.
+        strapi.log.info("\n" + "=".repeat(80));
+        strapi.log.info("🔗 MAGIC LINK EMAIL (Development Mode)");
+        strapi.log.info("=".repeat(80));
+        strapi.log.info(`To: ${email}`);
+        strapi.log.info(`Subject: ${compiledSubject}`);
+        strapi.log.info(`Magic Link: ${magicLink}`);
+        strapi.log.info(`Expires In: ${expiresIn}`);
+        strapi.log.info("=".repeat(80));
+        strapi.log.info("Note: Email not sent - no email service configured");
+        strapi.log.info("Copy the link above and open in your browser to test");
+        strapi.log.info("=".repeat(80) + "\n");
+
+        return {
+          success: true,
+          message: "Magic link logged to console (development mode)",
+        };
+      } catch (tier3Error: any) {
+        strapi.log.error(`Development fallback failed: ${tier3Error.message}`);
+      }
+    }
+
+    // Production error if no fallback worked
+    throw new errors.ApplicationError(
+      "Email service is not configured. Please configure Strapi email plugin or provide custom sendMagicLinkEmail function in plugin config."
+    );
+  }
 }
 
 export default ({ strapi }: { strapi: any }) => new EmailService();

@@ -46,5 +46,14 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "POST",
+      path: "/requestMagicLink",
+      handler: "firebaseController.requestMagicLink",
+      config: {
+        auth: false, // Public endpoint - passwordless authentication
+        policies: [],
+      },
+    },
   ],
 };

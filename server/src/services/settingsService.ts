@@ -123,13 +123,17 @@ export default ({ strapi }) => {
         const firebaseConfigJson = await this.decryptJson(key, hashedJson);
         return {
           firebaseConfigJson,
-          firebaseWebApiKey: configObject["firebase_web_api_key"] || null, // May be null if not configured
+          firebaseWebApiKey: configObject.firebaseWebApiKey || null, // May be null if not configured
           // Include password reset configuration fields
-          passwordRequirementsRegex: configObject["passwordRequirementsRegex"] || DEFAULT_PASSWORD_REGEX,
-          passwordRequirementsMessage:
-            configObject["passwordRequirementsMessage"] || DEFAULT_PASSWORD_MESSAGE,
-          passwordResetUrl: configObject["passwordResetUrl"] || DEFAULT_PASSWORD_RESET_URL,
-          passwordResetEmailSubject: configObject["passwordResetEmailSubject"] || DEFAULT_RESET_EMAIL_SUBJECT,
+          passwordRequirementsRegex: configObject.passwordRequirementsRegex || DEFAULT_PASSWORD_REGEX,
+          passwordRequirementsMessage: configObject.passwordRequirementsMessage || DEFAULT_PASSWORD_MESSAGE,
+          passwordResetUrl: configObject.passwordResetUrl || DEFAULT_PASSWORD_RESET_URL,
+          passwordResetEmailSubject: configObject.passwordResetEmailSubject || DEFAULT_RESET_EMAIL_SUBJECT,
+          // Include magic link configuration fields
+          enableMagicLink: configObject.enableMagicLink || false,
+          magicLinkUrl: configObject.magicLinkUrl || "http://localhost:1338/verify-magic-link.html",
+          magicLinkEmailSubject: configObject.magicLinkEmailSubject || "Sign in to Your Application",
+          magicLinkExpiryHours: configObject.magicLinkExpiryHours || 1,
         };
       } catch (error) {
         strapi.log.error("Firebase config error:", error);
@@ -172,6 +176,10 @@ export default ({ strapi }) => {
           passwordRequirementsMessage = DEFAULT_PASSWORD_MESSAGE,
           passwordResetUrl = DEFAULT_PASSWORD_RESET_URL,
           passwordResetEmailSubject = DEFAULT_RESET_EMAIL_SUBJECT,
+          enableMagicLink = false,
+          magicLinkUrl = "http://localhost:1338/verify-magic-link.html",
+          magicLinkEmailSubject = "Sign in to Your Application",
+          magicLinkExpiryHours = 1,
         } = requestBody;
 
         if (!requestBody) throw new ValidationError(ERROR_MESSAGES.MISSING_DATA);
@@ -212,6 +220,10 @@ export default ({ strapi }) => {
               passwordRequirementsMessage,
               passwordResetUrl,
               passwordResetEmailSubject,
+              enableMagicLink,
+              magicLinkUrl,
+              magicLinkEmailSubject,
+              magicLinkExpiryHours,
             },
           });
         } else {
@@ -224,20 +236,28 @@ export default ({ strapi }) => {
               passwordRequirementsMessage,
               passwordResetUrl,
               passwordResetEmailSubject,
+              enableMagicLink,
+              magicLinkUrl,
+              magicLinkEmailSubject,
+              magicLinkExpiryHours,
             },
           });
         }
         await strapi.plugin("firebase-authentication").service("settingsService").init();
-        const firebaseConfigHash = res["firebase_config_json"].firebaseConfigJson;
+        const firebaseConfigHash = res.firebaseConfigJson.firebaseConfigJson;
         const firebaseConfigJsonValue = await this.decryptJson(encryptionKey, firebaseConfigHash);
-        res["firebase_config_json"].firebaseConfigJson = firebaseConfigJsonValue;
-        res["firebase_web_api_key"] = firebaseWebApiKey;
+        res.firebaseConfigJson.firebaseConfigJson = firebaseConfigJsonValue;
+        res.firebaseWebApiKey = firebaseWebApiKey;
         // Include password reset fields in the response
-        res["passwordRequirementsRegex"] = res["passwordRequirementsRegex"] || passwordRequirementsRegex;
-        res["passwordRequirementsMessage"] =
-          res["passwordRequirementsMessage"] || passwordRequirementsMessage;
-        res["passwordResetUrl"] = res["passwordResetUrl"] || passwordResetUrl;
-        res["passwordResetEmailSubject"] = res["passwordResetEmailSubject"] || passwordResetEmailSubject;
+        res.passwordRequirementsRegex = res.passwordRequirementsRegex || passwordRequirementsRegex;
+        res.passwordRequirementsMessage = res.passwordRequirementsMessage || passwordRequirementsMessage;
+        res.passwordResetUrl = res.passwordResetUrl || passwordResetUrl;
+        res.passwordResetEmailSubject = res.passwordResetEmailSubject || passwordResetEmailSubject;
+        // Include magic link fields in the response - use ?? for boolean
+        res.enableMagicLink = res.enableMagicLink ?? enableMagicLink;
+        res.magicLinkUrl = res.magicLinkUrl || magicLinkUrl;
+        res.magicLinkEmailSubject = res.magicLinkEmailSubject || magicLinkEmailSubject;
+        res.magicLinkExpiryHours = res.magicLinkExpiryHours || magicLinkExpiryHours;
         return res;
       } catch (error) {
         throw new ApplicationError(ERROR_MESSAGES.SOMETHING_WENT_WRONG, {
@@ -268,6 +288,41 @@ export default ({ strapi }) => {
         });
       }
     },
+
+    /**
+     * Updates only the magic link settings without affecting other configuration
+     */
+    async updateMagicLinkSettings(settings: any) {
+      try {
+        const foundConfig = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
+
+        if (!foundConfig) {
+          throw new errors.NotFoundError("Configuration not found");
+        }
+
+        const result = await strapi.db.query(CONFIG_CONTENT_TYPE).update({
+          where: { id: foundConfig.id },
+          data: {
+            enableMagicLink: settings.enableMagicLink,
+            magicLinkUrl: settings.magicLinkUrl,
+            magicLinkEmailSubject: settings.magicLinkEmailSubject,
+            magicLinkExpiryHours: settings.magicLinkExpiryHours,
+          },
+        });
+
+        return {
+          enableMagicLink: result.enableMagicLink,
+          magicLinkUrl: result.magicLinkUrl,
+          magicLinkEmailSubject: result.magicLinkEmailSubject,
+          magicLinkExpiryHours: result.magicLinkExpiryHours,
+        };
+      } catch (error) {
+        throw new ApplicationError("Error updating magic link settings", {
+          error: error.message,
+        });
+      }
+    },
+
     async encryptJson(key: string, json: string) {
       const encrypted = CryptoJS.AES.encrypt(json, key).toString();
       return encrypted;

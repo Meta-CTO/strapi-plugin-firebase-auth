@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { JSONInput, Flex, Box, Button, Typography, TextInput, Textarea } from "@strapi/design-system";
+import {
+  JSONInput,
+  Flex,
+  Box,
+  Button,
+  Typography,
+  TextInput,
+  Textarea,
+  Toggle,
+  NumberInput,
+} from "@strapi/design-system";
 
 import { Page } from "@strapi/strapi/admin";
 import { useNotification } from "@strapi/strapi/admin";
@@ -26,6 +36,11 @@ function SettingsPage() {
   );
   const [passwordResetUrl, setPasswordResetUrl] = useState<string>("http://localhost:3000/reset-password");
   const [passwordResetEmailSubject, setPasswordResetEmailSubject] = useState<string>("Reset Your Password");
+  // Magic link configuration fields
+  const [enableMagicLink, setEnableMagicLink] = useState<boolean>(false);
+  const [magicLinkUrl, setMagicLinkUrl] = useState<string>("http://localhost:1338/verify-magic-link.html");
+  const [magicLinkEmailSubject, setMagicLinkEmailSubject] = useState<string>("Sign in to Your Application");
+  const [magicLinkExpiryHours, setMagicLinkExpiryHours] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -50,6 +65,11 @@ function SettingsPage() {
         );
         setPasswordResetUrl(data?.passwordResetUrl || "http://localhost:3000/reset-password");
         setPasswordResetEmailSubject(data?.passwordResetEmailSubject || "Reset Your Password");
+        // Load magic link configuration fields
+        setEnableMagicLink(data?.enableMagicLink || false);
+        setMagicLinkUrl(data?.magicLinkUrl || "http://localhost:1338/verify-magic-link.html");
+        setMagicLinkEmailSubject(data?.magicLinkEmailSubject || "Sign in to Your Application");
+        setMagicLinkExpiryHours(data?.magicLinkExpiryHours || 1);
       })
       .catch((error) => {
         setLoading(false);
@@ -75,6 +95,11 @@ function SettingsPage() {
       setPasswordRequirementsMessage("Password must be at least 6 characters long");
       setPasswordResetUrl("http://localhost:3000/reset-password");
       setPasswordResetEmailSubject("Reset Your Password");
+      // Reset magic link configuration fields to defaults
+      setEnableMagicLink(false);
+      setMagicLinkUrl("http://localhost:1338/verify-magic-link.html");
+      setMagicLinkEmailSubject("Sign in to Your Application");
+      setMagicLinkExpiryHours(1);
       // restartServer();
       setLoading(false);
       toggleNotification({
@@ -104,6 +129,10 @@ function SettingsPage() {
         passwordRequirementsMessage,
         passwordResetUrl,
         passwordResetEmailSubject,
+        enableMagicLink,
+        magicLinkUrl,
+        magicLinkEmailSubject,
+        magicLinkExpiryHours,
       });
       console.log("Firebase JSON submission response:", data);
 
@@ -139,6 +168,10 @@ function SettingsPage() {
         passwordRequirementsMessage,
         passwordResetUrl,
         passwordResetEmailSubject,
+        enableMagicLink,
+        magicLinkUrl,
+        magicLinkEmailSubject,
+        magicLinkExpiryHours,
       });
 
       console.log("Password settings saved:", data);
@@ -149,6 +182,10 @@ function SettingsPage() {
         setPasswordRequirementsMessage(data.passwordRequirementsMessage || passwordRequirementsMessage);
         setPasswordResetUrl(data.passwordResetUrl || passwordResetUrl);
         setPasswordResetEmailSubject(data.passwordResetEmailSubject || passwordResetEmailSubject);
+        setEnableMagicLink(data.enableMagicLink || enableMagicLink);
+        setMagicLinkUrl(data.magicLinkUrl || magicLinkUrl);
+        setMagicLinkEmailSubject(data.magicLinkEmailSubject || magicLinkEmailSubject);
+        setMagicLinkExpiryHours(data.magicLinkExpiryHours || magicLinkExpiryHours);
       }
 
       setLoading(false);
@@ -161,6 +198,44 @@ function SettingsPage() {
       toggleNotification({
         type: "warning",
         message: "Failed to save password settings",
+      });
+      setLoading(false);
+    }
+  };
+
+  const handleSaveMagicLinkSettings = async () => {
+    try {
+      setLoading(true);
+
+      const data = await savePasswordSettings({
+        passwordRequirementsRegex,
+        passwordRequirementsMessage,
+        passwordResetUrl,
+        passwordResetEmailSubject,
+        enableMagicLink,
+        magicLinkUrl,
+        magicLinkEmailSubject,
+        magicLinkExpiryHours,
+      });
+
+      // Update local state with returned values
+      if (data) {
+        setEnableMagicLink(data.enableMagicLink || enableMagicLink);
+        setMagicLinkUrl(data.magicLinkUrl || magicLinkUrl);
+        setMagicLinkEmailSubject(data.magicLinkEmailSubject || magicLinkEmailSubject);
+        setMagicLinkExpiryHours(data.magicLinkExpiryHours || magicLinkExpiryHours);
+      }
+
+      setLoading(false);
+      toggleNotification({
+        type: "success",
+        message: "Magic link settings saved successfully",
+      });
+    } catch (error) {
+      console.error("Error saving magic link settings:", error);
+      toggleNotification({
+        type: "warning",
+        message: "Failed to save magic link settings",
       });
       setLoading(false);
     }
@@ -556,6 +631,160 @@ function SettingsPage() {
             >
               <Button size="L" variant="secondary" onClick={handleSavePasswordSettings}>
                 Save Password Settings
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Section 3: Magic Link Settings */}
+          <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
+            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
+              🔗 Magic Link Authentication
+            </Typography>
+            <Typography
+              variant="omega"
+              textColor="neutral600"
+              style={{ display: "block", marginBottom: "24px" }}
+            >
+              Configure passwordless authentication via email magic links
+            </Typography>
+
+            {/* Enable/Disable Toggle */}
+            <Box marginBottom={3}>
+              <Flex alignItems="center" gap={2}>
+                <Toggle
+                  name="enableMagicLink"
+                  label="Enable Magic Link Authentication"
+                  checked={enableMagicLink}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEnableMagicLink(e.target.checked)}
+                  hint="Allow users to sign in using magic links sent to their email"
+                />
+                <Typography
+                  variant="pi"
+                  fontWeight="bold"
+                  textColor={enableMagicLink ? "success700" : "neutral400"}
+                >
+                  {enableMagicLink ? "Active" : "Inactive"}
+                </Typography>
+              </Flex>
+            </Box>
+
+            {/* Show configuration only when enabled */}
+            {enableMagicLink && (
+              <>
+                <Box marginBottom={3}>
+                  <Typography
+                    variant="omega"
+                    fontWeight="bold"
+                    style={{ display: "block", marginBottom: "8px" }}
+                  >
+                    Verification URL *
+                  </Typography>
+                  <TextInput
+                    name="magicLinkUrl"
+                    value={magicLinkUrl}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMagicLinkUrl(e.target.value)}
+                    placeholder="https://yourapp.com/verify-magic-link"
+                    hint="URL where users complete magic link authentication (must handle client-side verification)"
+                    required
+                  />
+                </Box>
+
+                <Box marginBottom={3}>
+                  <Typography
+                    variant="omega"
+                    fontWeight="bold"
+                    style={{ display: "block", marginBottom: "8px" }}
+                  >
+                    Email Subject
+                  </Typography>
+                  <TextInput
+                    name="magicLinkEmailSubject"
+                    value={magicLinkEmailSubject}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setMagicLinkEmailSubject(e.target.value)
+                    }
+                    placeholder="Sign in to Your Application"
+                    hint="Subject line for magic link emails"
+                  />
+                </Box>
+
+                <Box marginBottom={3}>
+                  <Typography
+                    variant="omega"
+                    fontWeight="bold"
+                    style={{ display: "block", marginBottom: "8px" }}
+                  >
+                    Link Expiry (hours)
+                  </Typography>
+                  <NumberInput
+                    name="magicLinkExpiryHours"
+                    value={magicLinkExpiryHours}
+                    onValueChange={(value: number) => setMagicLinkExpiryHours(value)}
+                    min={1}
+                    max={72}
+                    hint="How long the magic link remains valid (1-72 hours)"
+                  />
+                </Box>
+
+                {/* Helper Section */}
+                <Box marginTop={4} padding={3} background="primary100" borderRadius="4px">
+                  <Typography
+                    variant="omega"
+                    fontWeight="bold"
+                    style={{ display: "block", marginBottom: "12px" }}
+                  >
+                    📋 Setup Requirements:
+                  </Typography>
+                  <Box marginLeft={2}>
+                    <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                      1. <strong>Firebase Console:</strong> Enable "Email link (passwordless sign-in)" in
+                      Authentication → Sign-in method
+                    </Typography>
+                    <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                      2. <strong>Authorized Domains:</strong> Add your domain to Firebase authorized domains
+                      list
+                    </Typography>
+                    <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                      3. <strong>Verification Page:</strong> Deploy the client-side verification handler at
+                      the URL above
+                    </Typography>
+                    <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                      4. <strong>Email Service:</strong> Configure Strapi Email plugin or custom email hook
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Testing Information */}
+                <Box marginTop={3} padding={3} background="neutral100" borderRadius="4px">
+                  <Typography
+                    variant="omega"
+                    fontWeight="bold"
+                    style={{ display: "block", marginBottom: "8px" }}
+                  >
+                    🧪 Testing:
+                  </Typography>
+                  <Typography variant="omega" style={{ display: "block" }}>
+                    Test page available at:{" "}
+                    <a href="/test-magic-link.html" target="_blank" rel="noreferrer">
+                      /test-magic-link.html
+                    </a>
+                  </Typography>
+                  <Typography variant="omega" style={{ display: "block", marginTop: "4px" }}>
+                    In development mode, magic links are logged to the server console.
+                  </Typography>
+                </Box>
+              </>
+            )}
+
+            <Flex
+              style={{
+                marginTop: 24,
+                width: "100%",
+              }}
+              justifyContent="flex-end"
+            >
+              <Button size="L" variant="secondary" onClick={handleSaveMagicLinkSettings} disabled={loading}>
+                Save Magic Link Settings
               </Button>
             </Flex>
           </Box>

@@ -15,6 +15,10 @@ export const saveFirebaseConfig = async (
     passwordRequirementsMessage?: string;
     passwordResetUrl?: string;
     passwordResetEmailSubject?: string;
+    enableMagicLink?: boolean;
+    magicLinkUrl?: string;
+    magicLinkEmailSubject?: string;
+    magicLinkExpiryHours?: number;
   }
 ) => {
   const url = `/${PLUGIN_ID}/settings/firebase-config`;
@@ -46,6 +50,10 @@ export const savePasswordSettings = async (passwordConfig: {
   passwordRequirementsMessage?: string;
   passwordResetUrl?: string;
   passwordResetEmailSubject?: string;
+  enableMagicLink?: boolean;
+  magicLinkUrl?: string;
+  magicLinkEmailSubject?: string;
+  magicLinkExpiryHours?: number;
 }) => {
   const url = `/${PLUGIN_ID}/settings/password-config`;
   const { post } = getFetchClient();

@@ -54,6 +54,70 @@ const createFakeEmail = async (phoneNumber?: string, pattern?: string) => {
 };
 
 /**
+ * Generate a valid username from an email address
+ * Username must be 5-20 characters and contain only letters, numbers, dots, underscores, and hyphens
+ * @param email - Email address (e.g., "test+something@example.com")
+ * @returns Valid unique username
+ * @throws Error if unable to generate unique username after MAX_RETRIES attempts
+ */
+const generateUsernameFromEmail = async (email: string): Promise<string> => {
+  const MAX_RETRIES = 10;
+
+  // Get the part before @
+  const emailPrefix = email.split("@")[0];
+
+  // Remove invalid characters (keep only letters, numbers, dots, underscores, hyphens)
+  let sanitizedPrefix = emailPrefix.replace(/[^a-zA-Z0-9._-]/g, "");
+
+  // If sanitized prefix is empty, generate random username
+  if (!sanitizedPrefix) {
+    sanitizedPrefix = "user" + Math.random().toString(36).substring(2, 8);
+  }
+
+  // Truncate to 20 characters max
+  let username = sanitizedPrefix.substring(0, 20);
+
+  // Ensure minimum length of 5 characters
+  if (username.length < 5) {
+    // Pad with random characters
+    const randomSuffix = Math.random()
+      .toString(36)
+      .substring(2, 7 - username.length);
+    username = username + randomSuffix;
+  }
+
+  // Check if username already exists
+  const existingUser = await strapi.db
+    .query("plugin::users-permissions.user")
+    .findOne({ where: { username } });
+
+  if (!existingUser) {
+    return username;
+  }
+
+  // Username collision - try adding random suffixes
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    // Take first 15 chars + underscore + 4 random chars = max 20 chars
+    const basePart = sanitizedPrefix.substring(0, 15);
+    const randomPart = Math.random().toString(36).substring(2, 6);
+    const collisionUsername = `${basePart}_${randomPart}`;
+
+    const existingCollisionUser = await strapi.db
+      .query("plugin::users-permissions.user")
+      .findOne({ where: { username: collisionUsername } });
+
+    if (!existingCollisionUser) {
+      return collisionUsername;
+    }
+  }
+
+  throw new errors.ValidationError(
+    `[Firebase Auth Plugin] Failed to generate unique username from email after ${MAX_RETRIES} attempts.\n` +
+      `Email: "${email}"`
+  );
+};
+
+/**
  * Generate a valid username from a phone number
  * Username must be 5-20 characters and contain only letters, numbers, dots, underscores, and hyphens
  * @param phoneNumber - Phone number (e.g., "+5543999662203")
@@ -263,8 +327,11 @@ export default ({ strapi }) => ({
     }
 
     if (decodedToken.email) {
+      // Generate a valid username from the email
+      userPayload.username = await generateUsernameFromEmail(decodedToken.email);
+
+      // Check for Apple Private Relay email
       const emailComponents = decodedToken.email.split("@");
-      userPayload.username = emailComponents[0];
       if (emailComponents[1].includes("privaterelay.appleid.com")) {
         userPayload.appleEmail = decodedToken.email;
       }
@@ -669,6 +736,107 @@ export default ({ strapi }) => ({
         throw error;
       }
       throw new errors.ApplicationError("Failed to reset password");
+    }
+  },
+
+  /**
+   * Request Magic Link for passwordless authentication
+   * Generates a sign-in link using Firebase Admin SDK
+   * Note: Verification requires client-side completion
+   */
+  async requestMagicLink(ctx) {
+    const { email } = ctx.request.body;
+
+    // Input validation
+    if (!email || typeof email !== "string") {
+      throw new errors.ValidationError("Valid email is required");
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new errors.ValidationError("Invalid email format");
+    }
+
+    // Get configuration
+    const config = await strapi.db
+      .query("plugin::firebase-authentication.firebase-authentication-configuration")
+      .findOne({ where: {} });
+
+    // Check if magic link is enabled
+    if (!config?.enableMagicLink) {
+      throw new errors.ApplicationError(
+        "Magic link authentication is not enabled. " + "Enable it in Settings > Firebase Authentication"
+      );
+    }
+
+    const magicLinkUrl =
+      config.magicLinkUrl || `${process.env.PUBLIC_URL || "http://localhost:1338"}/verify-magic-link.html`;
+
+    try {
+      // ActionCodeSettings for Firebase
+      const actionCodeSettings = {
+        url: magicLinkUrl,
+        handleCodeInApp: true, // Required for magic links
+        // Optional: mobile app support can be added here
+        // iOS: { bundleId: 'com.example.ios' },
+        // android: {
+        //   packageName: 'com.example.android',
+        //   installApp: true,
+        //   minimumVersion: '12'
+        // },
+      };
+
+      // Generate magic link using Firebase Admin SDK
+      const magicLink = await strapi.firebase.auth().generateSignInWithEmailLink(email, actionCodeSettings);
+
+      // Development logging
+      if (process.env.NODE_ENV !== "production") {
+        strapi.log.info("🔗 Magic Link Generation Request:");
+        strapi.log.info(`   Email: ${email}`);
+        strapi.log.info(`   Verification URL: ${magicLinkUrl}`);
+        strapi.log.info(`   Expires: ${config.magicLinkExpiryHours || 1} hour(s)`);
+      }
+
+      // Send email using the email service with three-tier fallback
+      const emailResult = await strapi
+        .plugin("firebase-authentication")
+        .service("emailService")
+        .sendMagicLinkEmail(email, magicLink, config);
+
+      // Security: Always return same message to prevent email enumeration
+      return {
+        success: true,
+        message: "If an account exists with that email, a sign-in link has been sent.",
+        requiresFrontend: true,
+        verificationUrl: magicLinkUrl,
+        // Only in development
+        ...(process.env.NODE_ENV === "development" && {
+          debug: {
+            linkSent: emailResult.success,
+            email: email,
+            message: emailResult.message,
+          },
+        }),
+      };
+    } catch (error) {
+      strapi.log.error("requestMagicLink error:", error);
+
+      // If it's a Firebase error, it might be a configuration issue
+      if (error.code === "auth/operation-not-allowed") {
+        throw new errors.ApplicationError(
+          "Magic link sign-in is not enabled in Firebase Console. " +
+            "Please enable Email/Password provider and Email link sign-in method."
+        );
+      }
+
+      // Security: Don't reveal specific Firebase errors to client
+      return {
+        success: true,
+        message: "If an account exists with that email, a sign-in link has been sent.",
+        requiresFrontend: true,
+        verificationUrl: magicLinkUrl,
+      };
     }
   },
 });
