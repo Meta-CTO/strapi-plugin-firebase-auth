@@ -9,6 +9,8 @@ import {
   Textarea,
   Toggle,
   NumberInput,
+  Badge,
+  Modal,
 } from "@strapi/design-system";
 
 import { Page } from "@strapi/strapi/admin";
@@ -42,13 +44,14 @@ function SettingsPage() {
   const [magicLinkEmailSubject, setMagicLinkEmailSubject] = useState<string>("Sign in to Your Application");
   const [magicLinkExpiryHours, setMagicLinkExpiryHours] = useState<number>(1);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editWebApiKey, setEditWebApiKey] = useState<string>("");
   const navigate = useNavigate();
 
   const handleRetrieveFirebaseJsonConfig = () => {
     setLoading(true);
     getFirebaseConfig()
       .then((data) => {
-        console.log("Retrieved Firebase Config:", data);
         setLoading(false);
         if (!data || (Array.isArray(data) && data.length === 0)) {
           setFirebaseJsonValue(null);
@@ -116,7 +119,6 @@ function SettingsPage() {
   };
 
   const handleFirebaseJsonSubmit = async () => {
-    console.log("Submitting Firebase JSON:", firebaseJsonValueInput);
     try {
       setLoading(true);
       const jsonToSubmit =
@@ -134,7 +136,6 @@ function SettingsPage() {
         magicLinkEmailSubject,
         magicLinkExpiryHours,
       });
-      console.log("Firebase JSON submission response:", data);
 
       if (!data || !data.firebase_config_json) {
         throw new Error("Invalid response from server");
@@ -173,8 +174,6 @@ function SettingsPage() {
         magicLinkEmailSubject,
         magicLinkExpiryHours,
       });
-
-      console.log("Password settings saved:", data);
 
       // Update local state with returned values
       if (data) {
@@ -241,6 +240,93 @@ function SettingsPage() {
     }
   };
 
+  const handleAddWebApiKey = () => {
+    setEditWebApiKey("");
+    setShowEditModal(true);
+  };
+
+  const handleRemoveWebApiKey = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to remove the Web API Key? The emailLogin endpoint will stop working until you add it again."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      const jsonToSubmit = firebaseJsonValue.firebaseConfigJson;
+
+      // Save with empty API key to remove it
+      const data = await saveFirebaseConfig(jsonToSubmit, "", {
+        passwordRequirementsRegex,
+        passwordRequirementsMessage,
+        passwordResetUrl,
+        passwordResetEmailSubject,
+        enableMagicLink,
+        magicLinkUrl,
+        magicLinkEmailSubject,
+        magicLinkExpiryHours,
+      });
+
+      if (!data || !data.firebase_config_json) {
+        throw new Error("Invalid response from server");
+      }
+
+      setFirebaseJsonValue(data);
+      setFirebaseWebApiKey("");
+      setLoading(false);
+      toggleNotification({
+        type: "success",
+        message: "Web API Key removed successfully",
+      });
+    } catch (error) {
+      console.error("Error removing Web API Key:", error);
+      toggleNotification({
+        type: "warning",
+        message: "Failed to remove Web API Key",
+      });
+      setLoading(false);
+    }
+  };
+
+  const handleSaveEditConfiguration = async () => {
+    try {
+      setLoading(true);
+      const jsonToSubmit = firebaseJsonValue.firebaseConfigJson;
+
+      const data = await saveFirebaseConfig(jsonToSubmit, editWebApiKey, {
+        passwordRequirementsRegex,
+        passwordRequirementsMessage,
+        passwordResetUrl,
+        passwordResetEmailSubject,
+        enableMagicLink,
+        magicLinkUrl,
+        magicLinkEmailSubject,
+        magicLinkExpiryHours,
+      });
+
+      if (!data || !data.firebase_config_json) {
+        throw new Error("Invalid response from server");
+      }
+
+      setFirebaseJsonValue(data);
+      setFirebaseWebApiKey(editWebApiKey);
+      setShowEditModal(false);
+      setLoading(false);
+      toggleNotification({
+        type: "success",
+        message: "Web API Key added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding Web API Key:", error);
+      toggleNotification({
+        type: "warning",
+        message: "Failed to add Web API Key",
+      });
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return <Page.Loading />;
   }
@@ -261,7 +347,7 @@ function SettingsPage() {
           {/* Section 1: Firebase Authentication Configuration */}
           <Box marginBottom={6} padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow">
             <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
-              🔐 Firebase Authentication
+              Firebase Authentication
             </Typography>
             <Typography
               variant="omega"
@@ -272,7 +358,6 @@ function SettingsPage() {
             </Typography>
 
             {(() => {
-              console.log("Current firebaseJsonValue:", firebaseJsonValue);
               return !firebaseJsonValue || !firebaseJsonValue.firebaseConfigJson ? (
                 <>
                   <Box>
@@ -354,7 +439,7 @@ function SettingsPage() {
                             </li>
                             <li>
                               <Typography variant="omega">
-                                Click the gear icon ⚙️ → <strong>Project Settings</strong>
+                                Click the gear icon → <strong>Project Settings</strong>
                               </Typography>
                             </li>
                             <li>
@@ -480,44 +565,83 @@ function SettingsPage() {
                 </>
               ) : (
                 <>
-                  <Box padding={3} background="success100" borderRadius="4px">
-                    <Flex gap={2} alignItems="center">
-                      <Typography variant="omega" fontWeight="bold" textColor="success700">
-                        ✅ Firebase Configured
+                  <Box padding={4} background="neutral0">
+                    {/* Service Account Section */}
+                    <Box marginBottom={4}>
+                      <Typography variant="delta" fontWeight="bold" style={{ marginBottom: "8px" }}>
+                        Service Account Configuration
                       </Typography>
-                      <Typography variant="omega" textColor="success700">
-                        Project:{" "}
-                        <strong>
-                          {firebaseJsonValue?.firebaseConfigJson &&
-                            (() => {
-                              try {
-                                const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
-                                return config.project_id || config.projectId || "Unknown Project";
-                              } catch (e) {
-                                return "Invalid Config";
-                              }
-                            })()}
-                        </strong>
+                      <Box marginBottom={3}>
+                        <Typography variant="pi" textColor="neutral600" component="span">
+                          <strong>Required</strong> - Enables Firebase Admin SDK for server-side
+                          authentication
+                        </Typography>
+                      </Box>
+                      <Flex gap={2} alignItems="center" justifyContent="space-between">
+                        <Flex gap={2} alignItems="center">
+                          <Typography variant="omega" textColor="neutral600">
+                            Project:{" "}
+                            {firebaseJsonValue?.firebaseConfigJson &&
+                              (() => {
+                                try {
+                                  const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
+                                  return config.project_id || config.projectId || "Unknown Project";
+                                } catch (e) {
+                                  return "Invalid Config";
+                                }
+                              })()}
+                          </Typography>
+                          <Badge backgroundColor="success200" textColor="success700" size="S">
+                            ✓ CONFIGURED
+                          </Badge>
+                        </Flex>
+                        <Button variant="danger-light" size="S" onClick={handleDeleteFirebaseJsonConfig}>
+                          Delete Config
+                        </Button>
+                      </Flex>
+                    </Box>
+
+                    {/* Web API Key Section */}
+                    <Box paddingTop={4} style={{ borderTop: "1px solid #eaeaef" }}>
+                      <Typography variant="delta" fontWeight="bold" style={{ marginBottom: "8px" }}>
+                        Web API Key Configuration
                       </Typography>
-                    </Flex>
-                    {firebaseWebApiKey && (
-                      <Typography variant="omega" textColor="success700" marginTop={1}>
-                        API Key: {firebaseWebApiKey.substring(0, 10)}...
-                      </Typography>
-                    )}
+                      <Box marginBottom={3}>
+                        <Typography variant="pi" textColor="neutral600" component="span">
+                          <strong>Optional</strong> - Only needed for email/password login via emailLogin
+                          endpoint
+                        </Typography>
+                      </Box>
+                      <Flex gap={2} alignItems="center" justifyContent="space-between">
+                        <Flex gap={2} alignItems="center">
+                          {firebaseWebApiKey?.trim() && (
+                            <Typography variant="omega" textColor="neutral600">
+                              {`${firebaseWebApiKey.substring(0, 10)}...`}
+                            </Typography>
+                          )}
+                          {firebaseWebApiKey?.trim() ? (
+                            <Badge backgroundColor="success200" textColor="success700" size="S">
+                              ✓ CONFIGURED
+                            </Badge>
+                          ) : (
+                            <Badge backgroundColor="neutral200" textColor="neutral700" size="S">
+                              NOT SET
+                            </Badge>
+                          )}
+                        </Flex>
+                        {/* Contextual Action Button */}
+                        {firebaseWebApiKey?.trim() ? (
+                          <Button variant="danger-light" size="S" onClick={handleRemoveWebApiKey}>
+                            Delete Config
+                          </Button>
+                        ) : (
+                          <Button variant="secondary" size="S" onClick={handleAddWebApiKey}>
+                            + Add Web API Key
+                          </Button>
+                        )}
+                      </Flex>
+                    </Box>
                   </Box>
-                  <Flex gap={2} marginTop={3}>
-                    <Button
-                      variant="danger-light"
-                      onClick={handleDeleteFirebaseJsonConfig}
-                      startIcon={<Trash />}
-                    >
-                      Delete Configuration
-                    </Button>
-                    <Button onClick={() => navigate("/plugins/firebase-authentication")} variant="secondary">
-                      Back to Firebase Plugin
-                    </Button>
-                  </Flex>
                 </>
               );
             })()}
@@ -526,7 +650,7 @@ function SettingsPage() {
           {/* Section 2: Password Reset Configuration - Always Visible */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
             <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
-              🔑 Password Reset Settings
+              Password Reset Settings
             </Typography>
             <Typography
               variant="omega"
@@ -638,7 +762,7 @@ function SettingsPage() {
           {/* Section 3: Magic Link Settings */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
             <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
-              🔗 Magic Link Authentication
+              Magic Link Authentication
             </Typography>
             <Typography
               variant="omega"
@@ -733,7 +857,7 @@ function SettingsPage() {
                     fontWeight="bold"
                     style={{ display: "block", marginBottom: "12px" }}
                   >
-                    📋 Setup Requirements:
+                    Setup Requirements:
                   </Typography>
                   <Box marginLeft={2}>
                     <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
@@ -790,6 +914,84 @@ function SettingsPage() {
           </Box>
         </Box>
       </Flex>
+
+      {/* Add Web API Key Modal */}
+      <Modal.Root open={showEditModal} onOpenChange={(open: boolean) => !open && setShowEditModal(false)}>
+        <Modal.Content>
+          <Modal.Header>
+            <Modal.Title>Add Firebase Web API Key</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Box padding={4}>
+              <Typography variant="omega" marginBottom={2}>
+                Add your Firebase Web API Key to enable the emailLogin endpoint. This is optional and only
+                needed if you want to authenticate users with email/password directly through your backend.
+              </Typography>
+
+              <Box marginTop={3}>
+                <Typography
+                  variant="omega"
+                  fontWeight="bold"
+                  style={{ display: "block", marginBottom: "8px" }}
+                >
+                  Firebase Web API Key (Optional)
+                </Typography>
+                <TextInput
+                  name="editWebApiKey"
+                  value={editWebApiKey}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditWebApiKey(e.target.value)}
+                  placeholder="AIzaSy... (your Web API Key)"
+                  hint="Only required for email/password login endpoint"
+                />
+              </Box>
+
+              <Box marginTop={3} padding={2} background="primary100" borderRadius="4px">
+                <Typography variant="omega" fontWeight="bold">
+                  📍 Where to find your Web API Key:
+                </Typography>
+                <ol style={{ marginLeft: 20, marginTop: 8 }}>
+                  <li>
+                    <Typography variant="omega">
+                      Go to{" "}
+                      <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer">
+                        Firebase Console
+                      </a>
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="omega">Select your project</Typography>
+                  </li>
+                  <li>
+                    <Typography variant="omega">
+                      Click the gear icon ⚙️ → <strong>Project Settings</strong>
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="omega">
+                      In the <strong>General</strong> tab, scroll down to <strong>Your apps</strong>
+                    </Typography>
+                  </li>
+                  <li>
+                    <Typography variant="omega">
+                      Find <strong>Web API Key</strong> (looks like: AIzaSyB3Xd...)
+                    </Typography>
+                  </li>
+                </ol>
+              </Box>
+            </Box>
+          </Modal.Body>
+          <Modal.Footer>
+            <Flex justifyContent="flex-end" gap={2}>
+              <Button variant="tertiary" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button variant="default" onClick={handleSaveEditConfiguration}>
+                Add API Key
+              </Button>
+            </Flex>
+          </Modal.Footer>
+        </Modal.Content>
+      </Modal.Root>
     </>
   );
 }

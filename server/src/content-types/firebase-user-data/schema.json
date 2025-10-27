@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "firebase_user_data",
+  "info": {
+    "singularName": "firebase-user-data",
+    "pluralName": "firebase-user-datas",
+    "displayName": "Firebase User Data",
+    "description": "Stores Firebase-specific user data (UID, Apple email)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "firebaseUserID": {
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    "appleEmail": {
+      "type": "string",
+      "private": true
+    }
+  }
+}

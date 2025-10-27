@@ -1,5 +1,19 @@
 import { StrapiUser } from "../../../model/User";
 
+/**
+ * @deprecated This utility is deprecated and should not be used.
+ * Use firebaseStrapiLinkService.linkFirebaseUsers() instead.
+ *
+ * This function incorrectly looks for firebaseUserID on the User table,
+ * which was moved to the firebase_user_data table.
+ *
+ * Replacement:
+ * ```typescript
+ * const linkService = strapi.plugin('firebase-authentication').service('firebaseStrapiLinkService');
+ * const uidToUserMap = await linkService.buildUserMap();
+ * const linkedUsers = linkService.linkFirebaseUsers(firebaseUsers, uidToUserMap, strapiUsers);
+ * ```
+ */
 export const formatUserData = (result: any, strapiUsersData: StrapiUser[]) => ({
   ...result,
   users: result?.users?.map((user: any) => {

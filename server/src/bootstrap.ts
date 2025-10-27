@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import migrateFirebaseUserData from "./migrations/migrate-firebase-user-data";
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   // Register permission actions.
@@ -40,6 +41,25 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     // Register firebase-authentication content-api routes
     userPermissionsService.initialize();
   }
+
+  // TEMPORARY: Run Firebase user data migration on startup
+  // Remove this after migration is complete in production
+  if (process.env.RUN_FIREBASE_MIGRATION === "true") {
+    const dryRun = process.env.DRY_RUN === "true";
+    strapi.log.info("");
+    strapi.log.info("🚀 Firebase migration triggered by RUN_FIREBASE_MIGRATION env variable");
+    await migrateFirebaseUserData(strapi, dryRun);
+  }
+
+  // Auto-link Strapi users with Firebase users in the background
+  // Runs on every startup (non-blocking)
+  setImmediate(async () => {
+    try {
+      await strapi.plugin("firebase-authentication").service("autoLinkService").linkAllUsers(strapi);
+    } catch (error) {
+      strapi.log.error("Auto-linking failed:", error);
+    }
+  });
 };
 
 export default bootstrap;

@@ -6,7 +6,7 @@ export const tableHeaders = [
       type: "string",
     },
     metadatas: {
-      label: "User UID",
+      label: "Firebase ID",
       sortable: false,
       searchable: true,
     },

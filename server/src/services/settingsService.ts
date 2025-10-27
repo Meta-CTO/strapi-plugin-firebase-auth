@@ -123,7 +123,7 @@ export default ({ strapi }) => {
         const firebaseConfigJson = await this.decryptJson(key, hashedJson);
         return {
           firebaseConfigJson,
-          firebaseWebApiKey: configObject.firebaseWebApiKey || null, // May be null if not configured
+          firebaseWebApiKey: configObject.firebase_web_api_key || null, // May be null if not configured
           // Include password reset configuration fields
           passwordRequirementsRegex: configObject.passwordRequirementsRegex || DEFAULT_PASSWORD_REGEX,
           passwordRequirementsMessage: configObject.passwordRequirementsMessage || DEFAULT_PASSWORD_MESSAGE,
@@ -244,10 +244,32 @@ export default ({ strapi }) => {
           });
         }
         await strapi.plugin("firebase-authentication").service("settingsService").init();
-        const firebaseConfigHash = res.firebaseConfigJson.firebaseConfigJson;
+
+        // Handle both possible field names (camelCase and snake_case)
+        // Strapi may or may not convert field names depending on the API used
+        const configData = res.firebaseConfigJson || res.firebase_config_json;
+
+        if (!configData) {
+          strapi.log.error("Firebase config data missing from database response");
+          strapi.log.error("Available keys in response:", Object.keys(res));
+          throw new ApplicationError("Failed to retrieve Firebase configuration from database");
+        }
+
+        const firebaseConfigHash = configData.firebaseConfigJson;
+
+        if (!firebaseConfigHash) {
+          strapi.log.error("Firebase config hash missing from config data:", configData);
+          throw new ApplicationError("Firebase configuration hash is missing");
+        }
+
         const firebaseConfigJsonValue = await this.decryptJson(encryptionKey, firebaseConfigHash);
-        res.firebaseConfigJson.firebaseConfigJson = firebaseConfigJsonValue;
-        res.firebaseWebApiKey = firebaseWebApiKey;
+        configData.firebaseConfigJson = firebaseConfigJsonValue;
+
+        // Ensure the response has the config in the expected format for the admin panel
+        res.firebaseConfigJson = configData;
+        res.firebase_config_json = configData;
+        res.firebaseWebApiKey = res.firebase_web_api_key || null;
+
         // Include password reset fields in the response
         res.passwordRequirementsRegex = res.passwordRequirementsRegex || passwordRequirementsRegex;
         res.passwordRequirementsMessage = res.passwordRequirementsMessage || passwordRequirementsMessage;
@@ -259,9 +281,32 @@ export default ({ strapi }) => {
         res.magicLinkEmailSubject = res.magicLinkEmailSubject || magicLinkEmailSubject;
         res.magicLinkExpiryHours = res.magicLinkExpiryHours || magicLinkExpiryHours;
         return res;
-      } catch (error) {
+      } catch (error: any) {
+        // Detailed error logging for diagnostics
+        strapi.log.error("=== FIREBASE CONFIG SAVE ERROR ===");
+        strapi.log.error("Error name:", error.name);
+        strapi.log.error("Error message:", error.message);
+        strapi.log.error("Error stack:", error.stack);
+
+        // Log request body if available
+        try {
+          const { body } = ctx.request;
+          if (body) {
+            strapi.log.error("Request body keys:", Object.keys(body));
+          }
+        } catch (e) {
+          strapi.log.error("Could not access request body");
+        }
+
+        strapi.log.error("===================================");
+
         throw new ApplicationError(ERROR_MESSAGES.SOMETHING_WENT_WRONG, {
           error: error.message,
+          name: error.name,
+          // In development, include more details
+          ...(strapi.config.environment === "development" && {
+            stack: error.stack?.split("\n").slice(0, 3).join("\n"), // First 3 lines of stack
+          }),
         });
       }
     },

@@ -3,6 +3,9 @@ import userService from "./userService";
 import firebaseService from "./firebaseService";
 import templateService from "./templateService";
 import emailService from "./emailService";
+import firebaseUserDataService from "./firebaseUserDataService";
+import autoLinkService from "./autoLinkService";
+import firebaseStrapiLinkService from "./firebaseStrapiLinkService";
 
 export default {
   settingsService,
@@ -10,4 +13,7 @@ export default {
   firebaseService,
   templateService,
   emailService,
+  firebaseUserDataService,
+  autoLinkService,
+  firebaseStrapiLinkService,
 };

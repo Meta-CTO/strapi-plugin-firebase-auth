@@ -1,7 +1,6 @@
 import { errors } from "@strapi/utils";
 
 import paginate from "../utils/paginate";
-import { formatUserData } from "../utils/users";
 
 export default ({ strapi }) => {
   // Helper function to check if Firebase is initialized
@@ -124,23 +123,32 @@ export default ({ strapi }) => {
                 .query("plugin::users-permissions.user")
                 .findOne({ where: { id: parseInt(searchQuery) } });
 
-              if (strapiUser?.firebaseUserID) {
-                foundUser = await strapi.firebase.auth().getUser(strapiUser.firebaseUserID);
-              } else if (strapiUser) {
-                // Fallback: Try to find Firebase user by email or phone from Strapi data
-                if (strapiUser.email) {
-                  try {
-                    foundUser = await strapi.firebase.auth().getUserByEmail(strapiUser.email);
-                  } catch (e) {
-                    // Email lookup failed, continue
-                  }
-                }
+              if (strapiUser) {
+                // Try to get Firebase UID from firebase_user_data table
+                const firebaseData = await strapi
+                  .plugin("firebase-authentication")
+                  .service("firebaseUserDataService")
+                  .findOrCreateForUser(strapiUser.documentId)
+                  .catch(() => null);
 
-                if (!foundUser && strapiUser.phoneNumber) {
-                  try {
-                    foundUser = await strapi.firebase.auth().getUserByPhoneNumber(strapiUser.phoneNumber);
-                  } catch (e) {
-                    // Phone lookup failed, continue
+                if (firebaseData?.firebaseUserID) {
+                  foundUser = await strapi.firebase.auth().getUser(firebaseData.firebaseUserID);
+                } else {
+                  // Fallback: Try to find Firebase user by email or phone from Strapi data
+                  if (strapiUser.email) {
+                    try {
+                      foundUser = await strapi.firebase.auth().getUserByEmail(strapiUser.email);
+                    } catch (e) {
+                      // Email lookup failed, continue
+                    }
+                  }
+
+                  if (!foundUser && strapiUser.phoneNumber) {
+                    try {
+                      foundUser = await strapi.firebase.auth().getUserByPhoneNumber(strapiUser.phoneNumber);
+                    } catch (e) {
+                      // Phone lookup failed, continue
+                    }
                   }
                 }
               }
@@ -152,17 +160,23 @@ export default ({ strapi }) => {
           // If we found an exact match, return it immediately
           if (foundUser) {
             const totalUserscount = await strapi.firebase.auth().listUsers();
+
+            // Get link service and build user map
+            const linkService = strapi.plugin("firebase-authentication").service("firebaseStrapiLinkService");
+            const uidToUserMap = await linkService.buildUserMap();
+
             const strapiUsers = await strapi.db.query("plugin::users-permissions.user").findMany();
 
-            const formattedUser = formatUserData({ users: [foundUser] }, strapiUsers);
+            // Link Firebase user with Strapi data
+            const linkedUsers = linkService.linkFirebaseUsers([foundUser], uidToUserMap, strapiUsers);
 
             const { meta } = paginate(
-              formattedUser.users,
+              linkedUsers,
               1, // Only 1 result for exact match
               pagination
             );
 
-            return { data: formattedUser.users, pageToken: undefined, meta };
+            return { data: linkedUsers, pageToken: undefined, meta };
           }
         } catch (e) {
           // If exact match fails, fall through to normal pagination
@@ -190,9 +204,17 @@ export default ({ strapi }) => {
       }
 
       const totalUserscount = await strapi.firebase.auth().listUsers();
+
+      // Get link service and build user map
+      const linkService = strapi.plugin("firebase-authentication").service("firebaseStrapiLinkService");
+      const uidToUserMap = await linkService.buildUserMap();
+
       const strapiUsers = await strapi.db.query("plugin::users-permissions.user").findMany();
 
-      const allUsers = formatUserData(allFirebaseUsers, strapiUsers);
+      // Link Firebase users with Strapi data
+      const linkedUsers = linkService.linkFirebaseUsers(allFirebaseUsers.users, uidToUserMap, strapiUsers);
+
+      const allUsers = { users: linkedUsers };
 
       let sortedUsers = allUsers.users;
       let paginatedData = sortedUsers;

@@ -15,7 +15,6 @@ export const DeleteJsonConfigurationDialogue = ({
   onToggleDialog,
   onConfirm,
 }: DeleteJsonConfigurationDialogueProps) => {
-  console.log("Dialog props:", { isOpen });
   return (
     <Dialog.Root onClose={onToggleDialog} isOpen={isOpen}>
       <Dialog.Content>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Box, Typography, Flex, Link, Divider } from "@strapi/design-system";
 import { useNotification, Page, Layouts } from "@strapi/strapi/admin";
 import { Pencil } from "@strapi/icons";
@@ -9,9 +9,10 @@ import { User, ProviderItem } from "../../../../../model/User";
 import { Header } from "../../common/Header/Header";
 import { UserFormFields } from "../shared/UserFormFields/UserFormFields";
 import { UserFormLayout } from "../shared/UserFormLayout/UserFormLayout";
-import { updateUser } from "../../../pages/utils/api";
+import { updateUser, resetUserPassword, sendResetEmail, getFirebaseConfig } from "../../../pages/utils/api";
 import { useUserForm } from "../../../hooks/useUserForm";
 import { PasswordResetButton } from "../../PasswordResetButton";
+import { ResetPassword } from "../../user-management";
 
 const MetaWrapper = styled(Box)`
   width: 100%;
@@ -19,7 +20,6 @@ const MetaWrapper = styled(Box)`
   flex-direction: column;
   justify-content: flex-start;
   font-size: 18px;
-  padding: 5px;
 `;
 
 const ContentWrapper = styled(Box)`
@@ -45,11 +45,21 @@ interface EditFormProps {
 
 interface LocationState {
   strapiId?: string | number;
+  strapiDocumentId?: string;
 }
 
 const EditUserForm = ({ data }: EditFormProps) => {
   const [originalUserData] = useState(data);
   const [isLoading, setIsLoading] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState({
+    isOpen: false,
+    email: "",
+    id: "",
+  });
+  const [passwordConfig, setPasswordConfig] = useState({
+    passwordRequirementsRegex: "^.{6,}$",
+    passwordRequirementsMessage: "Password must be at least 6 characters long",
+  });
 
   const { toggleNotification } = useNotification();
   const navigate = useNavigate();
@@ -80,7 +90,63 @@ const EditUserForm = ({ data }: EditFormProps) => {
       setIsLoading(false);
       setUserData(data);
     }
-  }, [userData, toggleNotification, data]);
+  }, [userData, toggleNotification, data, setUserData]);
+
+  // Fetch Firebase password config
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const config = await getFirebaseConfig();
+        setPasswordConfig({
+          passwordRequirementsRegex: config.passwordRequirementsRegex,
+          passwordRequirementsMessage: config.passwordRequirementsMessage,
+        });
+      } catch (error) {
+        console.error("Failed to fetch Firebase config:", error);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  const handleCloseResetDialog = useCallback(() => {
+    setShowResetPasswordDialog({ isOpen: false, email: "", id: "" });
+  }, []);
+
+  const handleResetPassword = useCallback(
+    async (newPassword: string) => {
+      try {
+        await resetUserPassword(userData.uid as string, { password: newPassword });
+        toggleNotification({
+          type: "success",
+          message: "Password reset successfully",
+        });
+        handleCloseResetDialog();
+      } catch (error) {
+        console.error("Error resetting password:", error);
+        toggleNotification({
+          type: "danger",
+          message: "Failed to reset password",
+        });
+      }
+    },
+    [userData.uid, toggleNotification, handleCloseResetDialog]
+  );
+
+  const handleSendResetEmail = useCallback(async () => {
+    try {
+      await sendResetEmail(userData.uid as string);
+      toggleNotification({
+        type: "success",
+        message: "Password reset email sent successfully",
+      });
+    } catch (error) {
+      console.error("Error sending reset email:", error);
+      toggleNotification({
+        type: "danger",
+        message: "Failed to send reset email",
+      });
+    }
+  }, [userData.uid, toggleNotification]);
 
   if (isLoading) {
     return <Page.Loading />;
@@ -111,52 +177,80 @@ const EditUserForm = ({ data }: EditFormProps) => {
                 paddingTop={2}
                 shadow="tableShadow"
               >
+                {/* Fields shown once */}
+                <Flex paddingTop={2} paddingBottom={2} direction="column" alignItems="flex-start" gap={2}>
+                  {/* Firebase User ID */}
+                  <Flex gap={1}>
+                    <Typography variant="sigma" textColor="neutral600">
+                      Firebase User ID:
+                    </Typography>
+                    <Typography variant="sigma" textColor="neutral600">
+                      {userData.firebaseUserID || userData.uid}
+                    </Typography>
+                  </Flex>
+
+                  {/* Strapi ID */}
+                  {locationState?.strapiId && (
+                    <Flex gap={1}>
+                      <Typography variant="sigma" textColor="neutral600">
+                        Strapi ID:
+                      </Typography>
+                      <Typography
+                        variant="sigma"
+                        textColor="primary600"
+                        component="a"
+                        onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                          e.preventDefault();
+                          navigate(
+                            `/content-manager/collection-types/plugin::users-permissions.user/${
+                              userData.strapiDocumentId ||
+                              userData.documentId ||
+                              locationState.strapiDocumentId
+                            }`
+                          );
+                        }}
+                        style={{
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        {locationState.strapiId}
+                      </Typography>
+                    </Flex>
+                  )}
+                </Flex>
+
+                <Divider />
+
+                {/* Provider-specific fields (repeated per provider) */}
                 {userData.providerData?.map((provider: ProviderItem, index: number) => (
-                  <Flex
-                    key={index}
-                    paddingTop={2}
-                    paddingBottom={2}
-                    direction="column"
-                    alignItems="flex-start"
-                    gap={2}
-                  >
-                    <Flex gap={1}>
-                      <Typography variant="sigma" textColor="neutral600">
-                        Provider Id:
-                      </Typography>
-                      <Typography variant="sigma" textColor="neutral600">
-                        {provider.providerId}
-                      </Typography>
-                    </Flex>
-                    <Flex gap={1}>
-                      <Typography variant="sigma" textColor="neutral600">
-                        UID:
-                      </Typography>
-                      <Typography variant="sigma" textColor="neutral600">
-                        {provider.uid}
-                      </Typography>
-                    </Flex>
-                    {locationState?.strapiId && (
+                  <React.Fragment key={index}>
+                    {index > 0 && <Divider />}
+                    <Flex paddingTop={2} paddingBottom={2} direction="column" alignItems="flex-start" gap={2}>
+                      {/* Provider */}
                       <Flex gap={1}>
                         <Typography variant="sigma" textColor="neutral600">
-                          Strapi ID:
+                          Provider:
                         </Typography>
-                        <Link
-                          onClick={() => {
-                            navigate(
-                              `/content-manager/collection-types/plugin::users-permissions.user/${locationState.strapiId}`
-                            );
-                          }}
-                          style={{ cursor: "pointer", color: "blue", textDecoration: "underline" }}
-                        >
-                          <Typography variant="sigma">{locationState.strapiId}</Typography>
-                        </Link>
+                        <Typography variant="sigma" textColor="neutral600">
+                          {provider.providerId}
+                        </Typography>
                       </Flex>
-                    )}
-                  </Flex>
+
+                      {/* Identifier */}
+                      <Flex gap={1}>
+                        <Typography variant="sigma" textColor="neutral600">
+                          Identifier:
+                        </Typography>
+                        <Typography variant="sigma" textColor="neutral600">
+                          {provider.uid}
+                        </Typography>
+                      </Flex>
+                    </Flex>
+                  </React.Fragment>
                 ))}
                 <Divider />
-                <Flex paddingTop={2} paddingBottom={2} direction="column" alignItems="flex-start">
+                <Flex paddingTop={2} paddingBottom={2} direction="column" alignItems="flex-start" gap={3}>
                   {userData.metadata?.lastSignInTime && (
                     <MetaWrapper>
                       <Typography variant="sigma" textColor="neutral600">
@@ -205,11 +299,10 @@ const EditUserForm = ({ data }: EditFormProps) => {
                   user={userData as User}
                   fullWidth
                   onClick={() => {
-                    // Placeholder - will be implemented in Phase 2
-                    console.log("Password reset clicked for user:", userData.uid);
-                    toggleNotification({
-                      type: "info",
-                      message: "Password reset modal will be implemented in Phase 2",
+                    setShowResetPasswordDialog({
+                      isOpen: true,
+                      email: userData.email || "",
+                      id: userData.uid || "",
                     });
                   }}
                 />
@@ -269,6 +362,18 @@ const EditUserForm = ({ data }: EditFormProps) => {
           />
         </UserFormLayout>
       </Layouts.Content>
+
+      {/* Reset Password Modal */}
+      <ResetPassword
+        isOpen={showResetPasswordDialog.isOpen}
+        onClose={handleCloseResetDialog}
+        onDirectReset={handleResetPassword}
+        email={showResetPasswordDialog.email}
+        userId={showResetPasswordDialog.id}
+        passwordRegex={passwordConfig.passwordRequirementsRegex}
+        passwordMessage={passwordConfig.passwordRequirementsMessage}
+        onSendResetEmail={handleSendResetEmail}
+      />
     </Page.Main>
   );
 };

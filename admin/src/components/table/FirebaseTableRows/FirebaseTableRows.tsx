@@ -89,7 +89,10 @@ export const FirebaseTableRows = ({
               key={data.uid}
               onClick={() => {
                 navigate(data.uid, {
-                  state: { strapiId: data.strapiId },
+                  state: {
+                    strapiId: data.strapiId,
+                    strapiDocumentId: data.strapiDocumentId,
+                  },
                 });
               }}
             >
