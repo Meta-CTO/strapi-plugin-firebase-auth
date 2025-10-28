@@ -1,297 +1,521 @@
 # Strapi Plugin Firebase Authentication
 
-Welcome to the Strapi plugin for Firebase Authentication! This plugin seamlessly integrates Firebase Authentication with
-your Strapi Headless CMS, allowing you to manage and authenticate Firebase users directly from the Strapi moderation
-panel. This guide will take you through the installation and configuration process and provide information on how to use
-this plugin with iOS and Android apps. This plugin would be enabled by default for super admins only.
+[![npm version](https://img.shields.io/npm/v/strapi-plugin-firebase-authentication.svg)](https://www.npmjs.com/package/strapi-plugin-firebase-authentication)
+[![npm downloads](https://img.shields.io/npm/dm/strapi-plugin-firebase-authentication.svg)](https://www.npmjs.com/package/strapi-plugin-firebase-authentication)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## How it works
+A production-ready Strapi v5 plugin that seamlessly integrates Firebase Authentication with your Strapi Headless CMS. Authenticate users via Firebase (Google, Apple, Email/Password, Phone, Magic Link) and automatically sync them with Strapi's user system.
 
-The Firebase Auth plugin works by authenticating users using Firebase Authentication. Once a user is authenticated, the
-plugin creates a Strapi user account for them if it doesn't already exist. The plugin also syncs the user's Firebase
-data with their Strapi account.
+## Features at a Glance
+
+- **Multiple Authentication Methods**: Google Sign-In, Apple Sign-In, Email/Password, Phone-only, Magic Link (passwordless)
+- **Automatic User Sync**: Creates and updates Strapi users from Firebase authentication
+- **Password Reset Flow**: Complete password reset with email verification
+- **Phone-Only Support**: Configurable email handling for phone-based authentication
+- **Admin Panel**: Manage Firebase users directly from Strapi admin
+- **Secure Configuration**: AES-256 encrypted Firebase credentials
+- **Email Service**: Three-tier fallback (Strapi Email Plugin → Firebase Extension → Console)
+- **Flexible User Lookup**: Multiple strategies (Firebase UID, email, phone, Apple relay email)
 
 ## Table of Contents
 
-1. [Installation](#installation)
-2. [Configuration](#configuration)
-3. [Usage](#usage)
-4. [Client Setup](#client-setup)
-5. [Question and issues](#questions-and-issues)
+1. [Quick Reference](#quick-reference)
+2. [Installation](#installation)
+3. [Configuration](#configuration)
+4. [Features & Authentication Flows](#features--authentication-flows)
+5. [API Reference](#api-reference)
+6. [Admin Panel](#admin-panel)
+7. [Client Integration](#client-integration)
+8. [Email Templates](#email-templates)
+9. [Architecture & Database](#architecture--database)
+10. [Security](#security)
+11. [Troubleshooting](#troubleshooting)
+12. [Best Practices](#best-practices)
+13. [Support](#support)
+
+## Quick Reference
+
+### Essential Endpoints
+
+**Authentication:**
+
+- `POST /api/firebase-authentication` - Exchange Firebase token for Strapi JWT
+- `POST /api/firebase-authentication/emailLogin` - Direct email/password login
+- `POST /api/firebase-authentication/forgotPassword` - Request password reset
+- `POST /api/firebase-authentication/resetPassword` - Reset with JWT token
+- `POST /api/firebase-authentication/requestMagicLink` - Passwordless login
+- `GET /api/firebase-authentication/config` - Get public configuration
+
+### Minimal Configuration
+
+```javascript
+// config/plugins.js
+module.exports = () => ({
+  "firebase-authentication": {
+    enabled: true,
+    config: {
+      FIREBASE_JSON_ENCRYPTION_KEY: process.env.FIREBASE_JSON_ENCRYPTION_KEY,
+    },
+  },
+});
+```
+
+```bash
+# .env
+FIREBASE_JSON_ENCRYPTION_KEY=your-secure-32-character-key-here
+```
+
+### Required Setup Steps
+
+1. **Install:** `yarn add strapi-plugin-firebase-authentication`
+2. **Configure:** Add plugin config to `config/plugins.js`
+3. **Build:** `yarn build && yarn develop`
+4. **Upload:** Settings → Firebase Authentication → Upload service account JSON
+5. **Permissions:** Settings → Users & Permissions → Public → `firebase-authentication.authenticate` ✓
+
+### Admin Access
+
+- **Settings:** Settings → Firebase Authentication
+- **User Management:** Plugins → Firebase Authentication
+
+---
 
 ## Installation
 
-To get started, you need to install the Firebase Auth plugin for Strapi. We recommend using yarn for this installation.
+### Prerequisites
 
-### Via Command Line
+Before installing, ensure you have:
+
+- Strapi v5 project (this plugin is for v5 only)
+- Firebase project with Authentication enabled ([Create one](https://console.firebase.google.com/))
+- Node.js 18+ and npm/yarn installed
+
+### Step 1: Install Plugin
 
 ```bash
-yarn add @meta-cto/strapi-plugin-firebase-auth
+yarn add strapi-plugin-firebase-authentication
+# or
+npm install strapi-plugin-firebase-authentication
 ```
 
-Once the installation is complete, you must rebuild your Strapi instance. You can do this with the following commands:
+**Verify:** Check that the plugin appears in your `package.json` dependencies.
+
+---
+
+### Step 2: Create Encryption Key
+
+Generate a secure 32+ character encryption key for storing Firebase credentials:
+
+```bash
+# Generate a random key (save this!)
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**Common Mistake:** Using a weak or short key. The key MUST be at least 32 characters.
+
+---
+
+### Step 3: Configure Plugin
+
+Create or edit `config/plugins.js`:
+
+```javascript
+module.exports = () => ({
+  "firebase-authentication": {
+    enabled: true,
+    config: {
+      FIREBASE_JSON_ENCRYPTION_KEY: process.env.FIREBASE_JSON_ENCRYPTION_KEY,
+    },
+  },
+});
+```
+
+Add to `.env` file:
+
+```bash
+FIREBASE_JSON_ENCRYPTION_KEY=your-generated-key-from-step-2
+```
+
+**Verify:** Run `echo $FIREBASE_JSON_ENCRYPTION_KEY` to confirm it's set.
+
+---
+
+### Step 4: Build and Start
 
 ```bash
 yarn build
 yarn develop
 ```
 
-Alternatively, you can run Strapi in development mode with the `--watch-admin` option:
+**What happens:**
 
-```bash
-yarn develop --watch-admin
+- Plugin compiles (admin + server)
+- Strapi restarts with plugin enabled
+- "Firebase Authentication" appears in Plugins sidebar
+
+**Verify:** Check console output for:
+
+```
+✔ Building admin panel (XX.Xs)
+Firebase Authentication plugin initialized
 ```
 
-The **Firebase Auth** plugin should now be available in the **Plugins** section of your Strapi sidebar.
+**If build fails:** Run `yarn build --clean` to clear cache.
+
+---
+
+### Step 5: Download Firebase Service Account
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project
+3. Navigate to: **Project Settings** (⚙️ icon) → **Service Accounts** tab
+4. Click **"Generate New Private Key"**
+5. Download and save the JSON file securely (you'll upload this next)
+
+**Important:** This JSON contains sensitive credentials. Never commit it to Git.
+
+---
+
+### Step 6: Upload to Strapi
+
+1. Navigate to: **Settings → Firebase Authentication** (left sidebar)
+2. Click **"Upload Configuration"** button
+3. Select the downloaded service account JSON file
+4. Wait for "Configuration uploaded successfully" message
+5. **Restart Strapi:** `yarn develop` (important!)
+
+**Verify:** You should see in console:
+
+```
+Firebase Admin SDK initialized successfully
+```
+
+**If initialization fails:** Check [Troubleshooting](#troubleshooting) section.
+
+---
+
+### Step 7: Configure Permissions
+
+Navigate to: **Settings → Users & Permissions → Roles → Public**
+
+Enable these permissions:
+
+- `firebase-authentication` → `authenticate` ✓
+
+**Why:** This allows unauthenticated users to exchange Firebase tokens for Strapi JWTs.
+
+**Verify:** The permission checkbox should be checked and saved.
+
+---
+
+### Step 8: Test Your Setup
+
+Create a simple test to verify everything works:
+
+**Option 1: Test with Firebase Token**
+
+1. Get a Firebase ID token from your client app (or Firebase Console)
+2. Send POST request to: `http://localhost:1337/api/firebase-authentication`
+3. Body: `{ "idToken": "your-firebase-token-here" }`
+4. Expected: `200 OK` with `{ user, jwt }` response
+
+**Option 2: Test with Email/Password** (if configured)
+
+1. Create a user in Firebase Console
+2. Send POST to: `http://localhost:1337/api/firebase-authentication/emailLogin`
+3. Body: `{ "email": "test@example.com", "password": "password123" }`
+4. Expected: `200 OK` with `{ user, jwt }` response
+
+**If tests fail:** Check [Troubleshooting](#troubleshooting) for common issues.
+
+---
+
+### Common Setup Mistakes
+
+❌ **Encryption key too short** → Must be 32+ characters
+❌ **Forgot to restart after uploading config** → Always restart Strapi
+❌ **Wrong Firebase project** → Ensure service account matches your client app
+❌ **Forgot to enable permissions** → Public role needs `authenticate` permission
+❌ **Committed service account JSON to Git** → Use `.gitignore`
+
+---
+
+### Next Steps
+
+After successful installation:
+
+1. **Configure additional settings** (optional):
+   - Password requirements: **Settings → Firebase Authentication**
+   - Magic link settings (passwordless auth)
+   - Email templates for password reset
+
+2. **Integrate with your client app** (see [Client Integration](#client-integration))
+
+3. **Set up email service** for password reset (see [Email Templates](#email-templates))
+
+4. **Review security best practices** (see [Best Practices](#best-practices))
 
 ## Configuration
 
-In order to configure the Firebase Auth plugin, follow these steps:
+The plugin is configured in two places: `config/plugins.js` and the Strapi admin panel.
 
-### Step 1 - Enable the Plugin
+**Minimal Configuration** (`config/plugins.js`):
 
-In your Strapi project, edit the `config/plugins.js` or `config/<env>/plugins.js` file to enable the Firebase Auth
-plugin. If the file doesn't exist, create it manually. If you already have configurations for other plugins, add
-the `firebase-auth` section to your existing `plugins` configuration.
-
-To ensure the security of sensitive information, we have implemented a robust encryption process for the Firebase config JSON file in this project. The encrypted data is then stored as a hash in the database. Follow the steps below to set up and integrate Firebase with Strapi securely.
-
-```js
+```javascript
 module.exports = () => ({
-  // ...
-
-  "firebase-auth": {
+  "firebase-authentication": {
     enabled: true,
-    config: { FIREBASE_JSON_ENCRYPTION_KEY: "encryptMe" },
+    config: {
+      FIREBASE_JSON_ENCRYPTION_KEY: process.env.FIREBASE_JSON_ENCRYPTION_KEY,
+    },
   },
-
-  // ...
 });
 ```
 
-Replace `"encryptMe"` with a strong and secure key. This key will be used in the encryption and decryption process.
+**Admin Panel Settings** (Settings → Firebase Authentication):
 
-### Step 2: Firebase Configuration Encryption and Integration with Strapi
+- Firebase Web API Key (for email/password login)
+- Password requirements (regex + message)
+- Password reset URL & email subject
+- Magic link settings (enable, URL, subject, expiry)
+- Phone-only user handling (`emailRequired: false` for phone-only apps)
 
-To ensure the security of sensitive information, we have implemented a robust encryption process for the Firebase config JSON file in this project. The encrypted data is then stored as a hash in the database. Follow the steps below to set up and integrate Firebase with Strapi securely.
+## API Reference
 
-#### Step 1: Obtain Firebase Service Account Key
+### Public Endpoints
 
-Navigate to the [Firebase Console](https://console.firebase.google.com/) and access your project. In the settings, locate the service account section and download the JSON key file. This file contains sensitive information required for Firebase Authentication.
+| Method | Endpoint                                        | Purpose                                |
+| ------ | ----------------------------------------------- | -------------------------------------- |
+| POST   | `/api/firebase-authentication`                  | Exchange Firebase token for Strapi JWT |
+| POST   | `/api/firebase-authentication/emailLogin`       | Email/password login (no SDK required) |
+| POST   | `/api/firebase-authentication/forgotPassword`   | Request password reset email           |
+| POST   | `/api/firebase-authentication/resetPassword`    | Reset password with JWT token          |
+| POST   | `/api/firebase-authentication/requestMagicLink` | Request passwordless login email       |
+| GET    | `/api/firebase-authentication/config`           | Get public configuration               |
 
-#### Step 2: Submit Service Account Key in Strapi Settings
+### Admin Endpoints
 
-Access the Strapi admin panel and navigate to the settings page. Look for the section related to Firebase integration. Here, you will find an option to submit the `.json` service account key file. Upload the file you obtained in Step 2.
+**User Management:**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/firebase-authentication/content-internal-api/users` | List/search users |
+| POST | `/api/firebase-authentication/content-internal-api/users` | Create user |
+| GET | `/api/firebase-authentication/content-internal-api/users/:id` | Get user |
+| PUT | `/api/firebase-authentication/content-internal-api/users/:id` | Update user |
+| DELETE | `/api/firebase-authentication/content-internal-api/users/:id` | Delete user |
+| PUT | `/api/firebase-authentication/content-internal-api/users/resetPassword/:id` | Reset password |
 
-This service account key is essential for proper authentication with Firebase. It contains the necessary credentials for your Firebase project.
+**Settings Management:**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET/POST/DELETE | `/api/firebase-authentication/settings/firebase-config` | Manage Firebase config |
+| POST | `/api/firebase-authentication/settings/password-config` | Update password/magic link settings |
 
-#### Step 3: Save Changes
-
-After submitting the service account key, make sure to save the changes in the Strapi settings. This ensures that the encrypted configuration is stored securely in the database.
-the `.json` [service account key file](https://firebase.google.com/docs/app-distribution/authenticate-service-account).
-This key is essential for Firebase Authentication to work properly.
-
-### Step 4 - Rebuild Admin Panel
-
-After configuring the plugin, rebuild the Strapi admin panel:
-
-```bash
-npm run build
-```
-
-Alternatively, you can simply delete the existing `./build` directory.
-
-### Step 5 - Grant Public Permissions
-
-From the Strapi admin panel, navigate to "Users-permissions" and grant public role
-to `{Your domain or localhost}/admin/settings/users-permissions/roles/2`. Make sure to enable public access to the
-Firebase Authentication endpoint.
-
-That's it! You're ready to use Firebase Authentication in your Strapi project. Enjoy! 🎉
+---
 
 ## Usage
 
-### Handling User Information
+**Basic Flow:**
 
-To ensure proper handling of user information, make sure to include the following fields in the user object:
+1. User authenticates with Firebase Client SDK
+2. Client gets Firebase ID token
+3. Client sends token to Strapi: `POST /api/firebase-authentication`
+4. Plugin returns Strapi JWT for API access
 
-- `firebaseUserID` is the field that maps firebase user object to strapi user object.
-
-These fields can be populated during the creation of the user object if `profileMetaData` is provided.
-
-- `firstName`
-- `lastName`
-- `phoneNumber`
-- `email`
-
-#### Using `firebase-auth` Endpoint
-
-When interacting with the `firebase-auth` endpoint, use the following JSON structure in the request body:
-
-```json
-{
-  "idToken": "{{idToken}}",
-  "profileMetaData": {
-    "firstName": "name",
-    "lastName": "name",
-    "email": "email@gmail.com",
-    "phoneNumber": "+100000000"
-  }
-}
-```
-
-These values will be utilized only when the user does not exist and will be ignored in other cases.
-
-#### Hint for strapiKMM SDK Users
-
-If you are using our `strapiKMM SDK`, which is fully compatible with the plugin, user information will be populated automatically when signing in with Google or Apple. You don't need to manually handle these fields when using the SDK.
-
-These values will be applied only when the user is being created for the first time. If the user already exists, the provided data will be ignored, and the existing user information will be retained.
-
-### Client Links and Token Retrieval
-
-To enable Firebase Authentication in your iOS, Android, or web app and obtain authentication tokens, follow the provided
-links and their brief descriptions:
-
-- **Android Firebase Setup:**
-  [Link](https://firebase.google.com/docs/android/setup)
-
-  _Set up Firebase Authentication in your Android app by following the instructions on this page. It will guide you
-  through integrating Firebase into your Android project._
-
-- **iOS Firebase Setup:**
-  [Link](https://firebase.google.com/docs/ios/setup)
-
-  _For iOS app integration, this link will lead you to Firebase's official documentation. It outlines the steps to add
-  Firebase Authentication to your iOS project._
-
-- **Web Firebase Setup:**
-  [Link](https://firebase.google.com/docs/web/setup)
-
-  _If you're looking to incorporate Firebase Authentication into your web application, this link provides comprehensive
-  guidance on setting up Firebase in a web project. It's an essential resource for web-based authentication using
-  Firebase._
-
-## Client setup
-
-**Android Sample:**
-
-- To set up Google Sign-In on Android, follow the official Firebase
-  documentation: [Android Firebase Authentication with Google](https://firebase.google.com/docs/auth/android/google-signin)
-- After signing with Google,you need to get the GoogleAuthProvider Credential and pass it to firebaseSDK to be able to get the user token
-- Sample Code:
-
-```kotlin
-// Obtain an ID token from Google. Use it to authenticate with Firebase.
-val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
-auth.signInWithCredential(firebaseCredential)
-    .addOnCompleteListener(this) { task ->
-        if (task.isSuccessful) {
-            val token = it.result?.token
-            // Now, you can pass the token to the Firebase plugin by exchanging the Firebase Token using the `/firebase-auth` endpoint.
-        } else {
-            // If the sign-in fails, display a message to the user.
-            Log.w(TAG, "signInWithCredential:failure", task.exception)
-        }
-    }
-```
-
-**iOS Sample:**
-
-- For iOS, use the Firebase Authentication with Google Sign-In
-  guide: [iOS Firebase Authentication with Google](https://firebase.google.com/docs/auth/ios/google-signin)
-- After signing with Google,you need to get the GoogleAuthProvider Credential and pass it to firebaseSDK to be able to get the user token
-
-- Sample Code:
-
-```swift
-  guard let clientID = FirebaseApp.app()?.options.clientID else { return }
-
-// Create Google Sign In configuration object.
-let config = GIDConfiguration(clientID: clientID)
-GIDSignIn.sharedInstance.configuration = config
-
-// Start the sign in flow!
-GIDSignIn.sharedInstance.signIn(withPresenting: self) { [unowned self] result, error in
-  guard error == nil else {
-    // ...
-  }
-
-  guard let user = result?.user,
-    let idToken = user.idToken?.tokenString
-  else {
-    // ...
-  }
-
-  let credential = GoogleAuthProvider.credential(withIDToken: idToken,
-                                                 accessToken: user.accessToken.tokenString)
-
-  // ...
-
-  Auth.auth().signIn(with: credential) { result, error in
-
-  // At this point, our user is signed in
-  // Now you need to pass the token to firebasePlugin using exchange the firebase Token using `/firebase-auth` endpoint
-}
-
-
-}
-```
-
-**Web Sample:**
-
-- To set up Firebase Authentication with Google Sign-In on the web, follow this Firebase
-  documentation: [Web Firebase Authentication with Google](https://firebase.google.com/docs/auth/web/google-signin)
-- After signing with Google,you need to get the GoogleAuthProvider Credential and pass it to firebaseSDK to be able to get the user token
-- Sample Code:
+**Example (JavaScript):**
 
 ```javascript
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+// After Firebase authentication
+const idToken = await firebaseUser.getIdToken();
 
-const auth = getAuth();
-signInWithPopup(auth, provider)
-  .then((result) => {
-    // This gives you a Google Access Token. You can use it to access the Google API.
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const token = credential.accessToken;
-    // The signed-in user info.
-    const user = result.user;
-    // IdP data available using getAdditionalUserInfo(result)
-    // ...
-  })
-  .catch((error) => {
-    // Handle Errors here.
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    // The email of the user's account used.
-    const email = error.customData.email;
-    // The AuthCredential type that was used.
-    const credential = GoogleAuthProvider.credentialFromError(error);
-    // ...
-  });
+// Exchange with Strapi
+const response = await fetch("https://your-api.com/api/firebase-authentication", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ idToken }),
+});
+
+const { user, jwt } = await response.json();
+localStorage.setItem("jwt", jwt); // Use this JWT for Strapi API calls
 ```
 
-These samples will guide you on how to implement Google Sign-In and obtain the authentication token, which you can then
-pass to the Firebase plugin for user authentication using `/firebase-auth` endpoint
+**Resources:**
 
-**For More Samples:**
+- [Firebase Web SDK](https://firebase.google.com/docs/auth/web/start)
+- [Firebase iOS SDK](https://firebase.google.com/docs/auth/ios/start)
+- [Firebase Android SDK](https://firebase.google.com/docs/auth/android/start)
 
-If you need additional samples for authentication methods like Sign-In with Apple, Email and Password, or others, please refer to the official Firebase documentation for comprehensive details:
+---
 
-- [Firebase Official Documentation](https://firebase.google.com/docs/)
+## Architecture
 
-**Short Links to Specific Authentication Methods:**
+The plugin validates Firebase ID tokens and syncs users between Firebase and Strapi. Users authenticate via Firebase on the client, then exchange their Firebase token for a Strapi JWT to access your API.
 
-- **Sign-In with Apple:**
-  To ensure a smooth user login experience with Apple authentication, it’s essential to include the appleEmail field in the user object within the Strapi dashboard.
+**Security:**
 
-  - Android: [Link](https://firebase.google.com/docs/auth/android/apple)
-  - iOS: [Link](https://firebase.google.com/docs/auth/ios/apple)
-  - Web: [Link](https://firebase.google.com/docs/auth/web/apple)
+- Firebase service account JSON encrypted with AES-256
+- All tokens validated server-side via Firebase Admin SDK
+- Passwords managed by Firebase (not Strapi)
+- User responses automatically sanitized
 
-- **Email and Password Authentication:**
-  - Android: [Link](https://firebase.google.com/docs/auth/android/password-auth)
-  - iOS: [Link](https://firebase.google.com/docs/auth/ios/password-auth)
-  - Web: [Link](https://firebase.google.com/docs/auth/web/password-auth)
+## Troubleshooting
 
-These short links will take you directly to Firebase's official documentation pages for each authentication method, where you can find in-depth information and code samples.
+### 🔴 "Firebase is not initialized"
+
+**Solution:**
+
+1. Verify `FIREBASE_JSON_ENCRYPTION_KEY` in `config/plugins.js` (min 32 characters)
+2. Upload Firebase service account JSON: **Settings → Firebase Authentication**
+3. Restart Strapi: `yarn develop`
+4. Check startup logs for initialization errors
+
+---
+
+### 🔴 "Token validation failed"
+
+**Solution:**
+
+1. Ensure token hasn't expired (1 hour TTL) - client should obtain fresh token
+2. Verify client and server use the same Firebase project
+3. Confirm service account JSON matches your Firebase project ID
+4. Check Firebase Console for service status
+
+---
+
+### 🔴 Email Not Sending
+
+**Solution:**
+
+Install and configure Strapi Email Plugin:
+
+```bash
+yarn add @strapi/provider-email-sendgrid
+```
+
+```javascript
+// config/plugins.js
+email: {
+  config: {
+    provider: 'sendgrid',
+    providerOptions: { apiKey: env('SENDGRID_API_KEY') },
+    settings: {
+      defaultFrom: 'noreply@yourapp.com'
+    }
+  }
+}
+```
+
+Alternative: Install [Firebase Email Extension](https://extensions.dev/extensions/firebase/firestore-send-email)
+
+---
+
+**Need more help?** Check [Firebase Console](https://console.firebase.google.com/) logs or [GitHub Issues](https://github.com/meta-cto/strapi-plugin-firebase-auth/issues)
+
+## Best Practices
+
+- Use Firebase SDK for authentication (not `emailLogin` for production)
+- Store JWTs in httpOnly cookies (production) or secure storage (mobile)
+- Configure Strapi Email Plugin (SendGrid, Mailgun, SES) for production
+- Implement rate limiting on public endpoints
+- Enforce HTTPS for password reset URLs
+- Monitor Firebase quotas regularly
+- Keep dependencies updated
+
+---
+
+## Support
+
+### Questions and Issues
+
+If you encounter problems or have questions:
+
+1. **Check Troubleshooting Section:** Review common errors above
+2. **Firebase Documentation:** [firebase.google.com/docs/auth](https://firebase.google.com/docs/auth)
+3. **Strapi Documentation:** [docs.strapi.io](https://docs.strapi.io)
+4. **GitHub Issues:** [github.com/meta-cto/strapi-plugin-firebase-auth/issues](https://github.com/meta-cto/strapi-plugin-firebase-auth/issues)
+   - Search existing issues first
+   - Provide detailed information when creating new issues
+
+### Creating a Bug Report
+
+When reporting issues, please include:
+
+1. **Plugin version:** Check `package.json`
+2. **Strapi version:** Run `yarn strapi version`
+3. **Node version:** Run `node --version`
+4. **Error message:** Full error text and stack trace
+5. **Steps to reproduce:** Detailed steps to trigger the issue
+6. **Configuration:** Relevant plugin configuration (redact sensitive data)
+7. **Expected behavior:** What should happen
+8. **Actual behavior:** What actually happens
+
+### Feature Requests
+
+To request new features:
+
+1. Search existing feature requests
+2. Create detailed proposal with use case
+3. Explain why feature would be beneficial
+4. Suggest implementation approach (if applicable)
+
+### Community
+
+- **GitHub Discussions:** Ask questions and share experiences
+- **Discord:** Join Strapi community Discord server
+- **Stack Overflow:** Tag questions with `strapi` and `firebase`
+
+---
+
+## License
+
+This plugin is licensed under the MIT License. See `LICENSE.md` for full details.
+
+---
+
+## Changelog
+
+See `CHANGELOG.md` for version history and release notes.
+
+---
+
+## Credits
+
+Developed and maintained by **Meta CTO** team.
+
+**Contributors:**
+
+- Firebase Admin SDK: Google
+- Strapi Framework: Strapi Solutions SAS
+- AES Encryption: crypto-js library
+
+---
+
+## Additional Resources
+
+**Firebase Documentation:**
+
+- [Firebase Authentication](https://firebase.google.com/docs/auth)
+- [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup)
+- Platform Guides: [Web](https://firebase.google.com/docs/web/setup) | [iOS](https://firebase.google.com/docs/ios/setup) | [Android](https://firebase.google.com/docs/android/setup)
+
+**Strapi Documentation:**
+
+- [Strapi v5](https://docs.strapi.io/dev-docs/intro)
+- [Email Providers](https://market.strapi.io/providers) (SendGrid, Mailgun, Amazon SES)
+
+**Firebase Extensions:**
+
+- [Trigger Email Extension](https://extensions.dev/extensions/firebase/firestore-send-email)
+
+---
+
+**Thank you for using Strapi Plugin Firebase Authentication!** 🎉
+
+If you find this plugin helpful, please consider:
+
+- Starring the GitHub repository
+- Sharing with your community
+- Contributing improvements
+- Reporting issues to help us improve
+
+Happy coding! 🚀
