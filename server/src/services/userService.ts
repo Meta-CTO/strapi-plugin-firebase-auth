@@ -322,9 +322,19 @@ export default ({ strapi }) => {
     },
     resetPasswordStrapiUser: async (entityId, payload) => {
       try {
-        return strapi.db
-          .query("plugin::users-permissions.user")
-          .update({ where: { firebaseUserID: entityId }, data: payload });
+        const firebaseData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
+
+        if (!firebaseData?.user) {
+          throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
+        }
+
+        return await strapi.documents("plugin::users-permissions.user").update({
+          documentId: firebaseData.user.documentId,
+          data: payload,
+        });
       } catch (e) {
         throw new errors.ApplicationError(e.message.toString());
       }
@@ -332,10 +342,21 @@ export default ({ strapi }) => {
     resetPassword: async (entityId, payload) => {
       try {
         ensureFirebaseInitialized();
+
+        const firebaseData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
+
+        if (!firebaseData?.user) {
+          throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
+        }
+
         const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
-        const strapiPromise = strapi.db
-          .query("plugin::users-permissions.user")
-          .update({ where: { firebaseUserID: entityId }, data: payload });
+        const strapiPromise = strapi.documents("plugin::users-permissions.user").update({
+          documentId: firebaseData.user.documentId,
+          data: payload,
+        });
 
         return Promise.allSettled([firebasePromise, strapiPromise]);
       } catch (e) {
@@ -345,10 +366,20 @@ export default ({ strapi }) => {
     delete: async (entityId) => {
       try {
         ensureFirebaseInitialized();
+
+        const firebaseData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
+
+        if (!firebaseData?.user) {
+          throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
+        }
+
         const firebasePromise = strapi.firebase.auth().deleteUser(entityId);
-        const strapiPromise = strapi.db
-          .query("plugin::users-permissions.user")
-          .delete({ where: { firebaseUserID: entityId } });
+        const strapiPromise = strapi.documents("plugin::users-permissions.user").delete({
+          documentId: firebaseData.user.documentId,
+        });
         return Promise.allSettled([firebasePromise, strapiPromise]);
       } catch (e) {
         throw new errors.ApplicationError(e.message.toString());
@@ -365,9 +396,18 @@ export default ({ strapi }) => {
     },
     deleteStrapiUser: async (entityId) => {
       try {
-        const response = await strapi.db
-          .query("plugin::users-permissions.user")
-          .delete({ where: { firebaseUserID: entityId } });
+        const firebaseData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
+
+        if (!firebaseData?.user) {
+          throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
+        }
+
+        const response = await strapi.documents("plugin::users-permissions.user").delete({
+          documentId: firebaseData.user.documentId,
+        });
         return response;
       } catch (e) {
         throw new errors.ApplicationError(e.message.toString());

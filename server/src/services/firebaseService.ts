@@ -173,6 +173,22 @@ const generateUsernameFromPhone = async (phoneNumber: string): Promise<string> =
   );
 };
 
+/**
+ * Validates that a Strapi user is not blocked
+ * @param user - Strapi user object to validate
+ * @throws ForbiddenError if user is blocked
+ */
+const validateUserNotBlocked = (user: any) => {
+  if (user?.blocked === true) {
+    strapi.log.warn(`Blocked user attempted authentication`, {
+      userId: user.documentId,
+      email: user.email || "no-email",
+      username: user.username,
+    });
+    throw new errors.ForbiddenError("Your account has been blocked. Please contact support for assistance.");
+  }
+};
+
 export default ({ strapi }) => ({
   async getUserAttributes() {
     return strapi.plugin("users-permissions").contentType("user").attributes;
@@ -240,6 +256,7 @@ export default ({ strapi }) => ({
       .getByFirebaseUID(firebaseUID);
 
     if (firebaseData && firebaseData.user) {
+      validateUserNotBlocked(firebaseData.user);
       return firebaseData.user; // Already populated by service
     }
 
@@ -251,6 +268,7 @@ export default ({ strapi }) => ({
       });
 
       if (userByEmail) {
+        validateUserNotBlocked(userByEmail);
         // User exists but no firebase_user_data record - auto-link it
         try {
           await strapi
@@ -273,12 +291,21 @@ export default ({ strapi }) => ({
       }
 
       // Check appleEmail fallback (for Apple Sign-In users)
-      const userByAppleEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
-        where: { appleEmail: decodedToken.email },
-        populate: ["role"],
-      });
+      const firebaseDataByApple = await strapi
+        .documents("plugin::firebase-authentication.firebase-user-data")
+        .findMany({
+          filters: { appleEmail: { $eq: decodedToken.email } },
+          populate: {
+            user: {
+              populate: ["role"],
+            },
+          },
+        });
+
+      const userByAppleEmail = firebaseDataByApple?.[0]?.user || null;
 
       if (userByAppleEmail) {
+        validateUserNotBlocked(userByAppleEmail);
         // User exists but no firebase_user_data record - auto-link it
         try {
           await strapi
@@ -313,6 +340,7 @@ export default ({ strapi }) => ({
       });
 
       if (userByPhone) {
+        validateUserNotBlocked(userByPhone);
         // User exists but no firebase_user_data record - auto-link it
         try {
           await strapi
@@ -476,6 +504,8 @@ export default ({ strapi }) => ({
         .plugin("firebase-authentication")
         .service("firebaseService")
         .createStrapiUser(decodedToken, idToken, profileMetaData);
+    } else {
+      validateUserNotBlocked(user);
     }
 
     // Generate JWT
@@ -616,6 +646,8 @@ export default ({ strapi }) => ({
           .plugin("firebase-authentication")
           .service("firebaseService")
           .createStrapiUser(decodedToken, idToken, null);
+      } else {
+        validateUserNotBlocked(user);
       }
 
       // Generate Strapi JWT
@@ -795,6 +827,8 @@ export default ({ strapi }) => ({
       if (!strapiUser) {
         throw new errors.NotFoundError("User not found");
       }
+
+      validateUserNotBlocked(strapiUser);
 
       // Get Firebase UID from firebase_user_data table
       const firebaseData = await strapi
