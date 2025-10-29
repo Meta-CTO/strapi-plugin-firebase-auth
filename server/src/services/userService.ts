@@ -476,7 +476,7 @@ export default ({ strapi }) => {
           // Generate password reset link using Firebase Admin SDK with timeout
           const actionCodeSettings = {
             url: passwordResetUrl,
-            handleCodeInApp: true,
+            handleCodeInApp: false,
           };
 
           // Create a promise that rejects after 10 seconds with proper typing

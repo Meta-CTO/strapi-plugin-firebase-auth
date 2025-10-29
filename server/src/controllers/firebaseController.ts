@@ -22,7 +22,7 @@ const firebaseController = {
 
       ctx.body = result;
     } catch (error) {
-      strapi.log.error("validateToken controller error:", error);
+      strapi.log.error("validateToken controller error:", error.message);
       if (error.name === "ValidationError") {
         return ctx.badRequest(error.message);
       }
@@ -129,9 +129,11 @@ const firebaseController = {
   },
 
   /**
-   * Reset password - authenticated with 1hr JWT
+   * Reset password - authenticated password change
    * POST /api/firebase-authentication/resetPassword
-   * Public endpoint - uses JWT from Authorization header
+   * Public endpoint - requires valid JWT in Authorization header
+   * Used for admin-initiated resets or user self-service password changes
+   * NOT used for forgot password email flow (which uses Firebase's hosted UI)
    */
   async resetPassword(ctx) {
     strapi.log.debug("resetPassword endpoint called");

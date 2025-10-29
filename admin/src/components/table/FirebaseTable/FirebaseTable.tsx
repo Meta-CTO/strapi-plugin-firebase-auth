@@ -135,12 +135,12 @@ export const FirebaseTable = ({
     <>
       {/* Search and Bulk Actions Bar */}
       <BulkActionsBar paddingLeft={0} paddingRight={0}>
-        <Flex direction="row" alignItems="center" justifyContent="space-between">
-          <Flex direction="row" alignItems="center" gap={4}>
+        <Flex direction="row" alignItems="center" justifyContent="space-between" wrap="nowrap">
+          <Flex direction="row" alignItems="center" gap={2} wrap="nowrap">
             {action}
             {hasSelection && (
               <>
-                <Typography variant="omega" fontWeight="semiBold">
+                <Typography variant="omega" fontWeight="semiBold" style={{ whiteSpace: "nowrap" }}>
                   {selectedCount} {selectedCount === 1 ? "entry" : "entries"} selected
                 </Typography>
                 <Button
@@ -148,10 +148,16 @@ export const FirebaseTable = ({
                   startIcon={<Trash />}
                   onClick={() => setShowBulkDeleteDialog(true)}
                   size="S"
+                  style={{ whiteSpace: "nowrap" }}
                 >
                   Delete
                 </Button>
-                <Button variant="secondary" onClick={clearSelection} size="S">
+                <Button
+                  variant="secondary"
+                  onClick={clearSelection}
+                  size="S"
+                  style={{ whiteSpace: "nowrap" }}
+                >
                   Deselect all
                 </Button>
               </>

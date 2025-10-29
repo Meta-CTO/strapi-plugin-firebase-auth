@@ -33,7 +33,7 @@ export default {
       path: "/resetPassword",
       handler: "firebaseController.resetPassword",
       config: {
-        auth: false, // Public endpoint - uses JWT from Authorization header
+        auth: false, // Public endpoint - authenticated password change, requires valid JWT in Authorization header
         policies: [],
       },
     },

@@ -2,9 +2,6 @@ import { errors } from "@strapi/utils";
 import { Context, DefaultContext } from "koa";
 
 export default {
-  setToken: async (ctx: DefaultContext | Context) => {
-    ctx.body = await strapi.plugin("firebase-authentication").service("settingsService").setToken(ctx);
-  },
   setFirebaseConfigJson: async (ctx: DefaultContext | Context) => {
     ctx.body = await strapi
       .plugin("firebase-authentication")

@@ -269,23 +269,24 @@ export default ({ strapi }) => ({
 
       if (userByEmail) {
         validateUserNotBlocked(userByEmail);
-        // User exists but no firebase_user_data record - auto-link it
-        try {
-          await strapi
-            .plugin("firebase-authentication")
-            .service("firebaseUserDataService")
-            .updateForUser(userByEmail.documentId, {
-              firebaseUserID: firebaseUID,
-            });
-          strapi.log.info(`Auto-linked user ${userByEmail.username} to Firebase UID ${firebaseUID}`);
-        } catch (error) {
-          // Ignore duplicate key errors (another request already linked this user)
-          if (error.code !== "23505") {
-            // PostgreSQL unique constraint violation
-            throw error;
-          }
-          strapi.log.info(`User ${userByEmail.username} already linked to Firebase (race condition handled)`);
+
+        // Check if Firebase UID is already linked before attempting to create
+        const existingLink = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(firebaseUID);
+
+        if (existingLink && existingLink.user) {
+          validateUserNotBlocked(existingLink.user);
+          return existingLink.user;
         }
+
+        // Safe to link now - Firebase UID not linked to anyone
+        await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .updateForUser(userByEmail.documentId, { firebaseUserID: firebaseUID });
+        strapi.log.info(`Auto-linked user ${userByEmail.username} to Firebase UID ${firebaseUID}`);
 
         return userByEmail;
       }
@@ -306,27 +307,24 @@ export default ({ strapi }) => ({
 
       if (userByAppleEmail) {
         validateUserNotBlocked(userByAppleEmail);
-        // User exists but no firebase_user_data record - auto-link it
-        try {
-          await strapi
-            .plugin("firebase-authentication")
-            .service("firebaseUserDataService")
-            .updateForUser(userByAppleEmail.documentId, {
-              firebaseUserID: firebaseUID,
-            });
-          strapi.log.info(
-            `Auto-linked Apple user ${userByAppleEmail.username} to Firebase UID ${firebaseUID}`
-          );
-        } catch (error) {
-          // Ignore duplicate key errors (another request already linked this user)
-          if (error.code !== "23505") {
-            // PostgreSQL unique constraint violation
-            throw error;
-          }
-          strapi.log.info(
-            `User ${userByAppleEmail.username} already linked to Firebase (race condition handled)`
-          );
+
+        // Check if Firebase UID is already linked before attempting to create
+        const existingLink = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(firebaseUID);
+
+        if (existingLink && existingLink.user) {
+          validateUserNotBlocked(existingLink.user);
+          return existingLink.user;
         }
+
+        // Safe to link now - Firebase UID not linked to anyone
+        await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .updateForUser(userByAppleEmail.documentId, { firebaseUserID: firebaseUID });
+        strapi.log.info(`Auto-linked Apple user ${userByAppleEmail.username} to Firebase UID ${firebaseUID}`);
 
         return userByAppleEmail;
       }
@@ -341,23 +339,24 @@ export default ({ strapi }) => ({
 
       if (userByPhone) {
         validateUserNotBlocked(userByPhone);
-        // User exists but no firebase_user_data record - auto-link it
-        try {
-          await strapi
-            .plugin("firebase-authentication")
-            .service("firebaseUserDataService")
-            .updateForUser(userByPhone.documentId, {
-              firebaseUserID: firebaseUID,
-            });
-          strapi.log.info(`Auto-linked phone user ${userByPhone.username} to Firebase UID ${firebaseUID}`);
-        } catch (error) {
-          // Ignore duplicate key errors (another request already linked this user)
-          if (error.code !== "23505") {
-            // PostgreSQL unique constraint violation
-            throw error;
-          }
-          strapi.log.info(`User ${userByPhone.username} already linked to Firebase (race condition handled)`);
+
+        // Check if Firebase UID is already linked before attempting to create
+        const existingLink = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(firebaseUID);
+
+        if (existingLink && existingLink.user) {
+          validateUserNotBlocked(existingLink.user);
+          return existingLink.user;
         }
+
+        // Safe to link now - Firebase UID not linked to anyone
+        await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .updateForUser(userByPhone.documentId, { firebaseUserID: firebaseUID });
+        strapi.log.info(`Auto-linked phone user ${userByPhone.username} to Firebase UID ${firebaseUID}`);
 
         return userByPhone;
       }
@@ -409,6 +408,7 @@ export default ({ strapi }) => ({
       userPayload.role = role.id;
       // NO firebaseUserID here - it goes in firebase_user_data table
       userPayload.confirmed = true;
+      userPayload.provider = "firebase";
 
       userPayload.email = decodedToken.email;
       userPayload.phoneNumber = decodedToken.phone_number;
@@ -466,14 +466,43 @@ export default ({ strapi }) => ({
 
       return newUser;
     } catch (error) {
-      // Cleanup: Delete user if firebase_user_data creation failed
-      if (newUser) {
+      // Handle race condition: duplicate firebaseUserID from concurrent requests
+      if (error.code === "23505") {
+        // PostgreSQL unique constraint violation
+        strapi.log.warn(
+          `[Race Condition] User creation conflict for Firebase UID ${decodedToken.uid}. ` +
+            `Another concurrent request created the user first. Retrying lookup...`
+        );
+
+        // Retry lookup - the concurrent request should have succeeded
+        const existingUser = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseService")
+          .checkIfUserExists(decodedToken);
+
+        if (existingUser) {
+          strapi.log.info(
+            `[Race Condition] Successfully found user ${existingUser.username} ` +
+              `created by concurrent request`
+          );
+          return existingUser;
+        }
+
+        // If still not found after retry, log and fall through to throw error
+        strapi.log.error(
+          `[Race Condition] Failed to find user after race condition retry for ` +
+            `Firebase UID ${decodedToken.uid}`
+        );
+      }
+
+      // Cleanup orphaned user (only for non-race-condition errors)
+      if (error.code !== "23505" && newUser) {
         try {
           await strapi.db.query("plugin::users-permissions.user").delete({
             where: { documentId: newUser.documentId },
           });
           strapi.log.warn(
-            `Cleaned up orphaned user ${newUser.documentId} after firebase_user_data creation failed`
+            `Cleaned up orphaned user ${newUser.documentId} after ` + `firebase_user_data creation failed`
           );
         } catch (cleanupError) {
           strapi.log.error("Failed to cleanup orphaned user", cleanupError);
@@ -674,7 +703,7 @@ export default ({ strapi }) => ({
 
   /**
    * Forgot password flow - sends reset email
-   * Public endpoint that generates a JWT token and sends a password reset email
+   * Public endpoint that sends a Firebase-hosted password reset email using Firebase's secure hosted UI
    */
   forgotPassword: async (ctx) => {
     const { email } = ctx.request.body;
@@ -747,15 +776,35 @@ export default ({ strapi }) => ({
         return { message: "If an account with that email exists, a password reset link has been sent." };
       }
 
-      // Generate 1-hour JWT using numeric id for auth middleware compatibility
-      const jwtService = strapi.plugin("users-permissions").service("jwt");
-      const token = jwtService.issue(
-        { id: strapiUser.id }, // Use numeric id, not documentId
-        { expiresIn: "1h" }
-      );
+      // Use Firebase's generatePasswordResetLink (same as admin panel)
+      const actionCodeSettings = {
+        url: resetUrl, // Continue URL after reset completes on Firebase's page
+        handleCodeInApp: false,
+      };
 
-      // Build reset link
-      const resetLink = `${resetUrl}?token=${token}`;
+      // Create a promise that rejects after 10 seconds with proper typing
+      const timeoutPromise = new Promise<string>((_, reject) => {
+        setTimeout(
+          () => reject(new Error("Firebase generatePasswordResetLink timeout after 10 seconds")),
+          10000
+        );
+      });
+
+      let resetLink;
+      try {
+        // Generate Firebase password reset link with timeout protection
+        resetLink = await Promise.race([
+          strapi.firebase.auth().generatePasswordResetLink(strapiUser.email, actionCodeSettings),
+          timeoutPromise,
+        ]);
+
+        strapi.log.info(
+          `✅ Password reset link generated successfully for ${strapiUser.email}: ${resetLink}`
+        );
+      } catch (error) {
+        strapi.log.error(`❌ Failed to generate password reset link for ${strapiUser.email}:`, error);
+        throw error;
+      }
 
       // Send email using our three-tier fallback system
       await strapi
@@ -778,7 +827,17 @@ export default ({ strapi }) => ({
 
   /**
    * Reset password with authenticated JWT
-   * Public endpoint that validates a JWT token and resets the user's password
+   * Allows authenticated users (or admins) to change a user's Firebase password
+   *
+   * @param ctx - Koa context with JWT in Authorization header and new password in body
+   * @returns User object and fresh JWT for auto-login
+   *
+   * @remarks
+   * Use cases:
+   * 1. Admin-initiated password reset (via admin panel)
+   * 2. User-initiated password change (when already authenticated)
+   *
+   * NOT used for forgot password email flow - that now uses Firebase's hosted UI
    */
   resetPassword: async (ctx) => {
     const { password } = ctx.request.body;

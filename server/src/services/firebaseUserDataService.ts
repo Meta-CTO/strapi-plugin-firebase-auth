@@ -12,10 +12,12 @@ export default ({ strapi }) => ({
 
     // Try to find existing record
     // Use Document Service API with filters
-    let firebaseData = await strapi.documents("plugin::firebase-authentication.firebase-user-data").findOne({
-      filters: { user: { documentId: { $eq: userId } } },
-      populate: ["user"],
-    });
+    let firebaseData = await strapi
+      .documents("plugin::firebase-authentication.firebase-user-data")
+      .findFirst({
+        filters: { user: { documentId: { $eq: userId } } },
+        populate: ["user"],
+      });
 
     // Create if doesn't exist
     if (!firebaseData) {
@@ -34,7 +36,7 @@ export default ({ strapi }) => ({
    */
   async getByFirebaseUID(firebaseUID: string) {
     // Use Document Service API with filters
-    return await strapi.documents("plugin::firebase-authentication.firebase-user-data").findOne({
+    return await strapi.documents("plugin::firebase-authentication.firebase-user-data").findFirst({
       filters: { firebaseUserID: { $eq: firebaseUID } },
       populate: ["user"],
     });
@@ -54,9 +56,11 @@ export default ({ strapi }) => ({
   ) {
     // Try to find existing record
     // Use Document Service API with filters
-    let firebaseData = await strapi.documents("plugin::firebase-authentication.firebase-user-data").findOne({
-      filters: { user: { documentId: { $eq: userId } } },
-    });
+    let firebaseData = await strapi
+      .documents("plugin::firebase-authentication.firebase-user-data")
+      .findFirst({
+        filters: { user: { documentId: { $eq: userId } } },
+      });
 
     if (!firebaseData) {
       // Create new record - firebaseUserID is required
@@ -76,11 +80,11 @@ export default ({ strapi }) => ({
         // Handle race condition: another request created the record first
         if (error.code === "23505") {
           // PostgreSQL unique violation
-          strapi.log.warn(`Race condition detected for user ${userId}, retrying findOne`);
+          strapi.log.warn(`Race condition detected for user ${userId}, retrying findFirst`);
           // Use Document Service API with filters
           firebaseData = await strapi
             .documents("plugin::firebase-authentication.firebase-user-data")
-            .findOne({
+            .findFirst({
               filters: { user: { documentId: { $eq: userId } } },
             });
 
