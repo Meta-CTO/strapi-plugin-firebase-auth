@@ -6,6 +6,67 @@ import "react-phone-input-2/lib/style.css";
 import styled from "styled-components";
 import { User } from "../../../../../../model/User";
 
+// ==================== DEBUG LOGGING START ====================
+console.log("🔍 ==================== UserFormFields Debug Start ====================");
+console.log("📦 Import Inspection:");
+console.log("  Field:", Field);
+console.log("  Field type:", typeof Field);
+console.log("  Field constructor:", Field?.constructor?.name);
+console.log("  Field.Root:", Field.Root);
+console.log("  Field.Root type:", typeof Field.Root);
+console.log("  Field.Root $$typeof:", (Field.Root as any)?.$$typeof);
+console.log("  Field.Root displayName:", (Field.Root as any)?.displayName);
+console.log("  Field.Label:", Field.Label);
+console.log("  Field.Label type:", typeof Field.Label);
+console.log("  Field.Label $$typeof:", (Field.Label as any)?.$$typeof);
+console.log("  Field.Error:", Field.Error);
+console.log("  Field.Error type:", typeof Field.Error);
+console.log("  Field.Error $$typeof:", (Field.Error as any)?.$$typeof);
+console.log("  Field.Hint:", Field.Hint);
+console.log("  Field.Hint type:", typeof Field.Hint);
+console.log("  TextInput:", TextInput);
+console.log("  TextInput type:", typeof TextInput);
+console.log("  TextInput $$typeof:", (TextInput as any)?.$$typeof);
+console.log("  Toggle:", Toggle);
+console.log("  Toggle type:", typeof Toggle);
+console.log("  Toggle $$typeof:", (Toggle as any)?.$$typeof);
+console.log("  PhoneInput:", PhoneInput);
+console.log("  PhoneInput type:", typeof PhoneInput);
+console.log("  PhoneInput $$typeof:", (PhoneInput as any)?.$$typeof);
+console.log("  PhoneInput displayName:", (PhoneInput as any)?.displayName);
+
+console.log("🧩 Testing React.createElement:");
+try {
+  const testRoot = React.createElement(Field.Root, { children: "test" });
+  console.log("  ✅ Field.Root createElement succeeded:", testRoot);
+} catch (e) {
+  console.error("  ❌ Field.Root createElement FAILED:", e);
+}
+
+try {
+  const testLabel = React.createElement(Field.Label, { children: "test" });
+  console.log("  ✅ Field.Label createElement succeeded:", testLabel);
+} catch (e) {
+  console.error("  ❌ Field.Label createElement FAILED:", e);
+}
+
+try {
+  const testInput = React.createElement(TextInput, { value: "test" });
+  console.log("  ✅ TextInput createElement succeeded:", testInput);
+} catch (e) {
+  console.error("  ❌ TextInput createElement FAILED:", e);
+}
+
+try {
+  const testToggle = React.createElement(Toggle, { checked: false });
+  console.log("  ✅ Toggle createElement succeeded:", testToggle);
+} catch (e) {
+  console.error("  ❌ Toggle createElement FAILED:", e);
+}
+
+console.log("🔍 ==================== UserFormFields Debug End ====================");
+// ==================== DEBUG LOGGING END ====================
+
 const StyledPhoneInputWrapper = styled.div`
   width: 100%;
 
@@ -174,6 +235,21 @@ export const UserFormFields = ({
   isPasswordRequired = false,
   hasBeenTouched = false,
 }: UserFormFieldsProps) => {
+  // DEBUG: Log during render
+  console.log("🎨 UserFormFields RENDER START");
+  console.log("  Props received:", {
+    userData,
+    emailError,
+    phoneError,
+    showPasswordHint,
+    isPasswordRequired,
+    hasBeenTouched,
+  });
+  console.log("  About to render Field.Root, type:", typeof Field.Root);
+  console.log("  About to render TextInput, type:", typeof TextInput);
+  console.log("  About to render Toggle, type:", typeof Toggle);
+  console.log("  About to render PhoneInput, type:", typeof PhoneInput);
+
   return (
     <>
       <Field.Root

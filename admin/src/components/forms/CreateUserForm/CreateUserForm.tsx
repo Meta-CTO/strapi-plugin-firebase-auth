@@ -9,7 +9,16 @@ import { createUser } from "../../../pages/utils/api";
 import { PLUGIN_ID } from "../../../pluginId";
 import { useUserForm } from "../../../hooks/useUserForm";
 
+// DEBUG: Check imports in CreateUserForm
+console.log("🔷 CreateUserForm - Component Imports:");
+console.log("  UserFormFields:", UserFormFields);
+console.log("  UserFormFields type:", typeof UserFormFields);
+console.log("  UserFormFields $$typeof:", (UserFormFields as any)?.$$typeof);
+console.log("  UserFormLayout:", UserFormLayout);
+console.log("  UserFormLayout type:", typeof UserFormLayout);
+
 const CreateUserForm = () => {
+  console.log("🔷 CreateUserForm RENDERING");
   const [isLoading, setIsLoading] = useState(false);
   const { toggleNotification } = useNotification();
   const navigate = useNavigate();
@@ -59,17 +68,24 @@ const CreateUserForm = () => {
       />
       <Layouts.Content>
         <UserFormLayout>
-          <UserFormFields
-            userData={userData}
-            onTextInputChange={handlers.onTextInputChange}
-            onPhoneChange={handlers.onPhoneChange}
-            onToggleInputChange={handlers.onToggleInputChange}
-            onEmailBlur={handlers.onEmailBlur}
-            emailError={emailError}
-            phoneError={phoneError}
-            isPasswordRequired={true}
-            hasBeenTouched={hasBeenTouched}
-          />
+          {(() => {
+            console.log("🎯 About to render UserFormFields, component:", UserFormFields);
+            console.log("🎯 UserFormFields typeof:", typeof UserFormFields);
+            console.log("🎯 UserFormFields.$$typeof:", (UserFormFields as any)?.$$typeof);
+            return (
+              <UserFormFields
+                userData={userData}
+                onTextInputChange={handlers.onTextInputChange}
+                onPhoneChange={handlers.onPhoneChange}
+                onToggleInputChange={handlers.onToggleInputChange}
+                onEmailBlur={handlers.onEmailBlur}
+                emailError={emailError}
+                phoneError={phoneError}
+                isPasswordRequired={true}
+                hasBeenTouched={hasBeenTouched}
+              />
+            );
+          })()}
         </UserFormLayout>
       </Layouts.Content>
     </Page.Main>
