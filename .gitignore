@@ -84,7 +84,6 @@ ssl
 nbproject
 .tsbuildinfo
 .eslintcache
-.env
 
 
 ############################
@@ -136,3 +135,4 @@ yarn-error.log
 ############################
 
 coverage
+config.bat
