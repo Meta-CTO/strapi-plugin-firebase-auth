@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.1.1
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.6...v1.1.1)
+
+### 🩹 Fixes
+
+- Add debug logging for component imports and rendering in CreateUserForm, EditUserForm, and UserFormFields ([2009e14](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/2009e14))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.1.6
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.5...v1.1.6)
