@@ -152,7 +152,7 @@ const sendResetEmail = async (userId: string) => {
 };
 
 const getFirebaseConfig = async () => {
-  const url = `/${PLUGIN_ID}/config`;
+  const url = `/api/${PLUGIN_ID}/config`;
   try {
     const { get } = getFetchClient();
     const { data: config } = await get(url, {
