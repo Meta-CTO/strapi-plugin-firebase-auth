@@ -1,6 +1,7 @@
 import React from "react";
 import { TextInput, Toggle, Field } from "@strapi/design-system";
-import PhoneInput from "react-phone-input-2";
+import * as PhoneInputModule from "react-phone-input-2";
+const PhoneInput = (PhoneInputModule as any).default || PhoneInputModule;
 import "react-phone-input-2/lib/style.css";
 import styled from "styled-components";
 import { User } from "../../../../../../model/User";
@@ -212,7 +213,7 @@ export const UserFormFields = ({
         <StyledPhoneInputWrapper>
           <PhoneInput
             value={userData.phoneNumber || ""}
-            onChange={(phone) => onPhoneChange("+" + phone)}
+            onChange={(phone: string) => onPhoneChange("+" + phone)}
             country={"us"}
             enableSearch={true}
             searchPlaceholder="Search countries..."
