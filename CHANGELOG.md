@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.3
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.1...v1.0.3)
+
+### 🩹 Fixes
+
+- Correct version number and update peer dependencies for compatibility ([9687835](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/9687835))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.1.1
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.0...v1.1.1)
