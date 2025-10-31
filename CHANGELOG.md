@@ -1,5 +1,56 @@
 # Changelog
 
+## v1.1.1
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.0...v1.1.1)
+
+### Breaking Changes
+
+#### Admin API Route Migration
+
+- Admin endpoints migrated from `content-internal-api` type to proper `admin` API type
+- **Old paths:** `/api/firebase-authentication/content-internal-api/*`
+- **New paths:** `/firebase-authentication/*`
+- Removed deprecated `server/src/routes/content-internal-api.ts` file
+
+### Enhancements
+
+#### Password Reset Flow
+
+- **Firebase-Hosted Password Reset**: `forgotPassword` endpoint now uses Firebase's secure hosted UI
+  - Generates links using Firebase's `generatePasswordResetLink()` API
+  - Users redirected to Firebase's official password reset page for better security
+  - Configurable continue URL for post-reset redirect
+- **Authenticated Password Change**: Clarified that `resetPassword` endpoint requires JWT authentication
+  - Use cases: Admin panel password resets, authenticated user password changes
+
+#### Concurrency & Race Condition Handling
+
+- **Improved User Linking Logic**: Prevents database constraint violations during user lookup
+  - Checks for existing Firebase UID links before attempting to create or link users
+  - Applied to all user lookup paths: email, Apple email (privaterelay), and phone number
+  - Returns existing linked user if Firebase UID already associated with another account
+- **User Creation Race Conditions**: Graceful handling of concurrent authentication requests
+  - Automatically retries user lookup when concurrent request creates user first
+  - Proper cleanup of orphaned users for non-race-condition errors
+
+#### User Management
+
+- **Provider Tracking**: New users automatically tagged with `provider: "firebase"` field
+
+### Technical Improvements
+
+- Enhanced error handling for Firebase API timeouts
+- Improved logging throughout authentication flow
+- Consolidated admin route definitions with proper security policies
+- Better code organization with removal of deprecated route files
+
+### Documentation
+
+- Updated README with corrected admin endpoint paths
+- Added detailed password reset flow documentation explaining two distinct approaches
+- Clarified distinction between forgot password flow (Firebase-hosted) and authenticated password change
+
 ## v1.1.0
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.0.13...v1.1.0)
