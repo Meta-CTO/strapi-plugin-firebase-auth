@@ -1,6 +1,6 @@
 {
   "name": "strapi-plugin-firebase-authentication",
-  "version": "1.1.1",
+  "version": "1.0.2",
   "description": "Allows easy integration between clients utilizing Firebase for authentication and Strapi",
   "license": "MIT",
   "repository": {
@@ -82,12 +82,11 @@
     "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "@strapi/sdk-plugin": "^5.3.2",
-    "@strapi/strapi": "^5.0.1",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.3",
-    "styled-components": "^6.1.19"
+    "@strapi/strapi": "^5.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "styled-components": "^6.0.0"
   },
   "engines": {
     "node": ">=18.0.0 <=22.x.x",
