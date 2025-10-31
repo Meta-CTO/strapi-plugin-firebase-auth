@@ -2,32 +2,11 @@
 
 ## v1.1.3
 
-[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.4...v1.1.3)
-
-## v1.1.4
-
-[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.0.3...v1.1.4)
-
-### 🩹 Fixes
-
-- Update version number to 1.1.2 in package.json ([5018875](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/5018875))
-- Update PhoneInput import and type for phone change handler ([166a89e](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/166a89e))
-
-### ❤️ Contributors
-
-- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
-
-## v1.0.3
-
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.1...v1.0.3)
 
 ### 🩹 Fixes
 
 - Correct version number and update peer dependencies for compatibility ([9687835](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/9687835))
-
-### ❤️ Contributors
-
-- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
 
 ## v1.1.1
 
