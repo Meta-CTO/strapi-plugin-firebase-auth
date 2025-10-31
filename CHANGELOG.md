@@ -2,7 +2,7 @@
 
 ## v1.1.3
 
-[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.1...v1.0.3)
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.1...v1.1.3)
 
 ### 🩹 Fixes
 
