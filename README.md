@@ -42,7 +42,7 @@ A production-ready Strapi v5 plugin that seamlessly integrates Firebase Authenti
 - `POST /api/firebase-authentication` - Exchange Firebase token for Strapi JWT
 - `POST /api/firebase-authentication/emailLogin` - Direct email/password login
 - `POST /api/firebase-authentication/forgotPassword` - Request password reset
-- `POST /api/firebase-authentication/resetPassword` - Reset with JWT token
+- `POST /api/firebase-authentication/resetPassword` - Authenticated password change (requires JWT)
 - `POST /api/firebase-authentication/requestMagicLink` - Passwordless login
 - `GET /api/firebase-authentication/config` - Get public configuration
 
@@ -284,32 +284,66 @@ module.exports = () => ({
 
 ### Public Endpoints
 
-| Method | Endpoint                                        | Purpose                                |
-| ------ | ----------------------------------------------- | -------------------------------------- |
-| POST   | `/api/firebase-authentication`                  | Exchange Firebase token for Strapi JWT |
-| POST   | `/api/firebase-authentication/emailLogin`       | Email/password login (no SDK required) |
-| POST   | `/api/firebase-authentication/forgotPassword`   | Request password reset email           |
-| POST   | `/api/firebase-authentication/resetPassword`    | Reset password with JWT token          |
-| POST   | `/api/firebase-authentication/requestMagicLink` | Request passwordless login email       |
-| GET    | `/api/firebase-authentication/config`           | Get public configuration               |
+| Method | Endpoint                                        | Purpose                                      |
+| ------ | ----------------------------------------------- | -------------------------------------------- |
+| POST   | `/api/firebase-authentication`                  | Exchange Firebase token for Strapi JWT       |
+| POST   | `/api/firebase-authentication/emailLogin`       | Email/password login (no SDK required)       |
+| POST   | `/api/firebase-authentication/forgotPassword`   | Request password reset email                 |
+| POST   | `/api/firebase-authentication/resetPassword`    | Authenticated password change (requires JWT) |
+| POST   | `/api/firebase-authentication/requestMagicLink` | Request passwordless login email             |
+| GET    | `/api/firebase-authentication/config`           | Get public configuration                     |
+
+### Password Reset Flow
+
+There are two distinct password reset approaches in this plugin:
+
+#### 1. Forgot Password Flow (Email-Based)
+
+**For users who forgot their password:**
+
+1. User requests reset: `POST /api/firebase-authentication/forgotPassword` with `{ "email": "user@example.com" }`
+2. Firebase sends email with link to Firebase's hosted password reset page
+3. User clicks link → Opens Firebase's secure hosted UI
+4. User enters new password on Firebase's page
+5. After success → Redirects to configured continue URL
+6. User logs in normally with new password
+
+**Configuration:** Set `passwordResetUrl` in Firebase Authentication settings (this is where users land AFTER resetting their password on Firebase's page).
+
+#### 2. Authenticated Password Change
+
+**For admin-initiated resets or users changing their own password:**
+
+- **Endpoint:** `POST /api/firebase-authentication/resetPassword`
+- **Requires:** Valid JWT in `Authorization` header + `{ "password": "newpassword" }` in body
+- **Use cases:**
+  - Admin resetting a user's password via admin panel
+  - Authenticated user changing their own password
+- **Returns:** Updated user object + fresh JWT for auto-login
+
+**Note:** This endpoint is NOT part of the forgot password email flow. Use `forgotPassword` for email-based password reset.
 
 ### Admin Endpoints
+
+Admin endpoints use the admin API type (no `/api` prefix) and require admin authentication.
 
 **User Management:**
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET | `/api/firebase-authentication/content-internal-api/users` | List/search users |
-| POST | `/api/firebase-authentication/content-internal-api/users` | Create user |
-| GET | `/api/firebase-authentication/content-internal-api/users/:id` | Get user |
-| PUT | `/api/firebase-authentication/content-internal-api/users/:id` | Update user |
-| DELETE | `/api/firebase-authentication/content-internal-api/users/:id` | Delete user |
-| PUT | `/api/firebase-authentication/content-internal-api/users/resetPassword/:id` | Reset password |
+| GET | `/firebase-authentication/users` | List/search users |
+| POST | `/firebase-authentication/users` | Create user |
+| GET | `/firebase-authentication/users/:id` | Get user |
+| PUT | `/firebase-authentication/users/:id` | Update user |
+| DELETE | `/firebase-authentication/users/:id` | Delete user |
+| PUT | `/firebase-authentication/users/resetPassword/:id` | Reset password |
 
 **Settings Management:**
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| GET/POST/DELETE | `/api/firebase-authentication/settings/firebase-config` | Manage Firebase config |
-| POST | `/api/firebase-authentication/settings/password-config` | Update password/magic link settings |
+| GET | `/firebase-authentication/settings/firebase-config` | Get Firebase config |
+| POST | `/firebase-authentication/settings/firebase-config` | Upload Firebase config |
+| DELETE | `/firebase-authentication/settings/firebase-config` | Delete Firebase config |
+| POST | `/firebase-authentication/settings/password-config` | Update password/magic link settings |
 
 ---
 
