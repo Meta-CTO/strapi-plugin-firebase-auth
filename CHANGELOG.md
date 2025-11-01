@@ -1,16 +1,16 @@
 # Changelog
 
-## v1.2.0
+## v1.1.7
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.0...v1.2.0)
 
-### 🚀 Enhancements
+### Enhancements
 
 - Enhance Firebase integration with improved user linking and password reset flow ([9f8d8f0](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/9f8d8f0))
 - Update password reset flow and enhance user management routes in admin API ([18369e9](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/18369e9))
 - Update changelog for v1.1.1 with breaking changes, enhancements, and documentation updates ([53895e0](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/53895e0))
 
-### 🩹 Fixes
+### Fixes
 
 - Correct version number and update peer dependencies for compatibility ([9687835](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/9687835))
 - Update version number to 1.1.2 in package.json ([5018875](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/5018875))
@@ -21,26 +21,6 @@
 - Update release script to include formatting, building, and verification steps ([560fba0](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/560fba0))
 - Add debug logging for component imports and rendering in CreateUserForm, EditUserForm, and UserFormFields ([2009e14](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/2009e14))
 - Revert version number in package.json to 1.1.0 ([d18f3d5](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/d18f3d5))
-
-### 🏡 Chore
-
-- **release:** V1.0.3 ([e9de5f3](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/e9de5f3))
-- **release:** V1.1.4 ([7d3b055](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/7d3b055))
-- **release:** V1.1.3 ([12ddb2e](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/12ddb2e))
-- **release:** V1.1.4 ([c142d49](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/c142d49))
-- **release:** V1.1.5 ([893d030](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/893d030))
-- **release:** V1.1.6 ([015d7a5](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/015d7a5))
-- **release:** V1.1.1 ([653a7ea](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/653a7ea))
-- Clean up CHANGELOG.md by removing outdated version entries ([470cfe3](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/470cfe3))
-- **release:** V1.1.2 ([dd422b5](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/dd422b5))
-- **release:** V1.1.1 ([7910907](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/7910907))
-- Revert version number in package.json to 1.1.0 and remove v1.1.1 entry from CHANGELOG.md ([8dd2562](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/8dd2562))
-- **release:** V1.1.1 ([f2ff417](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/f2ff417))
-- Update version number in package.json to 1.1.6 and clean up CHANGELOG.md ([89ebbc1](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/89ebbc1))
-
-### ❤️ Contributors
-
-- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
 
 ## v1.1.0
 
