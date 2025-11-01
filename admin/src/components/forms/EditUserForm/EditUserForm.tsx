@@ -8,9 +8,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { User, ProviderItem } from "../../../../../model/User";
 import { Header } from "../../common/Header/Header";
 import { UserFormFields } from "../shared/UserFormFields/UserFormFields";
-
-// DEBUG: EditUserForm import check
-console.log("🔶 EditUserForm - UserFormFields import:", UserFormFields, "type:", typeof UserFormFields);
 import { UserFormLayout } from "../shared/UserFormLayout/UserFormLayout";
 import { updateUser, resetUserPassword, sendResetEmail, getFirebaseConfig } from "../../../pages/utils/api";
 import { useUserForm } from "../../../hooks/useUserForm";
