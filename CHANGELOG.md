@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.1.9
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.8...v1.1.9)
+
+### 💅 Refactors
+
+- Improve error logging and streamline function parameters across services ([a357815](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/a357815))
+
+### 🏡 Chore
+
+- Clean up CHANGELOG.md by removing contributor section and unnecessary emoji ([35a5af4](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/35a5af4))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.1.8
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.7...v1.1.8)
