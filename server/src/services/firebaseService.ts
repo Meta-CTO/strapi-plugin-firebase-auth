@@ -705,8 +705,8 @@ export default ({ strapi }) => ({
    * Forgot password flow - sends reset email
    * Public endpoint that sends a Firebase-hosted password reset email using Firebase's secure hosted UI
    */
-  forgotPassword: async (ctx) => {
-    const { email } = ctx.request.body;
+  forgotPassword: async (email: string) => {
+    strapi.log.info(`[forgotPassword] Starting password reset for email: ${email}`);
 
     if (!email) {
       throw new errors.ValidationError("Email is required");
@@ -772,9 +772,18 @@ export default ({ strapi }) => ({
       }
 
       if (!strapiUser) {
+        strapi.log.warn(`⚠️ [forgotPassword] User not found for email: ${email}`);
         // Security: Don't reveal if email exists or not
         return { message: "If an account with that email exists, a password reset link has been sent." };
       }
+
+      strapi.log.info(
+        `✅ [forgotPassword] User found: ${JSON.stringify({
+          documentId: strapiUser.documentId,
+          email: strapiUser.email,
+          firebaseUID: firebaseUser?.uid || "not in Firebase",
+        })}`
+      );
 
       // Use Firebase's generatePasswordResetLink (same as admin panel)
       const actionCodeSettings = {
@@ -792,6 +801,7 @@ export default ({ strapi }) => ({
 
       let resetLink;
       try {
+        strapi.log.info(`[forgotPassword] Generating Firebase password reset link for: ${strapiUser.email}`);
         // Generate Firebase password reset link with timeout protection
         resetLink = await Promise.race([
           strapi.firebase.auth().generatePasswordResetLink(strapiUser.email, actionCodeSettings),
@@ -807,17 +817,28 @@ export default ({ strapi }) => ({
       }
 
       // Send email using our three-tier fallback system
+      strapi.log.info(`[forgotPassword] Attempting to send password reset email to: ${strapiUser.email}`);
       await strapi
         .plugin("firebase-authentication")
         .service("emailService")
         .sendPasswordResetEmail(strapiUser, resetLink);
+
+      strapi.log.info(`✅ [forgotPassword] Password reset email sent successfully to: ${strapiUser.email}`);
 
       // Security: Always return same message
       return {
         message: "If an account with that email exists, a password reset link has been sent.",
       };
     } catch (error) {
-      strapi.log.error("forgotPassword error:", error);
+      strapi.log.error(
+        `❌ [forgotPassword] ERROR: ${JSON.stringify({
+          email,
+          message: error.message,
+          code: error.code,
+          name: error.name,
+          stack: error.stack,
+        })}`
+      );
       // Security: Don't reveal internal errors
       return {
         message: "If an account with that email exists, a password reset link has been sent.",
@@ -839,16 +860,11 @@ export default ({ strapi }) => ({
    *
    * NOT used for forgot password email flow - that now uses Firebase's hosted UI
    */
-  resetPassword: async (ctx) => {
-    const { password } = ctx.request.body;
-    const populate = ctx.request.query.populate || [];
-
+  resetPassword: async (password: string, token: string, populate: any[]) => {
     if (!password) {
       throw new errors.ValidationError("Password is required");
     }
 
-    // Verify JWT from Authorization header
-    const token = ctx.request.header.authorization?.replace("Bearer ", "");
     if (!token) {
       throw new errors.UnauthorizedError("Authorization token is required");
     }
@@ -930,9 +946,7 @@ export default ({ strapi }) => ({
    * Generates a sign-in link using Firebase Admin SDK
    * Note: Verification requires client-side completion
    */
-  async requestMagicLink(ctx) {
-    const { email } = ctx.request.body;
-
+  async requestMagicLink(email: string) {
     // Input validation
     if (!email || typeof email !== "string") {
       throw new errors.ValidationError("Valid email is required");
@@ -978,7 +992,7 @@ export default ({ strapi }) => ({
 
       // Development logging
       if (process.env.NODE_ENV !== "production") {
-        strapi.log.info("🔗 Magic Link Generation Request:");
+        strapi.log.info("Magic Link Generation Request:");
         strapi.log.info(`   Email: ${email}`);
         strapi.log.info(`   Verification URL: ${magicLinkUrl}`);
         strapi.log.info(`   Expires: ${config.magicLinkExpiryHours || 1} hour(s)`);

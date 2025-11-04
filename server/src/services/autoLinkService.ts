@@ -36,7 +36,7 @@ export default {
     };
 
     try {
-      strapi.log.info("🔗 Auto-linking Strapi users with Firebase users...");
+      strapi.log.info("Auto-linking Strapi users with Firebase users...");
 
       // Check if Firebase is initialized
       // @ts-ignore - firebase property is added dynamically
@@ -93,6 +93,8 @@ export default {
 
       // Step 4: Link users
       for (const strapiUser of strapiUsers) {
+        let firebaseUser = null; // Declare at loop scope so it's accessible in catch block
+
         try {
           // Check if already linked (fast query - only check link table)
           const existing = await strapi.db
@@ -108,7 +110,7 @@ export default {
           }
 
           // Try to find matching Firebase user by email
-          let firebaseUser = null;
+          firebaseUser = null;
           if (strapiUser.email) {
             firebaseUser = firebaseByEmail.get(strapiUser.email.toLowerCase());
           }
@@ -119,6 +121,29 @@ export default {
           }
 
           if (!firebaseUser) {
+            result.skipped++;
+            continue;
+          }
+
+          // Pre-flight Check 2: Check if Firebase UID is already linked to a DIFFERENT user
+          const existingUIDLink = await strapi.db
+            .query("plugin::firebase-authentication.firebase-user-data")
+            .findOne({
+              where: { firebaseUserID: firebaseUser.uid },
+              populate: ["user"],
+            });
+
+          if (existingUIDLink && existingUIDLink.user?.documentId !== strapiUser.documentId) {
+            // This Firebase UID is already linked to a different Strapi user
+            strapi.log.warn(
+              `⚠️ [Auto-Link] Skipping '${strapiUser.username || strapiUser.email}' - Firebase UID already linked`
+            );
+            strapi.log.warn(`   Strapi User: ${strapiUser.email} (documentId: ${strapiUser.documentId})`);
+            strapi.log.warn(`   Firebase UID: ${firebaseUser.uid}`);
+            strapi.log.warn(
+              `   Already linked to: ${existingUIDLink.user?.email} (documentId: ${existingUIDLink.user?.documentId})`
+            );
+            strapi.log.warn(`   Action: Resolve duplicate users or manually unlink conflicting record`);
             result.skipped++;
             continue;
           }
@@ -150,20 +175,46 @@ export default {
             throw createError;
           }
         } catch (error) {
-          result.errors++;
-          strapi.log.error(`Error linking user ${strapiUser.username}:`, error);
+          // Handle unique constraint violations from Strapi validation layer
+          if (error.message?.includes("This attribute must be unique")) {
+            strapi.log.warn(
+              `⚠️ [Auto-Link] Unique constraint conflict for '${strapiUser.username || strapiUser.email}'`
+            );
+            strapi.log.warn(`   Strapi User: ${strapiUser.email} (documentId: ${strapiUser.documentId})`);
+            if (firebaseUser) {
+              strapi.log.warn(`   Firebase UID: ${firebaseUser.uid}`);
+              strapi.log.warn(`   Cause: This Firebase UID is already linked to another Strapi user`);
+              strapi.log.warn(
+                `   Action: Query firebase_user_data table to find conflict - WHERE firebase_user_id = '${firebaseUser.uid}'`
+              );
+            }
+            result.skipped++;
+          } else {
+            // Unexpected errors
+            result.errors++;
+            strapi.log.error(
+              `❌ [Auto-Link] Unexpected error linking user '${strapiUser.username || strapiUser.email}': ${error.message}`
+            );
+          }
         }
       }
 
       // Log summary
-      strapi.log.info(
-        `✅ Auto-linking complete: ${result.linked} linked, ${result.skipped} skipped, ${result.errors} errors`
-      );
+      if (result.errors > 0) {
+        strapi.log.error(
+          `❌ Auto-linking completed with unexpected errors: ${result.linked} linked, ${result.skipped} skipped, ${result.errors} errors`
+        );
+        strapi.log.error(`   Review error logs above for resolution steps`);
+      } else {
+        strapi.log.info(
+          `✅ Auto-linking complete: ${result.linked} linked, ${result.skipped} skipped, ${result.errors} errors`
+        );
+      }
       strapi.log.info(
         `   Total: ${result.totalStrapiUsers} Strapi users, ${result.totalFirebaseUsers} Firebase users`
       );
     } catch (error) {
-      strapi.log.error("Fatal error during auto-linking:", error);
+      strapi.log.error(`❌ Fatal error during auto-linking: ${error.message}`);
     }
 
     return result;

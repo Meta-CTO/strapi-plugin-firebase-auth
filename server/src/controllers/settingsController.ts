@@ -3,17 +3,18 @@ import { Context, DefaultContext } from "koa";
 
 export default {
   setFirebaseConfigJson: async (ctx: DefaultContext | Context) => {
+    const requestBody = ctx.request.body;
     ctx.body = await strapi
       .plugin("firebase-authentication")
       .service("settingsService")
-      .setFirebaseConfigJson(ctx);
+      .setFirebaseConfigJson(requestBody);
   },
   getFirebaseConfigJson: async (ctx: DefaultContext | Context) => {
     try {
       const config = await strapi
         .plugin("firebase-authentication")
         .service("settingsService")
-        .getFirebaseConfigJson(ctx);
+        .getFirebaseConfigJson();
 
       if (!config) {
         return ctx.send(null);
@@ -31,7 +32,7 @@ export default {
       const isExist = await strapi
         .plugin("firebase-authentication")
         .service("settingsService")
-        .delFirebaseConfigJson(ctx);
+        .delFirebaseConfigJson();
       if (!isExist) {
         throw new errors.NotFoundError("No Firebase configs exists for deletion");
       }

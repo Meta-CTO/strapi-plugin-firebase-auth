@@ -309,7 +309,7 @@ class EmailService {
         // NOTE: This output appears in the SERVER TERMINAL where Strapi is running,
         // not in the browser console. Check your terminal for the magic link.
         strapi.log.info("\n" + "=".repeat(80));
-        strapi.log.info("🔗 MAGIC LINK EMAIL (Development Mode)");
+        strapi.log.info("MAGIC LINK EMAIL (Development Mode)");
         strapi.log.info("=".repeat(80));
         strapi.log.info(`To: ${email}`);
         strapi.log.info(`Subject: ${compiledSubject}`);

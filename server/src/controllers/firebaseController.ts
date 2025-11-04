@@ -22,7 +22,7 @@ const firebaseController = {
 
       ctx.body = result;
     } catch (error) {
-      strapi.log.error("validateToken controller error:", error.message);
+      strapi.log.error(`validateToken controller error: ${error.message}`);
       if (error.name === "ValidationError") {
         return ctx.badRequest(error.message);
       }
@@ -31,10 +31,6 @@ const firebaseController = {
       }
       throw error;
     }
-  },
-
-  async createAlias(ctx) {
-    ctx.body = await strapi.plugin(pluginName).service("firebaseService").createAlias(ctx);
   },
 
   async deleteByEmail(email) {
@@ -114,7 +110,8 @@ const firebaseController = {
   async forgotPassword(ctx) {
     strapi.log.debug("forgotPassword endpoint called");
     try {
-      ctx.body = await strapi.plugin(pluginName).service("firebaseService").forgotPassword(ctx);
+      const { email } = ctx.request.body || {};
+      ctx.body = await strapi.plugin(pluginName).service("firebaseService").forgotPassword(email);
     } catch (error) {
       strapi.log.error("forgotPassword controller error:", error);
       if (error.name === "ValidationError") {
@@ -138,7 +135,14 @@ const firebaseController = {
   async resetPassword(ctx) {
     strapi.log.debug("resetPassword endpoint called");
     try {
-      ctx.body = await strapi.plugin(pluginName).service("firebaseService").resetPassword(ctx);
+      const { password } = ctx.request.body || {};
+      const token = ctx.request.headers.authorization?.replace("Bearer ", "");
+      const populate = ctx.request.query.populate || [];
+
+      ctx.body = await strapi
+        .plugin(pluginName)
+        .service("firebaseService")
+        .resetPassword(password, token, populate);
     } catch (error) {
       strapi.log.error("resetPassword controller error:", error);
       if (error.name === "ValidationError" || error.name === "UnauthorizedError") {
@@ -152,10 +156,12 @@ const firebaseController = {
 
   async requestMagicLink(ctx: Context) {
     try {
+      const { email } = ctx.request.body || {};
+
       const result = await strapi
         .plugin("firebase-authentication")
         .service("firebaseService")
-        .requestMagicLink(ctx);
+        .requestMagicLink(email);
 
       ctx.body = result;
     } catch (error) {

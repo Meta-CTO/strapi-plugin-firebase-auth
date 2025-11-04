@@ -25,7 +25,7 @@ export default ({ strapi }) => {
       try {
         strapi.log.info("Starting Firebase initialization...");
         const res = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
-        strapi.log.debug("Found config:", !!res);
+        strapi.log.debug(`Found config: ${!!res}`);
 
         if (!res) {
           strapi.log.debug("No config found, checking for existing Firebase app...");
@@ -37,7 +37,7 @@ export default ({ strapi }) => {
         }
 
         const jsonObject = res["firebase_config_json"];
-        strapi.log.debug("Config JSON present:", !!jsonObject?.firebaseConfigJson);
+        strapi.log.debug(`Config JSON present: ${!!jsonObject?.firebaseConfigJson}`);
 
         if (!jsonObject || !jsonObject.firebaseConfigJson) {
           strapi.log.debug("No valid JSON config, checking for existing Firebase app...");
@@ -81,11 +81,11 @@ export default ({ strapi }) => {
           strapi.firebase = admin;
           strapi.log.info("Firebase initialization complete - admin instance attached to strapi.firebase");
         } catch (initError) {
-          strapi.log.error("Failed to initialize Firebase:", initError);
+          strapi.log.error(`Failed to initialize Firebase: ${initError.message}`);
           throw initError;
         }
       } catch (error) {
-        strapi.log.error("Firebase bootstrap error:", error);
+        strapi.log.error(`Firebase bootstrap error: ${error.message}`);
       }
     },
     /**
@@ -136,7 +136,7 @@ export default ({ strapi }) => {
           magicLinkExpiryHours: configObject.magicLinkExpiryHours || 1,
         };
       } catch (error) {
-        strapi.log.error("Firebase config error:", error);
+        strapi.log.error(`Firebase config error: ${error.message}`);
         throw new errors.ApplicationError("Error retrieving Firebase config", {
           error: error.message,
         });
@@ -164,10 +164,9 @@ export default ({ strapi }) => {
      * The service account JSON is encrypted using AES before storage,
      * while the Web API key and password settings are stored in plain text.
      */
-    async setFirebaseConfigJson(ctx: DefaultContext | Context) {
+    async setFirebaseConfigJson(requestBody: any) {
       try {
-        strapi.log.debug("setFirebaseConfigJson", ctx.request);
-        const { body: requestBody } = ctx.request;
+        strapi.log.debug("setFirebaseConfigJson called");
         const firebaseConfigJsonString = requestBody.firebaseConfigJson;
         const firebaseWebApiKey = requestBody.firebaseWebApiKey || null; // Make Web API Key optional
         // Extract password reset configuration fields
@@ -251,14 +250,14 @@ export default ({ strapi }) => {
 
         if (!configData) {
           strapi.log.error("Firebase config data missing from database response");
-          strapi.log.error("Available keys in response:", Object.keys(res));
+          strapi.log.error(`Available keys in response: ${JSON.stringify(Object.keys(res))}`);
           throw new ApplicationError("Failed to retrieve Firebase configuration from database");
         }
 
         const firebaseConfigHash = configData.firebaseConfigJson;
 
         if (!firebaseConfigHash) {
-          strapi.log.error("Firebase config hash missing from config data:", configData);
+          strapi.log.error(`Firebase config hash missing from config data: ${JSON.stringify(configData)}`);
           throw new ApplicationError("Firebase configuration hash is missing");
         }
 
@@ -284,15 +283,14 @@ export default ({ strapi }) => {
       } catch (error: any) {
         // Detailed error logging for diagnostics
         strapi.log.error("=== FIREBASE CONFIG SAVE ERROR ===");
-        strapi.log.error("Error name:", error.name);
-        strapi.log.error("Error message:", error.message);
-        strapi.log.error("Error stack:", error.stack);
+        strapi.log.error(`Error name: ${error.name}`);
+        strapi.log.error(`Error message: ${error.message}`);
+        strapi.log.error(`Error stack: ${error.stack}`);
 
         // Log request body if available
         try {
-          const { body } = ctx.request;
-          if (body) {
-            strapi.log.error("Request body keys:", Object.keys(body));
+          if (requestBody) {
+            strapi.log.error(`Request body keys: ${JSON.stringify(Object.keys(requestBody))}`);
           }
         } catch (e) {
           strapi.log.error("Could not access request body");
@@ -314,7 +312,7 @@ export default ({ strapi }) => {
       try {
         strapi.log.debug("delFirebaseConfigJson called");
         const isExist = await strapi.db.query(CONFIG_CONTENT_TYPE).findOne({ where: {} });
-        strapi.log.debug("Config exists:", isExist);
+        strapi.log.debug(`Config exists: ${!!isExist}`);
         if (!isExist) {
           strapi.log.info(ERROR_MESSAGES.DELETION_NO_CONFIG);
           return null;
@@ -322,12 +320,12 @@ export default ({ strapi }) => {
         const res = await strapi.db.query(CONFIG_CONTENT_TYPE).delete({
           where: { id: isExist.id },
         });
-        strapi.log.debug("Delete result:", res);
+        strapi.log.debug(`Delete result: ${JSON.stringify(res)}`);
         await strapi.plugin("firebase-authentication").service("settingsService").init();
         strapi.log.info(SUCCESS_MESSAGES.FIREBASE_CONFIG_DELETED);
         return res;
       } catch (error) {
-        strapi.log.error("delFirebaseConfigJson error:", error);
+        strapi.log.error(`delFirebaseConfigJson error: ${error.message}`);
         throw new ApplicationError(ERROR_MESSAGES.SOMETHING_WENT_WRONG, {
           error: error,
         });

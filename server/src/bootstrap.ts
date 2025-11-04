@@ -27,8 +27,8 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     }
   } catch (error) {
     strapi.log.error("Firebase initialization failed during bootstrap:");
-    strapi.log.error("   Error:", error.message);
-    strapi.log.error("   Stack:", error.stack);
+    strapi.log.error(`   Error: ${error.message}`);
+    strapi.log.error(`   Stack: ${error.stack}`);
     // Don't throw - allow Strapi to start even if Firebase config not uploaded yet
   }
 
@@ -47,7 +47,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   if (process.env.RUN_FIREBASE_MIGRATION === "true") {
     const dryRun = process.env.DRY_RUN === "true";
     strapi.log.info("");
-    strapi.log.info("🚀 Firebase migration triggered by RUN_FIREBASE_MIGRATION env variable");
+    strapi.log.info("Firebase migration triggered by RUN_FIREBASE_MIGRATION env variable");
     await migrateFirebaseUserData(strapi, dryRun);
   }
 
@@ -57,7 +57,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     try {
       await strapi.plugin("firebase-authentication").service("autoLinkService").linkAllUsers(strapi);
     } catch (error) {
-      strapi.log.error("Auto-linking failed:", error);
+      strapi.log.error(`Auto-linking failed: ${error.message}`);
     }
   });
 };
