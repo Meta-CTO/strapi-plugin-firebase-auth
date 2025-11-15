@@ -69,16 +69,17 @@ const StyledPhoneInputWrapper = styled.div`
 
   /* Flag dropdown button styles */
   .flag-dropdown {
-    background: transparent;
+    background: transparent !important;
     border: none;
     border-right: none;
 
     &.open {
+      background: transparent !important;
       z-index: 1001;
     }
 
     .selected-flag {
-      padding: 0 0 0 0.75rem;
+      padding: 0 0.5rem 0 1rem;
       height: 40px;
       display: flex;
       align-items: center;
@@ -92,8 +93,26 @@ const StyledPhoneInputWrapper = styled.div`
         margin-left: 8px;
       }
 
-      &.open .arrow {
-        border-top-color: ${({ theme }) => theme.colors.neutral800};
+      /* Fix flag background in all interactive states */
+      &:hover,
+      &:focus,
+      &:active,
+      &.open {
+        background: transparent;
+        background-color: transparent;
+
+        .arrow {
+          border-top-color: ${({ theme }) => theme.colors.neutral800};
+        }
+
+        .flag {
+          background-color: transparent;
+        }
+      }
+
+      /* Fix flag background flash on initial load */
+      .flag {
+        background-color: transparent;
       }
     }
   }

@@ -78,8 +78,9 @@ export default ({ strapi }) => ({
         });
       } catch (error) {
         // Handle race condition: another request created the record first
-        if (error.code === "23505") {
-          // PostgreSQL unique violation
+        // Catch both PostgreSQL constraint violation (23505) and Strapi application-level validation error
+        if (error.code === "23505" || error.name === "ValidationError") {
+          // PostgreSQL unique violation OR Strapi validation error
           strapi.log.warn(`Race condition detected for user ${userId}, retrying findFirst`);
           // Use Document Service API with filters
           firebaseData = await strapi
