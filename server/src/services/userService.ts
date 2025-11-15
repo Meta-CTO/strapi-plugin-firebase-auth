@@ -344,34 +344,35 @@ export default ({ strapi }) => {
         // displayName → firstName + lastName transformation (handle empty string explicitly)
         if (payload.displayName !== undefined) {
           if (payload.displayName) {
-            const nameParts = payload.displayName.trim().split(' ');
-            strapiPayload.firstName = nameParts[0] || '';
-            strapiPayload.lastName = nameParts.slice(1).join(' ') || '';
+            const nameParts = payload.displayName.trim().split(" ");
+            strapiPayload.firstName = nameParts[0] || "";
+            strapiPayload.lastName = nameParts.slice(1).join(" ") || "";
           } else {
             // Clear names if displayName is explicitly set to empty
-            strapiPayload.firstName = '';
-            strapiPayload.lastName = '';
+            strapiPayload.firstName = "";
+            strapiPayload.lastName = "";
           }
         }
 
         // disabled → blocked semantic mapping
-        if (typeof payload.disabled === 'boolean') {
+        if (typeof payload.disabled === "boolean") {
           strapiPayload.blocked = payload.disabled;
         }
 
         // Update Strapi using db.query() for consistency with codebase pattern
-        const strapiPromise = Object.keys(strapiPayload).length > 0
-          ? strapi.db.query("plugin::users-permissions.user").update({
-              where: { documentId: firebaseData.user.documentId },
-              data: strapiPayload,
-            })
-          : Promise.resolve(firebaseData.user);
+        const strapiPromise =
+          Object.keys(strapiPayload).length > 0
+            ? strapi.db.query("plugin::users-permissions.user").update({
+                where: { documentId: firebaseData.user.documentId },
+                data: strapiPayload,
+              })
+            : Promise.resolve(firebaseData.user);
 
         // Execute both updates (allows partial success/failure)
         const results = await Promise.allSettled([firebasePromise, strapiPromise]);
 
         // Audit logging for security compliance
-        strapi.log.info('User update operation', {
+        strapi.log.info("User update operation", {
           userId: entityId,
           firebaseStatus: results[0].status,
           strapiStatus: results[1].status,
@@ -379,28 +380,28 @@ export default ({ strapi }) => {
         });
 
         // Log partial failures for manual reconciliation
-        if (results[0].status === 'rejected' || results[1].status === 'rejected') {
-          strapi.log.error('Partial update failure detected', {
+        if (results[0].status === "rejected" || results[1].status === "rejected") {
+          strapi.log.error("Partial update failure detected", {
             userId: entityId,
-            firebaseError: results[0].status === 'rejected' ? results[0].reason : null,
-            strapiError: results[1].status === 'rejected' ? results[1].reason : null,
+            firebaseError: results[0].status === "rejected" ? results[0].reason : null,
+            strapiError: results[1].status === "rejected" ? results[1].reason : null,
           });
         }
 
         return results;
       } catch (e) {
         // Map Firebase-specific error codes to ValidationError for proper HTTP status
-        if (e.code === 'auth/email-already-exists') {
-          throw new errors.ValidationError('Email address is already in use by another account');
+        if (e.code === "auth/email-already-exists") {
+          throw new errors.ValidationError("Email address is already in use by another account");
         }
-        if (e.code === 'auth/phone-number-already-exists') {
-          throw new errors.ValidationError('Phone number is already in use by another account');
+        if (e.code === "auth/phone-number-already-exists") {
+          throw new errors.ValidationError("Phone number is already in use by another account");
         }
-        if (e.code === 'auth/invalid-email') {
-          throw new errors.ValidationError('Invalid email address format');
+        if (e.code === "auth/invalid-email") {
+          throw new errors.ValidationError("Invalid email address format");
         }
-        if (e.code === 'auth/invalid-phone-number') {
-          throw new errors.ValidationError('Invalid phone number format');
+        if (e.code === "auth/invalid-phone-number") {
+          throw new errors.ValidationError("Invalid phone number format");
         }
 
         throw new errors.ApplicationError(e.message.toString());

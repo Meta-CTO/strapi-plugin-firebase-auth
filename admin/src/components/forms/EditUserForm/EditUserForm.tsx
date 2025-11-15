@@ -77,9 +77,10 @@ const EditUserForm = ({ data }: EditFormProps) => {
       const result = updatedUser[0];
       if (result?.status === "rejected") {
         const errorReason = result.reason;
-        const errorMessage = errorReason?.message ||
-                             (errorReason?.code ? `Firebase error: ${errorReason.code}` : null) ||
-                             "Error updating user";
+        const errorMessage =
+          errorReason?.message ||
+          (errorReason?.code ? `Firebase error: ${errorReason.code}` : null) ||
+          "Error updating user";
         throw new Error(errorMessage);
       }
 
@@ -91,9 +92,8 @@ const EditUserForm = ({ data }: EditFormProps) => {
       });
     } catch (error) {
       console.error("Error updating user:", error);
-      const errorMessage = error instanceof Error
-        ? error.message
-        : "An error occurred while updating the user";
+      const errorMessage =
+        error instanceof Error ? error.message : "An error occurred while updating the user";
       toggleNotification({
         type: "danger",
         message: errorMessage,
