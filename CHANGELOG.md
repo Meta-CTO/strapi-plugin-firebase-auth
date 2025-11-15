@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.1.10
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.9...v1.1.10)
+
+### 🩹 Fixes
+
+- Improve flag dropdown styles and enhance user experience in phone input component ([c87dea8](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/c87dea8))
+
+### 💅 Refactors
+
+- Enhance user update process with improved error handling and payload filtering ([64ff681](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/64ff681))
+
+### 🏡 Chore
+
+- Clean up CHANGELOG.md by removing unnecessary emoji and contributor section ([5283ca7](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/5283ca7))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.1.9
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.8...v1.1.9)
