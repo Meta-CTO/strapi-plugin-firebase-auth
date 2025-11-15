@@ -72,10 +72,18 @@ const EditUserForm = ({ data }: EditFormProps) => {
     setIsLoading(true);
     try {
       const updatedUser = await updateUser(userData.uid as string, userData as User);
-      if (updatedUser[0]?.status === "rejected") {
-        throw new Error("Error updating user");
+
+      // Handle Promise.allSettled response format with proper type narrowing
+      const result = updatedUser[0];
+      if (result?.status === "rejected") {
+        const errorReason = result.reason;
+        const errorMessage = errorReason?.message ||
+                             (errorReason?.code ? `Firebase error: ${errorReason.code}` : null) ||
+                             "Error updating user";
+        throw new Error(errorMessage);
       }
-      setUserData(updatedUser[0].value);
+
+      setUserData(result.value);
       setIsLoading(false);
       toggleNotification({
         type: "success",
@@ -83,9 +91,12 @@ const EditUserForm = ({ data }: EditFormProps) => {
       });
     } catch (error) {
       console.error("Error updating user:", error);
+      const errorMessage = error instanceof Error
+        ? error.message
+        : "An error occurred while updating the user";
       toggleNotification({
         type: "danger",
-        message: "An error occurred while updating the user",
+        message: errorMessage,
       });
       setIsLoading(false);
       setUserData(data);

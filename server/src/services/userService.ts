@@ -305,10 +305,104 @@ export default ({ strapi }) => {
     update: async (entityId, payload) => {
       try {
         ensureFirebaseInitialized();
-        const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
 
-        return Promise.allSettled([firebasePromise]);
+        // Get Strapi user via firebase_user_data link
+        const firebaseData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
+
+        if (!firebaseData?.user) {
+          throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
+        }
+
+        // Filter payload - ONLY Firebase-compatible fields (security best practice)
+        const firebasePayload: any = {};
+        if (payload.email !== undefined) firebasePayload.email = payload.email;
+        if (payload.phoneNumber !== undefined) firebasePayload.phoneNumber = payload.phoneNumber;
+        if (payload.displayName !== undefined) firebasePayload.displayName = payload.displayName;
+        if (payload.photoURL !== undefined) firebasePayload.photoURL = payload.photoURL;
+        if (payload.disabled !== undefined) firebasePayload.disabled = payload.disabled;
+        if (payload.emailVerified !== undefined) firebasePayload.emailVerified = payload.emailVerified;
+        if (payload.password !== undefined) firebasePayload.password = payload.password;
+
+        // Update Firebase with filtered payload
+        const firebasePromise = strapi.firebase.auth().updateUser(entityId, firebasePayload);
+
+        // Prepare Strapi payload with field mapping
+        const strapiPayload: any = {};
+
+        // Direct field mappings
+        if (payload.email !== undefined) {
+          strapiPayload.email = payload.email;
+        }
+
+        if (payload.phoneNumber !== undefined) {
+          strapiPayload.phoneNumber = payload.phoneNumber;
+        }
+
+        // displayName → firstName + lastName transformation (handle empty string explicitly)
+        if (payload.displayName !== undefined) {
+          if (payload.displayName) {
+            const nameParts = payload.displayName.trim().split(' ');
+            strapiPayload.firstName = nameParts[0] || '';
+            strapiPayload.lastName = nameParts.slice(1).join(' ') || '';
+          } else {
+            // Clear names if displayName is explicitly set to empty
+            strapiPayload.firstName = '';
+            strapiPayload.lastName = '';
+          }
+        }
+
+        // disabled → blocked semantic mapping
+        if (typeof payload.disabled === 'boolean') {
+          strapiPayload.blocked = payload.disabled;
+        }
+
+        // Update Strapi using db.query() for consistency with codebase pattern
+        const strapiPromise = Object.keys(strapiPayload).length > 0
+          ? strapi.db.query("plugin::users-permissions.user").update({
+              where: { documentId: firebaseData.user.documentId },
+              data: strapiPayload,
+            })
+          : Promise.resolve(firebaseData.user);
+
+        // Execute both updates (allows partial success/failure)
+        const results = await Promise.allSettled([firebasePromise, strapiPromise]);
+
+        // Audit logging for security compliance
+        strapi.log.info('User update operation', {
+          userId: entityId,
+          firebaseStatus: results[0].status,
+          strapiStatus: results[1].status,
+          updatedFields: Object.keys(firebasePayload),
+        });
+
+        // Log partial failures for manual reconciliation
+        if (results[0].status === 'rejected' || results[1].status === 'rejected') {
+          strapi.log.error('Partial update failure detected', {
+            userId: entityId,
+            firebaseError: results[0].status === 'rejected' ? results[0].reason : null,
+            strapiError: results[1].status === 'rejected' ? results[1].reason : null,
+          });
+        }
+
+        return results;
       } catch (e) {
+        // Map Firebase-specific error codes to ValidationError for proper HTTP status
+        if (e.code === 'auth/email-already-exists') {
+          throw new errors.ValidationError('Email address is already in use by another account');
+        }
+        if (e.code === 'auth/phone-number-already-exists') {
+          throw new errors.ValidationError('Phone number is already in use by another account');
+        }
+        if (e.code === 'auth/invalid-email') {
+          throw new errors.ValidationError('Invalid email address format');
+        }
+        if (e.code === 'auth/invalid-phone-number') {
+          throw new errors.ValidationError('Invalid phone number format');
+        }
+
         throw new errors.ApplicationError(e.message.toString());
       }
     },
@@ -331,8 +425,8 @@ export default ({ strapi }) => {
           throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
         }
 
-        return await strapi.documents("plugin::users-permissions.user").update({
-          documentId: firebaseData.user.documentId,
+        return await strapi.db.query("plugin::users-permissions.user").update({
+          where: { documentId: firebaseData.user.documentId },
           data: payload,
         });
       } catch (e) {
@@ -353,8 +447,8 @@ export default ({ strapi }) => {
         }
 
         const firebasePromise = strapi.firebase.auth().updateUser(entityId, payload);
-        const strapiPromise = strapi.documents("plugin::users-permissions.user").update({
-          documentId: firebaseData.user.documentId,
+        const strapiPromise = strapi.db.query("plugin::users-permissions.user").update({
+          where: { documentId: firebaseData.user.documentId },
           data: payload,
         });
 
@@ -377,8 +471,8 @@ export default ({ strapi }) => {
         }
 
         const firebasePromise = strapi.firebase.auth().deleteUser(entityId);
-        const strapiPromise = strapi.documents("plugin::users-permissions.user").delete({
-          documentId: firebaseData.user.documentId,
+        const strapiPromise = strapi.db.query("plugin::users-permissions.user").delete({
+          where: { documentId: firebaseData.user.documentId },
         });
         return Promise.allSettled([firebasePromise, strapiPromise]);
       } catch (e) {
@@ -405,8 +499,8 @@ export default ({ strapi }) => {
           throw new errors.NotFoundError(`User not found for Firebase UID: ${entityId}`);
         }
 
-        const response = await strapi.documents("plugin::users-permissions.user").delete({
-          documentId: firebaseData.user.documentId,
+        const response = await strapi.db.query("plugin::users-permissions.user").delete({
+          where: { documentId: firebaseData.user.documentId },
         });
         return response;
       } catch (e) {

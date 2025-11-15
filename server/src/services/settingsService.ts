@@ -262,11 +262,10 @@ export default ({ strapi }) => {
         }
 
         const firebaseConfigJsonValue = await this.decryptJson(encryptionKey, firebaseConfigHash);
-        configData.firebaseConfigJson = firebaseConfigJsonValue;
 
-        // Ensure the response has the config in the expected format for the admin panel
-        res.firebaseConfigJson = configData;
-        res.firebase_config_json = configData;
+        // Ensure the response has the config in the expected format for the admin panel (flat structure)
+        res.firebaseConfigJson = firebaseConfigJsonValue;
+        res.firebase_config_json = firebaseConfigJsonValue;
         res.firebaseWebApiKey = res.firebase_web_api_key || null;
 
         // Include password reset fields in the response
