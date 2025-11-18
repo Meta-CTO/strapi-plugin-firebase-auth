@@ -4,18 +4,14 @@
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.10...v1.1.11)
 
-### 💅 Refactors
+### Refactors
 
 - Standardize string handling and improve error messaging in userService ([7bfdc49](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/7bfdc49))
 - Update delete functionality to support destination parameter for user deletion ([0bbc31c](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/0bbc31c))
 
-### 🏡 Chore
+### Chore
 
 - Update CHANGELOG.md to remove unnecessary sections and standardize formatting ([91ab6ab](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/91ab6ab))
-
-### ❤️ Contributors
-
-- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
 
 ## v1.1.10
 
