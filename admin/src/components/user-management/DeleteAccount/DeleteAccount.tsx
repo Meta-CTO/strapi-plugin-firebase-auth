@@ -41,35 +41,38 @@ export const DeleteAccount = ({
                 After you delete an account, it's permanently deleted. Accounts cannot be undeleted.
               </Typography>
             </Flex>
-            {isSingleRecord && (
-              <>
-                <Flex direction="column" alignItems="stretch" gap={1}>
-                  <Typography variant="sigma">User account</Typography>
-                  <Typography>{email}</Typography>
-                </Flex>
-                <Flex direction="column" alignItems="stretch" gap={2}>
-                  <Typography>Delete user from:</Typography>
-                  <Flex direction="row" alignItems="center" gap={4}>
-                    <Checkbox
-                      onCheckedChange={(checked: boolean | "indeterminate") =>
-                        setIsStrapiIncluded(checked === true)
-                      }
-                      checked={isStrapiIncluded}
-                    >
-                      Strapi
-                    </Checkbox>
-                    <Checkbox
-                      onCheckedChange={(checked: boolean | "indeterminate") =>
-                        setIsFirebaseIncluded(checked === true)
-                      }
-                      checked={isFirebaseIncluded}
-                    >
-                      Firebase
-                    </Checkbox>
-                  </Flex>
-                </Flex>
-              </>
+            {isSingleRecord ? (
+              <Flex direction="column" alignItems="stretch" gap={1}>
+                <Typography variant="sigma">User account</Typography>
+                <Typography>{email}</Typography>
+              </Flex>
+            ) : (
+              <Flex direction="column" alignItems="stretch" gap={1}>
+                <Typography variant="sigma">Bulk delete operation</Typography>
+                <Typography>You are about to delete multiple user accounts</Typography>
+              </Flex>
             )}
+            <Flex direction="column" alignItems="stretch" gap={2}>
+              <Typography>Delete user from:</Typography>
+              <Flex direction="row" alignItems="center" gap={4}>
+                <Checkbox
+                  onCheckedChange={(checked: boolean | "indeterminate") =>
+                    setIsStrapiIncluded(checked === true)
+                  }
+                  checked={isStrapiIncluded}
+                >
+                  Strapi
+                </Checkbox>
+                <Checkbox
+                  onCheckedChange={(checked: boolean | "indeterminate") =>
+                    setIsFirebaseIncluded(checked === true)
+                  }
+                  checked={isFirebaseIncluded}
+                >
+                  Firebase
+                </Checkbox>
+              </Flex>
+            </Flex>
           </Flex>
         </Modal.Body>
         <Modal.Footer>

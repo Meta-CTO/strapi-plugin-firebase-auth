@@ -77,7 +77,7 @@ interface FirebaseTableProps {
   createAction?: React.ReactNode;
   isLoading: boolean;
   rows: User[];
-  onConfirmDeleteAll: (idsToDelete: Array<string | number>) => Promise<void>;
+  onConfirmDeleteAll: (idsToDelete: Array<string | number>, destination: string | null) => Promise<void>;
   onResetPasswordClick: (data: User) => void;
   onDeleteAccountClick: (data: User) => void;
 }
@@ -111,10 +111,18 @@ export const FirebaseTable = ({
   const [sortBy, sortOrder] = sort.split(":");
 
   const handleBulkDelete = async (isStrapiIncluded: boolean, isFirebaseIncluded: boolean) => {
-    // For bulk delete, we use onConfirmDeleteAll which handles both strapi and firebase deletion
-    // Note: The existing handleDeleteAll in ListView doesn't support destination parameter,
-    // so we ignore isStrapiIncluded and isFirebaseIncluded for now
-    await onConfirmDeleteAll(selectedArray);
+    // Determine destination based on checkbox selections
+    let destination: string | null = null;
+
+    if (isStrapiIncluded && isFirebaseIncluded) {
+      destination = null; // Delete from both Firebase and Strapi
+    } else if (isStrapiIncluded) {
+      destination = "strapi"; // Delete from Strapi only
+    } else if (isFirebaseIncluded) {
+      destination = "firebase"; // Delete from Firebase only
+    }
+
+    await onConfirmDeleteAll(selectedArray, destination);
     clearSelection();
     setShowBulkDeleteDialog(false);
   };

@@ -75,7 +75,7 @@ const fetchUsers = async (query: Query = {}) => {
  */
 
 const createUser = async (userPayload: User) => {
-  const url = `${PLUGIN_ID}/users`;
+  const url = `/${PLUGIN_ID}/users`;
   try {
     const { post } = getFetchClient();
     const { data: user } = await post(url, userPayload);
@@ -92,7 +92,7 @@ const createUser = async (userPayload: User) => {
  */
 
 const fetchUserByID = async (userID: string) => {
-  const url = `${PLUGIN_ID}/users/${userID}`;
+  const url = `/${PLUGIN_ID}/users/${userID}`;
   try {
     const { get } = getFetchClient();
     const { data: user } = await get(url);
@@ -109,7 +109,7 @@ const fetchUserByID = async (userID: string) => {
  */
 
 const deleteUser = async (idToDelete: string, destination: string | null) => {
-  const url = `${PLUGIN_ID}/users/${idToDelete}${destination ? `?destination=${destination}` : ""}`;
+  const url = `/${PLUGIN_ID}/users/${idToDelete}${destination ? `?destination=${destination}` : ""}`;
   try {
     const { del } = getFetchClient();
     const { data: users } = await del(url);
@@ -128,7 +128,7 @@ const deleteUser = async (idToDelete: string, destination: string | null) => {
  */
 
 const updateUser = async (idToUpdate: string, payload: User) => {
-  const url = `${PLUGIN_ID}/users/${idToUpdate}`;
+  const url = `/${PLUGIN_ID}/users/${idToUpdate}`;
   const { put } = getFetchClient();
   const { data: user } = await put(url, payload);
 
@@ -136,7 +136,7 @@ const updateUser = async (idToUpdate: string, payload: User) => {
 };
 
 const resetUserPassword = async (idToUpdate: string, payload: { password: string }) => {
-  const url = `${PLUGIN_ID}/users/resetPassword/${idToUpdate}`;
+  const url = `/${PLUGIN_ID}/users/resetPassword/${idToUpdate}`;
   const { put } = getFetchClient();
   const { data: user } = await put(url, payload);
 
@@ -144,7 +144,7 @@ const resetUserPassword = async (idToUpdate: string, payload: { password: string
 };
 
 const sendResetEmail = async (userId: string) => {
-  const url = `${PLUGIN_ID}/users/sendResetEmail/${userId}`;
+  const url = `/${PLUGIN_ID}/users/sendResetEmail/${userId}`;
   const { put } = getFetchClient();
   const { data: result } = await put(url, {});
 

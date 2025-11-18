@@ -204,8 +204,8 @@ function ListView({ data, meta }: ListViewProps) {
   }, [fetchPaginatedUsers, toggleNotification, formatMessage]);
 
   const handleDeleteAll = useCallback(
-    async (idsToDelete: Array<string | number>) => {
-      await Promise.all(idsToDelete.map((id) => deleteUser(id as string, null)));
+    async (idsToDelete: Array<string | number>, destination: string | null = null) => {
+      await Promise.all(idsToDelete.map((id) => deleteUser(id as string, destination)));
       await fetchData();
     },
     [fetchData]
