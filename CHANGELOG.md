@@ -4,17 +4,13 @@
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.11...v1.1.12)
 
-### 💅 Refactors
+### Refactors
 
 - Implement password reset functionality with custom JWT token and email confirmation ([173c106](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/173c106))
 
-### 🏡 Chore
+### Chore
 
 - Update CHANGELOG.md to standardize formatting and remove unnecessary sections ([c84012d](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/c84012d))
-
-### ❤️ Contributors
-
-- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
 
 ## v1.1.9
 
