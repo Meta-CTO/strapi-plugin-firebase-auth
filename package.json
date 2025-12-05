@@ -61,7 +61,7 @@
     "react-phone-input-2": "^2.15.1",
     "react-phone-number-input": "^3.4.12",
     "react-syntax-highlighter": "^15.6.6",
-    "@radix-ui/react-tooltip": "1.0.7",
+    "@radix-ui/react-tooltip": "1.2.8",
     "validator": "^13.15.15"
   },
   "devDependencies": {
