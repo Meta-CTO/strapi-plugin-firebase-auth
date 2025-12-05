@@ -6,6 +6,7 @@ import emailService from "./emailService";
 import firebaseUserDataService from "./firebaseUserDataService";
 import autoLinkService from "./autoLinkService";
 import firebaseStrapiLinkService from "./firebaseStrapiLinkService";
+import tokenService from "./tokenService";
 
 export default {
   settingsService,
@@ -16,4 +17,5 @@ export default {
   firebaseUserDataService,
   autoLinkService,
   firebaseStrapiLinkService,
+  tokenService,
 };

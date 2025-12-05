@@ -32,6 +32,13 @@
     "appleEmail": {
       "type": "string",
       "private": true
+    },
+    "resetTokenHash": {
+      "type": "string",
+      "private": true
+    },
+    "resetTokenExpiresAt": {
+      "type": "datetime"
     }
   }
 }

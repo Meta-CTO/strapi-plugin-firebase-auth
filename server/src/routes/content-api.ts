@@ -55,5 +55,14 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "POST",
+      path: "/resetPasswordWithToken",
+      handler: "firebaseController.resetPasswordWithToken",
+      config: {
+        auth: false, // Public endpoint - token provides authentication
+        policies: [],
+      },
+    },
   ],
 };

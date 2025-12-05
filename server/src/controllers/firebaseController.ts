@@ -176,6 +176,57 @@ const firebaseController = {
       };
     }
   },
+
+  /**
+   * Reset password using custom JWT token
+   * POST /api/firebase-authentication/resetPasswordWithToken
+   * Public endpoint - token provides authentication
+   *
+   * @param ctx - Koa context with { token, newPassword } in body
+   * @returns { success: true, message: "Password has been reset successfully" }
+   */
+  async resetPasswordWithToken(ctx: Context) {
+    strapi.log.debug("resetPasswordWithToken endpoint called");
+    try {
+      const { token, newPassword } = (ctx.request.body as { token?: string; newPassword?: string }) || {};
+
+      if (!token) {
+        ctx.status = 400;
+        ctx.body = { error: "Token is required" };
+        return;
+      }
+
+      if (!newPassword) {
+        ctx.status = 400;
+        ctx.body = { error: "New password is required" };
+        return;
+      }
+
+      const result = await strapi
+        .plugin(pluginName)
+        .service("userService")
+        .resetPasswordWithToken(token, newPassword);
+
+      ctx.body = result;
+    } catch (error) {
+      strapi.log.error("resetPasswordWithToken controller error:", error);
+
+      if (error.name === "ValidationError") {
+        ctx.status = 400;
+        ctx.body = { error: error.message };
+        return;
+      }
+
+      if (error.name === "NotFoundError") {
+        ctx.status = 404;
+        ctx.body = { error: error.message };
+        return;
+      }
+
+      ctx.status = 500;
+      ctx.body = { error: "An error occurred while resetting your password" };
+    }
+  },
 };
 
 export default firebaseController;

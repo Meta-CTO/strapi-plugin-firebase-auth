@@ -410,7 +410,25 @@ export default ({ strapi }) => {
     resetPasswordFirebaseUser: async (entityId, payload) => {
       try {
         ensureFirebaseInitialized();
-        return await strapi.firebase.auth().updateUser(entityId, payload);
+        const result = await strapi.firebase.auth().updateUser(entityId, payload);
+
+        // Revoke all refresh tokens (best-effort, don't block on failure)
+        try {
+          await strapi.firebase.auth().revokeRefreshTokens(entityId);
+        } catch (revokeError: any) {
+          strapi.log.warn(`Session revocation failed: ${revokeError.message}`);
+        }
+
+        // Send password changed confirmation email (don't block on failure)
+        try {
+          const firebaseUser = await strapi.firebase.auth().getUser(entityId);
+          const emailService = strapi.plugin("firebase-authentication").service("emailService");
+          await emailService.sendPasswordChangedEmail(firebaseUser);
+        } catch (emailError: any) {
+          strapi.log.warn(`Could not send password changed confirmation: ${emailError.message}`);
+        }
+
+        return result;
       } catch (e) {
         throw new errors.ApplicationError(e.message.toString());
       }
@@ -453,7 +471,28 @@ export default ({ strapi }) => {
           data: payload,
         });
 
-        return Promise.allSettled([firebasePromise, strapiPromise]);
+        const results = await Promise.allSettled([firebasePromise, strapiPromise]);
+
+        // Only proceed with post-password-change actions if Firebase update succeeded
+        if (results[0].status === "fulfilled") {
+          // Revoke all refresh tokens (best-effort, don't block on failure)
+          try {
+            await strapi.firebase.auth().revokeRefreshTokens(entityId);
+          } catch (revokeError: any) {
+            strapi.log.warn(`Session revocation failed: ${revokeError.message}`);
+          }
+
+          // Send password changed confirmation email (don't block on failure)
+          try {
+            const firebaseUser = await strapi.firebase.auth().getUser(entityId);
+            const emailService = strapi.plugin("firebase-authentication").service("emailService");
+            await emailService.sendPasswordChangedEmail(firebaseUser);
+          } catch (emailError: any) {
+            strapi.log.warn(`Could not send password changed confirmation: ${emailError.message}`);
+          }
+        }
+
+        return results;
       } catch (e) {
         throw new errors.ApplicationError(e.message.toString());
       }
@@ -548,11 +587,15 @@ export default ({ strapi }) => {
     },
     async setSocialMetaData() {},
 
-    sendPasswordResetEmail: async (entityId) => {
+    /**
+     * Send password reset email with custom JWT token
+     * @param entityId - Firebase UID of the user
+     */
+    sendPasswordResetEmail: async (entityId: string) => {
       try {
         ensureFirebaseInitialized();
 
-        // Get the user to get their email
+        // Get the Firebase user to get their email
         const user = await strapi.firebase.auth().getUser(entityId);
 
         if (!user.email) {
@@ -566,40 +609,139 @@ export default ({ strapi }) => {
 
         const passwordResetUrl = config?.passwordResetUrl || "http://localhost:3000/reset-password";
 
-        let resetLink;
-        try {
-          // Generate password reset link using Firebase Admin SDK with timeout
-          const actionCodeSettings = {
-            url: passwordResetUrl,
-            handleCodeInApp: false,
-          };
+        // Find the firebase-user-data record for this Firebase user
+        const firebaseUserData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
 
-          // Create a promise that rejects after 10 seconds with proper typing
-          const timeoutPromise = new Promise<string>((_, reject) => {
-            setTimeout(
-              () => reject(new Error("Firebase generatePasswordResetLink timeout after 10 seconds")),
-              10000
-            );
-          });
-
-          // Race between the Firebase call and the timeout
-          resetLink = await Promise.race([
-            strapi.firebase.auth().generatePasswordResetLink(user.email, actionCodeSettings),
-            timeoutPromise,
-          ]);
-        } catch (firebaseError: any) {
-          strapi.log.error(`Failed to generate Firebase reset link: ${firebaseError.message}`);
-          // Use a fallback reset link if Firebase fails
-          resetLink = `${passwordResetUrl}?email=${encodeURIComponent(user.email)}&error=firebase_link_generation_failed`;
+        if (!firebaseUserData) {
+          throw new errors.ApplicationError("User is not linked to Firebase authentication");
         }
 
-        // Use the new email service
+        // Generate custom JWT token using tokenService
+        const tokenService = strapi.plugin("firebase-authentication").service("tokenService");
+        const token = await tokenService.generateResetToken(firebaseUserData.documentId);
+
+        // Build the reset link using admin-configured URL + our token
+        const resetLink = `${passwordResetUrl}?token=${token}`;
+
+        strapi.log.debug(`Generated password reset link for user ${user.email}`);
+
+        // Use the email service to send the email
         const emailService = strapi.plugin("firebase-authentication").service("emailService");
 
         return await emailService.sendPasswordResetEmail(user, resetLink);
       } catch (e: any) {
         strapi.log.error(`sendPasswordResetEmail error: ${e.message}`);
         throw new errors.ApplicationError(e.message?.toString() || "Failed to send password reset email");
+      }
+    },
+
+    /**
+     * Send password reset email by email address (for public self-service)
+     * @param email - Email address of the user
+     */
+    sendPasswordResetEmailByEmail: async (email: string) => {
+      try {
+        ensureFirebaseInitialized();
+
+        // Try to find the Firebase user by email
+        let firebaseUser;
+        try {
+          firebaseUser = await strapi.firebase.auth().getUserByEmail(email);
+        } catch (e: any) {
+          // Don't reveal if email exists or not (security best practice)
+          strapi.log.debug(`Password reset requested for non-existent email: ${email}`);
+          return {
+            success: true,
+            message: "If an account with that email exists, a password reset link has been sent.",
+          };
+        }
+
+        // Call the existing method with Firebase UID
+        const userService = strapi.plugin("firebase-authentication").service("userService");
+        await userService.sendPasswordResetEmail(firebaseUser.uid);
+
+        return {
+          success: true,
+          message: "If an account with that email exists, a password reset link has been sent.",
+        };
+      } catch (e: any) {
+        strapi.log.error(`sendPasswordResetEmailByEmail error: ${e.message}`);
+        // Return generic success to prevent email enumeration
+        return {
+          success: true,
+          message: "If an account with that email exists, a password reset link has been sent.",
+        };
+      }
+    },
+
+    /**
+     * Reset password using a custom JWT token
+     * @param token - The JWT token from the reset URL
+     * @param newPassword - The new password
+     */
+    resetPasswordWithToken: async (token: string, newPassword: string) => {
+      try {
+        ensureFirebaseInitialized();
+
+        // Validate password length (Firebase minimum is 6 characters)
+        if (!newPassword || newPassword.length < 6) {
+          throw new errors.ValidationError("Password must be at least 6 characters long");
+        }
+
+        // Validate token using tokenService
+        const tokenService = strapi.plugin("firebase-authentication").service("tokenService");
+        const validationResult = await tokenService.validateResetToken(token);
+
+        if (!validationResult.valid) {
+          throw new errors.ValidationError(validationResult.error || "Invalid or expired token");
+        }
+
+        const { firebaseUserDataDocumentId, firebaseUID } = validationResult;
+
+        // Update password in Firebase
+        await strapi.firebase.auth().updateUser(firebaseUID, {
+          password: newPassword,
+        });
+
+        // Revoke all existing sessions (security best practice)
+        await strapi.firebase.auth().revokeRefreshTokens(firebaseUID);
+
+        // Invalidate the token so it can't be reused
+        await tokenService.invalidateResetToken(firebaseUserDataDocumentId);
+
+        strapi.log.info(`Password reset completed for Firebase user ${firebaseUID}`);
+
+        // Send confirmation email (don't block on failure)
+        try {
+          const firebaseUser = await strapi.firebase.auth().getUser(firebaseUID);
+          const emailService = strapi.plugin("firebase-authentication").service("emailService");
+          await emailService.sendPasswordChangedEmail(firebaseUser);
+        } catch (emailError: any) {
+          // Log but don't fail the password reset
+          strapi.log.warn(`Could not send password changed confirmation: ${emailError.message}`);
+        }
+
+        return { success: true, message: "Password has been reset successfully" };
+      } catch (e: any) {
+        strapi.log.error(`resetPasswordWithToken error: ${e.message}`);
+
+        // Map Firebase-specific errors
+        if (e.code === "auth/user-not-found") {
+          throw new errors.NotFoundError("User not found");
+        }
+        if (e.code === "auth/invalid-password" || e.code === "auth/weak-password") {
+          throw new errors.ValidationError("Password must be at least 6 characters long");
+        }
+
+        // Re-throw validation errors as-is
+        if (e instanceof errors.ValidationError) {
+          throw e;
+        }
+
+        throw new errors.ApplicationError(e.message?.toString() || "Failed to reset password");
       }
     },
   };

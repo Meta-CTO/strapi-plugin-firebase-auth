@@ -334,6 +334,125 @@ class EmailService {
       "Email service is not configured. Please configure Strapi email plugin or provide custom sendMagicLinkEmail function in plugin config."
     );
   }
+
+  /**
+   * Send password changed confirmation email
+   * Notifies user that their password was successfully changed
+   * Uses same three-tier fallback system
+   */
+  async sendPasswordChangedEmail(user: any): Promise<{ success: boolean; message: string }> {
+    // Validation
+    if (!user.email) {
+      throw new errors.ValidationError("User does not have an email address");
+    }
+
+    // Build template variables
+    const changedAt = new Date().toLocaleString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+
+    const variables: Partial<TemplateVariables> = {
+      user: {
+        email: user.email,
+        firstName: user.firstName || user.displayName?.split(" ")[0],
+        lastName: user.lastName,
+        displayName: user.displayName,
+        phoneNumber: user.phoneNumber,
+        uid: user.uid,
+      },
+      changedAt,
+    };
+
+    // Get configuration for building complete variables
+    const pluginConfig: any = strapi.config.get("plugin::firebase-authentication");
+    const appConfig: any = pluginConfig?.app || {};
+
+    // Build complete template variables for compilation
+    const completeVariables: TemplateVariables = {
+      ...variables,
+      appName: appConfig?.name || "Your Application",
+      appUrl: appConfig?.url || process.env.PUBLIC_URL || "http://localhost:3000",
+      supportEmail: appConfig?.supportEmail,
+      year: new Date().getFullYear(),
+    } as TemplateVariables;
+
+    // TIER 1: Try Strapi email plugin
+    try {
+      await this.sendTemplatedEmail(user.email, "passwordChanged", variables);
+
+      strapi.log.info(`✅ Password changed confirmation email sent to ${user.email}`);
+      return {
+        success: true,
+        message: `Password changed confirmation sent to ${user.email}`,
+      };
+    } catch (tier1Error: any) {
+      strapi.log.debug(`Strapi email plugin failed: ${tier1Error.message}. Trying fallback options...`);
+    }
+
+    // TIER 2: Try custom hook function
+    const customSender = pluginConfig?.sendPasswordChangedEmail;
+    if (customSender && typeof customSender === "function") {
+      try {
+        // Get template service and template
+        const templateService = strapi.plugin("firebase-authentication").service("templateService");
+        const template = await templateService.getTemplate("passwordChanged");
+
+        // Compile the templates
+        const compiledSubject = _.template(template.subject)(completeVariables);
+        const compiledHtml = template.html ? _.template(template.html)(completeVariables) : undefined;
+        const compiledText = template.text ? _.template(template.text)(completeVariables) : undefined;
+
+        // Call custom sender
+        await customSender({
+          to: user.email,
+          subject: compiledSubject,
+          html: compiledHtml,
+          text: compiledText,
+          variables: completeVariables,
+        });
+
+        strapi.log.info(`✅ Password changed confirmation sent via custom hook to ${user.email}`);
+        return {
+          success: true,
+          message: `Password changed confirmation sent to ${user.email}`,
+        };
+      } catch (tier2Error: any) {
+        strapi.log.error(`Custom hook failed: ${tier2Error.message}. Continuing to next fallback...`);
+      }
+    }
+
+    // TIER 3: Development fallback (just log, don't block the operation)
+    if (process.env.NODE_ENV !== "production") {
+      strapi.log.info("\n" + "=".repeat(80));
+      strapi.log.info("PASSWORD CHANGED CONFIRMATION (Development Mode)");
+      strapi.log.info("=".repeat(80));
+      strapi.log.info(`To: ${user.email}`);
+      strapi.log.info(`Changed At: ${changedAt}`);
+      strapi.log.info("=".repeat(80));
+      strapi.log.info("Note: Confirmation email not sent - no email service configured");
+      strapi.log.info("=".repeat(80) + "\n");
+
+      return {
+        success: true,
+        message: "Password changed confirmation logged to console (development mode)",
+      };
+    }
+
+    // In production, log warning but don't fail the password reset
+    strapi.log.warn(
+      `Could not send password changed confirmation to ${user.email} - no email service configured`
+    );
+    return {
+      success: false,
+      message: "Password changed but confirmation email could not be sent",
+    };
+  }
 }
 
 export default ({ strapi }: { strapi: any }) => new EmailService();

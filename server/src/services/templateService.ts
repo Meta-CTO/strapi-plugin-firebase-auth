@@ -5,10 +5,12 @@ import _ from "lodash";
 import { EmailTemplate, EmailTemplateConfig, TemplateVariables, TemplateType } from "../templates/types";
 import { passwordResetTemplate } from "../templates/defaults/password-reset";
 import { magicLinkTemplate } from "../templates/defaults/magic-link";
+import { passwordChangedTemplate } from "../templates/defaults/password-changed";
 
 const defaultTemplates: Record<TemplateType, EmailTemplate> = {
   passwordReset: passwordResetTemplate,
   magicLink: magicLinkTemplate,
+  passwordChanged: passwordChangedTemplate,
 };
 
 class TemplateService {
