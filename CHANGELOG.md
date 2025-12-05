@@ -1,33 +1,20 @@
 # Changelog
 
-## v1.1.11
+## v1.1.12
 
-[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.10...v1.1.11)
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.11...v1.1.12)
 
-### Refactors
+### 💅 Refactors
 
-- Standardize string handling and improve error messaging in userService ([7bfdc49](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/7bfdc49))
-- Update delete functionality to support destination parameter for user deletion ([0bbc31c](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/0bbc31c))
+- Implement password reset functionality with custom JWT token and email confirmation ([173c106](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/173c106))
 
-### Chore
+### 🏡 Chore
 
-- Update CHANGELOG.md to remove unnecessary sections and standardize formatting ([91ab6ab](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/91ab6ab))
+- Update CHANGELOG.md to standardize formatting and remove unnecessary sections ([c84012d](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/c84012d))
 
-## v1.1.10
+### ❤️ Contributors
 
-[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.9...v1.1.10)
-
-### Fixes
-
-- Improve flag dropdown styles and enhance user experience in phone input component ([c87dea8](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/c87dea8))
-
-### Refactors
-
-- Enhance user update process with improved error handling and payload filtering ([64ff681](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/64ff681))
-
-### Chore
-
-- Clean up CHANGELOG.md by removing unnecessary emoji and contributor section ([5283ca7](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/5283ca7))
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
 
 ## v1.1.9
 
