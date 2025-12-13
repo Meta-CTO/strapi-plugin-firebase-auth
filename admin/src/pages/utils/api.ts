@@ -177,6 +177,14 @@ const sendPasswordResetEmail = async (userId: string) => {
   return sendResetEmail(userId);
 };
 
+const sendVerificationEmail = async (userId: string) => {
+  const url = `/${PLUGIN_ID}/users/sendVerificationEmail/${userId}`;
+  const { put } = getFetchClient();
+  const { data: result } = await put(url, {});
+
+  return result;
+};
+
 export {
   fetchUsers,
   fetchUserByID,
@@ -189,4 +197,5 @@ export {
   sendResetEmail,
   getFirebaseConfig,
   sendPasswordResetEmail,
+  sendVerificationEmail,
 };

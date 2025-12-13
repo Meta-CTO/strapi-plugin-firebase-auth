@@ -43,6 +43,12 @@ function SettingsPage() {
   const [magicLinkUrl, setMagicLinkUrl] = useState<string>("http://localhost:1338/verify-magic-link.html");
   const [magicLinkEmailSubject, setMagicLinkEmailSubject] = useState<string>("Sign in to Your Application");
   const [magicLinkExpiryHours, setMagicLinkExpiryHours] = useState<number>(1);
+  // Email verification configuration fields
+  const [emailVerificationUrl, setEmailVerificationUrl] = useState<string>(
+    "http://localhost:3000/verify-email"
+  );
+  const [emailVerificationEmailSubject, setEmailVerificationEmailSubject] =
+    useState<string>("Verify Your Email");
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editWebApiKey, setEditWebApiKey] = useState<string>("");
@@ -73,6 +79,9 @@ function SettingsPage() {
         setMagicLinkUrl(data?.magicLinkUrl || "http://localhost:1338/verify-magic-link.html");
         setMagicLinkEmailSubject(data?.magicLinkEmailSubject || "Sign in to Your Application");
         setMagicLinkExpiryHours(data?.magicLinkExpiryHours || 1);
+        // Load email verification configuration
+        setEmailVerificationUrl(data?.emailVerificationUrl || "http://localhost:3000/verify-email");
+        setEmailVerificationEmailSubject(data?.emailVerificationEmailSubject || "Verify Your Email");
       })
       .catch((error) => {
         setLoading(false);
@@ -103,6 +112,9 @@ function SettingsPage() {
       setMagicLinkUrl("http://localhost:1338/verify-magic-link.html");
       setMagicLinkEmailSubject("Sign in to Your Application");
       setMagicLinkExpiryHours(1);
+      // Reset email verification configuration to default
+      setEmailVerificationUrl("http://localhost:3000/verify-email");
+      setEmailVerificationEmailSubject("Verify Your Email");
       // restartServer();
       setLoading(false);
       toggleNotification({
@@ -135,6 +147,8 @@ function SettingsPage() {
         magicLinkUrl,
         magicLinkEmailSubject,
         magicLinkExpiryHours,
+        emailVerificationUrl,
+        emailVerificationEmailSubject,
       });
 
       if (!data || !data.firebase_config_json) {
@@ -173,6 +187,8 @@ function SettingsPage() {
         magicLinkUrl,
         magicLinkEmailSubject,
         magicLinkExpiryHours,
+        emailVerificationUrl,
+        emailVerificationEmailSubject,
       });
 
       // Update local state with returned values
@@ -185,6 +201,8 @@ function SettingsPage() {
         setMagicLinkUrl(data.magicLinkUrl || magicLinkUrl);
         setMagicLinkEmailSubject(data.magicLinkEmailSubject || magicLinkEmailSubject);
         setMagicLinkExpiryHours(data.magicLinkExpiryHours || magicLinkExpiryHours);
+        setEmailVerificationUrl(data.emailVerificationUrl || emailVerificationUrl);
+        setEmailVerificationEmailSubject(data.emailVerificationEmailSubject || emailVerificationEmailSubject);
       }
 
       setLoading(false);
@@ -215,6 +233,8 @@ function SettingsPage() {
         magicLinkUrl,
         magicLinkEmailSubject,
         magicLinkExpiryHours,
+        emailVerificationUrl,
+        emailVerificationEmailSubject,
       });
 
       // Update local state with returned values
@@ -223,6 +243,8 @@ function SettingsPage() {
         setMagicLinkUrl(data.magicLinkUrl || magicLinkUrl);
         setMagicLinkEmailSubject(data.magicLinkEmailSubject || magicLinkEmailSubject);
         setMagicLinkExpiryHours(data.magicLinkExpiryHours || magicLinkExpiryHours);
+        setEmailVerificationUrl(data.emailVerificationUrl || emailVerificationUrl);
+        setEmailVerificationEmailSubject(data.emailVerificationEmailSubject || emailVerificationEmailSubject);
       }
 
       setLoading(false);
@@ -235,6 +257,44 @@ function SettingsPage() {
       toggleNotification({
         type: "warning",
         message: "Failed to save magic link settings",
+      });
+      setLoading(false);
+    }
+  };
+
+  const handleSaveEmailVerificationSettings = async () => {
+    try {
+      setLoading(true);
+
+      const data = await savePasswordSettings({
+        passwordRequirementsRegex,
+        passwordRequirementsMessage,
+        passwordResetUrl,
+        passwordResetEmailSubject,
+        enableMagicLink,
+        magicLinkUrl,
+        magicLinkEmailSubject,
+        magicLinkExpiryHours,
+        emailVerificationUrl,
+        emailVerificationEmailSubject,
+      });
+
+      // Update local state with returned values
+      if (data) {
+        setEmailVerificationUrl(data.emailVerificationUrl || emailVerificationUrl);
+        setEmailVerificationEmailSubject(data.emailVerificationEmailSubject || emailVerificationEmailSubject);
+      }
+
+      setLoading(false);
+      toggleNotification({
+        type: "success",
+        message: "Email verification settings saved successfully",
+      });
+    } catch (error) {
+      console.error("Error saving email verification settings:", error);
+      toggleNotification({
+        type: "warning",
+        message: "Failed to save email verification settings",
       });
       setLoading(false);
     }
@@ -266,6 +326,8 @@ function SettingsPage() {
         magicLinkUrl,
         magicLinkEmailSubject,
         magicLinkExpiryHours,
+        emailVerificationUrl,
+        emailVerificationEmailSubject,
       });
 
       if (!data || !data.firebase_config_json) {
@@ -303,6 +365,8 @@ function SettingsPage() {
         magicLinkUrl,
         magicLinkEmailSubject,
         magicLinkExpiryHours,
+        emailVerificationUrl,
+        emailVerificationEmailSubject,
       });
 
       if (!data || !data.firebase_config_json) {
@@ -690,6 +754,33 @@ function SettingsPage() {
               />
             </Box>
 
+            {/* Helper Section for Common Patterns - Right below password requirements */}
+            <Box marginBottom={4} padding={3} background="neutral100" borderRadius="4px">
+              <Typography
+                variant="omega"
+                fontWeight="bold"
+                style={{ display: "block", marginBottom: "12px" }}
+              >
+                Common Password Patterns:
+              </Typography>
+              <Box marginLeft={2}>
+                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                  • <code>{"^.{6,}$"}</code> - Minimum 6 characters (simple)
+                </Typography>
+                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                  • <code>{"^.{8,}$"}</code> - Minimum 8 characters
+                </Typography>
+                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
+                  • <code>{"^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"}</code> - At least 8 chars with letters
+                  and numbers
+                </Typography>
+                <Typography variant="omega" style={{ display: "block" }}>
+                  • <code>{"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"}</code> -
+                  Complex (upper, lower, number, special)
+                </Typography>
+              </Box>
+            </Box>
+
             <Box marginBottom={3}>
               <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
                 Password Reset URL *
@@ -719,33 +810,6 @@ function SettingsPage() {
               />
             </Box>
 
-            {/* Helper Section for Common Patterns */}
-            <Box marginTop={4} padding={3} background="neutral100" borderRadius="4px">
-              <Typography
-                variant="omega"
-                fontWeight="bold"
-                style={{ display: "block", marginBottom: "12px" }}
-              >
-                Common Password Patterns:
-              </Typography>
-              <Box marginLeft={2}>
-                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
-                  • <code>{"^.{6,}$"}</code> - Minimum 6 characters (simple)
-                </Typography>
-                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
-                  • <code>{"^.{8,}$"}</code> - Minimum 8 characters
-                </Typography>
-                <Typography variant="omega" style={{ display: "block", marginBottom: "8px" }}>
-                  • <code>{"^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$"}</code> - At least 8 chars with letters
-                  and numbers
-                </Typography>
-                <Typography variant="omega" style={{ display: "block" }}>
-                  • <code>{"^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"}</code> -
-                  Complex (upper, lower, number, special)
-                </Typography>
-              </Box>
-            </Box>
-
             <Flex
               style={{
                 marginTop: 24,
@@ -759,7 +823,67 @@ function SettingsPage() {
             </Flex>
           </Box>
 
-          {/* Section 3: Magic Link Settings */}
+          {/* Section 3: Email Verification */}
+          <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
+            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
+              Email Verification
+            </Typography>
+            <Typography
+              variant="omega"
+              textColor="neutral600"
+              style={{ display: "block", marginBottom: "24px" }}
+            >
+              Configure email verification settings for new user registration
+            </Typography>
+
+            <Box marginBottom={3}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
+                Email Verification URL *
+              </Typography>
+              <TextInput
+                name="emailVerificationUrl"
+                value={emailVerificationUrl}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmailVerificationUrl(e.target.value)}
+                placeholder="https://yourapp.com/verify-email"
+                hint="URL where users will verify their email address (your frontend application)"
+                required
+              />
+            </Box>
+
+            <Box marginBottom={3}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
+                Verification Email Subject
+              </Typography>
+              <TextInput
+                name="emailVerificationEmailSubject"
+                value={emailVerificationEmailSubject}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setEmailVerificationEmailSubject(e.target.value)
+                }
+                placeholder="Verify Your Email"
+                hint="Subject line for email verification emails"
+              />
+            </Box>
+
+            <Flex
+              style={{
+                marginTop: 24,
+                width: "100%",
+              }}
+              justifyContent="flex-end"
+            >
+              <Button
+                size="L"
+                variant="secondary"
+                onClick={handleSaveEmailVerificationSettings}
+                disabled={loading}
+              >
+                Save Email Verification Settings
+              </Button>
+            </Flex>
+          </Box>
+
+          {/* Section 4: Magic Link Settings */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
             <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
               Magic Link Authentication

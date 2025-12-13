@@ -6,11 +6,13 @@ import { EmailTemplate, EmailTemplateConfig, TemplateVariables, TemplateType } f
 import { passwordResetTemplate } from "../templates/defaults/password-reset";
 import { magicLinkTemplate } from "../templates/defaults/magic-link";
 import { passwordChangedTemplate } from "../templates/defaults/password-changed";
+import { emailVerificationTemplate } from "../templates/defaults/email-verification";
 
 const defaultTemplates: Record<TemplateType, EmailTemplate> = {
   passwordReset: passwordResetTemplate,
   magicLink: magicLinkTemplate,
   passwordChanged: passwordChangedTemplate,
+  emailVerification: emailVerificationTemplate,
 };
 
 class TemplateService {

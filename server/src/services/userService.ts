@@ -744,5 +744,64 @@ export default ({ strapi }) => {
         throw new errors.ApplicationError(e.message?.toString() || "Failed to reset password");
       }
     },
+
+    /**
+     * Send email verification email (admin-initiated)
+     * @param entityId - Firebase UID of the user
+     */
+    sendVerificationEmail: async (entityId: string) => {
+      try {
+        ensureFirebaseInitialized();
+
+        // Get the Firebase user to get their email
+        const user = await strapi.firebase.auth().getUser(entityId);
+
+        if (!user.email) {
+          throw new errors.ApplicationError("User does not have an email address");
+        }
+
+        // Check if already verified
+        if (user.emailVerified) {
+          return { success: true, message: "Email is already verified" };
+        }
+
+        // Get the email verification URL from configuration
+        const config = await strapi.db
+          .query("plugin::firebase-authentication.firebase-authentication-configuration")
+          .findOne({ where: {} });
+
+        const emailVerificationUrl = config?.emailVerificationUrl;
+        if (!emailVerificationUrl) {
+          throw new errors.ApplicationError("Email verification URL is not configured");
+        }
+
+        // Find the firebase-user-data record for this Firebase user
+        const firebaseUserData = await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .getByFirebaseUID(entityId);
+
+        if (!firebaseUserData) {
+          throw new errors.ApplicationError("User is not linked to Firebase authentication");
+        }
+
+        // Generate custom JWT token using tokenService (with email for change detection)
+        const tokenService = strapi.plugin("firebase-authentication").service("tokenService");
+        const token = await tokenService.generateVerificationToken(firebaseUserData.documentId, user.email);
+
+        // Build the verification link using admin-configured URL + our token
+        const verificationLink = `${emailVerificationUrl}?token=${token}`;
+
+        strapi.log.debug(`Generated email verification link for user ${user.email}`);
+
+        // Use the email service to send the email
+        const emailService = strapi.plugin("firebase-authentication").service("emailService");
+
+        return await emailService.sendVerificationEmail(user, verificationLink);
+      } catch (e: any) {
+        strapi.log.error(`sendVerificationEmail error: ${e.message}`);
+        throw new errors.ApplicationError(e.message?.toString() || "Failed to send verification email");
+      }
+    },
   };
 };

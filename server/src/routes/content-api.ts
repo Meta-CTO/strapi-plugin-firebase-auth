@@ -64,5 +64,23 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "POST",
+      path: "/sendVerificationEmail",
+      handler: "firebaseController.sendVerificationEmail",
+      config: {
+        auth: false, // Public endpoint - sends email verification link
+        policies: [],
+      },
+    },
+    {
+      method: "POST",
+      path: "/verifyEmail",
+      handler: "firebaseController.verifyEmail",
+      config: {
+        auth: false, // Public endpoint - token provides authentication
+        policies: [],
+      },
+    },
   ],
 };

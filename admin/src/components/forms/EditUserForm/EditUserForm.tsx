@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { Box, Typography, Flex, Link, Divider } from "@strapi/design-system";
+import { Box, Typography, Flex, Link, Divider, Button } from "@strapi/design-system";
 import { useNotification, Page, Layouts } from "@strapi/strapi/admin";
 import { Pencil } from "@strapi/icons";
 import { format } from "date-fns";
@@ -9,10 +9,16 @@ import { User, ProviderItem } from "../../../../../model/User";
 import { Header } from "../../common/Header/Header";
 import { UserFormFields } from "../shared/UserFormFields/UserFormFields";
 import { UserFormLayout } from "../shared/UserFormLayout/UserFormLayout";
-import { updateUser, resetUserPassword, sendResetEmail, getFirebaseConfig } from "../../../pages/utils/api";
+import {
+  updateUser,
+  resetUserPassword,
+  sendResetEmail,
+  sendVerificationEmail,
+  getFirebaseConfig,
+} from "../../../pages/utils/api";
 import { useUserForm } from "../../../hooks/useUserForm";
 import { PasswordResetButton } from "../../PasswordResetButton";
-import { ResetPassword } from "../../user-management";
+import { ResetPassword, ResendVerification } from "../../user-management";
 
 const MetaWrapper = styled(Box)`
   width: 100%;
@@ -52,6 +58,11 @@ const EditUserForm = ({ data }: EditFormProps) => {
   const [originalUserData] = useState(data);
   const [isLoading, setIsLoading] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState({
+    isOpen: false,
+    email: "",
+    id: "",
+  });
+  const [showVerificationDialog, setShowVerificationDialog] = useState({
     isOpen: false,
     email: "",
     id: "",
@@ -158,6 +169,15 @@ const EditUserForm = ({ data }: EditFormProps) => {
       });
     }
   }, [userData.uid, toggleNotification]);
+
+  const handleCloseVerificationDialog = useCallback(() => {
+    setShowVerificationDialog({ isOpen: false, email: "", id: "" });
+  }, []);
+
+  const handleSendVerificationEmail = useCallback(async () => {
+    // Modal handles success/error feedback inline - no toast needed here
+    await sendVerificationEmail(userData.uid as string);
+  }, [userData.uid]);
 
   if (isLoading) {
     return <Page.Loading />;
@@ -306,17 +326,35 @@ const EditUserForm = ({ data }: EditFormProps) => {
                 <Typography variant="sigma" textColor="neutral600" marginBottom={2}>
                   Account Actions
                 </Typography>
-                <PasswordResetButton
-                  user={userData as User}
-                  fullWidth
-                  onClick={() => {
-                    setShowResetPasswordDialog({
-                      isOpen: true,
-                      email: userData.email || "",
-                      id: userData.uid || "",
-                    });
-                  }}
-                />
+                <Flex direction="column" gap={2}>
+                  <PasswordResetButton
+                    user={userData as User}
+                    fullWidth
+                    onClick={() => {
+                      setShowResetPasswordDialog({
+                        isOpen: true,
+                        email: userData.email || "",
+                        id: userData.uid || "",
+                      });
+                    }}
+                  />
+                  {/* Show Resend Verification button only if email is not verified */}
+                  {userData.email && !userData.emailVerified && (
+                    <Button
+                      variant="secondary"
+                      fullWidth
+                      onClick={() => {
+                        setShowVerificationDialog({
+                          isOpen: true,
+                          email: userData.email || "",
+                          id: userData.uid || "",
+                        });
+                      }}
+                    >
+                      Resend Verification Email
+                    </Button>
+                  )}
+                </Flex>
               </Box>
 
               <Box marginTop={5} marginBottom={5} />
@@ -384,6 +422,15 @@ const EditUserForm = ({ data }: EditFormProps) => {
         passwordRegex={passwordConfig.passwordRequirementsRegex}
         passwordMessage={passwordConfig.passwordRequirementsMessage}
         onSendResetEmail={handleSendResetEmail}
+      />
+
+      {/* Resend Verification Email Modal */}
+      <ResendVerification
+        isOpen={showVerificationDialog.isOpen}
+        onClose={handleCloseVerificationDialog}
+        email={showVerificationDialog.email}
+        userId={showVerificationDialog.id}
+        onSendVerificationEmail={handleSendVerificationEmail}
       />
     </Page.Main>
   );

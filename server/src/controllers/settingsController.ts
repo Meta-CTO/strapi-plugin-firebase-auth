@@ -124,6 +124,8 @@ export default {
         magicLinkUrl = "http://localhost:1338/verify-magic-link.html",
         magicLinkEmailSubject = "Sign in to Your Application",
         magicLinkExpiryHours = 1,
+        emailVerificationUrl = "http://localhost:3000/verify-email",
+        emailVerificationEmailSubject = "Verify Your Email",
       } = requestBody;
 
       // Check if configuration exists
@@ -146,6 +148,8 @@ export default {
               magicLinkUrl,
               magicLinkEmailSubject,
               magicLinkExpiryHours,
+              emailVerificationUrl,
+              emailVerificationEmailSubject,
             },
           });
       } else {
@@ -163,6 +167,8 @@ export default {
               magicLinkUrl,
               magicLinkEmailSubject,
               magicLinkExpiryHours,
+              emailVerificationUrl,
+              emailVerificationEmailSubject,
             },
           });
       }
@@ -176,6 +182,8 @@ export default {
         magicLinkUrl: result.magicLinkUrl,
         magicLinkEmailSubject: result.magicLinkEmailSubject,
         magicLinkExpiryHours: result.magicLinkExpiryHours,
+        emailVerificationUrl: result.emailVerificationUrl,
+        emailVerificationEmailSubject: result.emailVerificationEmailSubject,
       };
     } catch (error) {
       throw new errors.ApplicationError("Error saving password configuration", {

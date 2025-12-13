@@ -227,6 +227,69 @@ const firebaseController = {
       ctx.body = { error: "An error occurred while resetting your password" };
     }
   },
+
+  /**
+   * Send email verification - public endpoint
+   * POST /api/firebase-authentication/sendVerificationEmail
+   * Public endpoint - no authentication required
+   */
+  async sendVerificationEmail(ctx: Context) {
+    strapi.log.debug("sendVerificationEmail endpoint called");
+    try {
+      const { email } = (ctx.request.body as { email?: string }) || {};
+      ctx.body = await strapi.plugin(pluginName).service("firebaseService").sendVerificationEmail(email);
+    } catch (error) {
+      strapi.log.error("sendVerificationEmail controller error:", error);
+      if (error.name === "ValidationError") {
+        ctx.status = 400;
+      } else {
+        ctx.status = 500;
+      }
+      ctx.body = { error: error.message };
+    }
+  },
+
+  /**
+   * Verify email using custom JWT token
+   * POST /api/firebase-authentication/verifyEmail
+   * Public endpoint - token provides authentication
+   *
+   * @param ctx - Koa context with { token } in body
+   * @returns { success: true, message: "Email verified successfully" }
+   */
+  async verifyEmail(ctx: Context) {
+    strapi.log.debug("verifyEmail endpoint called");
+    try {
+      const { token } = (ctx.request.body as { token?: string }) || {};
+
+      if (!token) {
+        ctx.status = 400;
+        ctx.body = { error: "Token is required" };
+        return;
+      }
+
+      const result = await strapi.plugin(pluginName).service("firebaseService").verifyEmail(token);
+
+      ctx.body = result;
+    } catch (error) {
+      strapi.log.error("verifyEmail controller error:", error);
+
+      if (error.name === "ValidationError") {
+        ctx.status = 400;
+        ctx.body = { error: error.message };
+        return;
+      }
+
+      if (error.name === "NotFoundError") {
+        ctx.status = 404;
+        ctx.body = { error: error.message };
+        return;
+      }
+
+      ctx.status = 500;
+      ctx.body = { error: "An error occurred while verifying your email" };
+    }
+  },
 };
 
 export default firebaseController;

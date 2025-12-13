@@ -1,5 +1,4 @@
 import { errors } from "@strapi/utils";
-import { Context, DefaultContext } from "koa";
 import admin, { ServiceAccount } from "firebase-admin";
 import checkValidJson from "../utils/check-valid-json";
 import CryptoJS from "crypto-js";
@@ -134,6 +133,9 @@ export default ({ strapi }) => {
           magicLinkUrl: configObject.magicLinkUrl || "http://localhost:1338/verify-magic-link.html",
           magicLinkEmailSubject: configObject.magicLinkEmailSubject || "Sign in to Your Application",
           magicLinkExpiryHours: configObject.magicLinkExpiryHours || 1,
+          // Include email verification configuration fields
+          emailVerificationUrl: configObject.emailVerificationUrl || "http://localhost:3000/verify-email",
+          emailVerificationEmailSubject: configObject.emailVerificationEmailSubject || "Verify Your Email",
         };
       } catch (error) {
         strapi.log.error(`Firebase config error: ${error.message}`);
@@ -179,6 +181,8 @@ export default ({ strapi }) => {
           magicLinkUrl = "http://localhost:1338/verify-magic-link.html",
           magicLinkEmailSubject = "Sign in to Your Application",
           magicLinkExpiryHours = 1,
+          emailVerificationUrl = "http://localhost:3000/verify-email",
+          emailVerificationEmailSubject = "Verify Your Email",
         } = requestBody;
 
         if (!requestBody) throw new ValidationError(ERROR_MESSAGES.MISSING_DATA);
@@ -223,6 +227,8 @@ export default ({ strapi }) => {
               magicLinkUrl,
               magicLinkEmailSubject,
               magicLinkExpiryHours,
+              emailVerificationUrl,
+              emailVerificationEmailSubject,
             },
           });
         } else {
@@ -239,10 +245,21 @@ export default ({ strapi }) => {
               magicLinkUrl,
               magicLinkEmailSubject,
               magicLinkExpiryHours,
+              emailVerificationUrl,
+              emailVerificationEmailSubject,
             },
           });
         }
         await strapi.plugin("firebase-authentication").service("settingsService").init();
+
+        // Auto-link users after Firebase is initialized (non-blocking)
+        setImmediate(async () => {
+          try {
+            await strapi.plugin("firebase-authentication").service("autoLinkService").linkAllUsers(strapi);
+          } catch (error) {
+            strapi.log.error(`Auto-linking after config save failed: ${error.message}`);
+          }
+        });
 
         // Handle both possible field names (camelCase and snake_case)
         // Strapi may or may not convert field names depending on the API used
@@ -278,6 +295,10 @@ export default ({ strapi }) => {
         res.magicLinkUrl = res.magicLinkUrl || magicLinkUrl;
         res.magicLinkEmailSubject = res.magicLinkEmailSubject || magicLinkEmailSubject;
         res.magicLinkExpiryHours = res.magicLinkExpiryHours || magicLinkExpiryHours;
+        // Include email verification fields in the response
+        res.emailVerificationUrl = res.emailVerificationUrl || emailVerificationUrl;
+        res.emailVerificationEmailSubject =
+          res.emailVerificationEmailSubject || emailVerificationEmailSubject;
         return res;
       } catch (error: any) {
         // Detailed error logging for diagnostics

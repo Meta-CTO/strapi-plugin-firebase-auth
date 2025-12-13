@@ -48,7 +48,7 @@ export type FirebaseAuthConfig = {
 export default {
   default: ({ env }) => ({
     firebaseJsonEncryptionKey: env("FIREBASE_JSON_ENCRYPTION_KEY", "your-key-here"),
-    emailRequired: true,
+    emailRequired: env.bool("FIREBASE_EMAIL_REQUIRED", false),
     emailPattern: "{randomString}@phone-user.firebase.local",
   }),
   validator(config: FirebaseAuthConfig) {

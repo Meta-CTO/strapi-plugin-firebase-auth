@@ -19,6 +19,8 @@ export const saveFirebaseConfig = async (
     magicLinkUrl?: string;
     magicLinkEmailSubject?: string;
     magicLinkExpiryHours?: number;
+    emailVerificationUrl?: string;
+    emailVerificationEmailSubject?: string;
   }
 ) => {
   const url = `/${PLUGIN_ID}/settings/firebase-config`;
@@ -54,6 +56,8 @@ export const savePasswordSettings = async (passwordConfig: {
   magicLinkUrl?: string;
   magicLinkEmailSubject?: string;
   magicLinkExpiryHours?: number;
+  emailVerificationUrl?: string;
+  emailVerificationEmailSubject?: string;
 }) => {
   const url = `/${PLUGIN_ID}/settings/password-config`;
   const { post } = getFetchClient();

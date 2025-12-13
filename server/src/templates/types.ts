@@ -10,9 +10,7 @@ export interface EmailTemplateConfig {
   passwordReset?: Partial<EmailTemplate>;
   magicLink?: Partial<EmailTemplate>;
   passwordChanged?: Partial<EmailTemplate>;
-  // Future templates can be added here
-  // welcome?: Partial<EmailTemplate>;
-  // emailVerification?: Partial<EmailTemplate>;
+  emailVerification?: Partial<EmailTemplate>;
 }
 
 export interface TemplateVariables {
@@ -27,6 +25,7 @@ export interface TemplateVariables {
   link?: string;
   resetLink?: string;
   magicLink?: string;
+  verificationLink?: string;
   changedAt?: string;
   appName: string;
   appUrl: string;
@@ -35,4 +34,4 @@ export interface TemplateVariables {
   supportEmail?: string;
 }
 
-export type TemplateType = "passwordReset" | "magicLink" | "passwordChanged";
+export type TemplateType = "passwordReset" | "magicLink" | "passwordChanged" | "emailVerification";

@@ -39,6 +39,13 @@
     },
     "resetTokenExpiresAt": {
       "type": "datetime"
+    },
+    "verificationTokenHash": {
+      "type": "string",
+      "private": true
+    },
+    "verificationTokenExpiresAt": {
+      "type": "datetime"
     }
   }
 }

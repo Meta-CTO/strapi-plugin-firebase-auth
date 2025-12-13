@@ -453,6 +453,151 @@ class EmailService {
       message: "Password changed but confirmation email could not be sent",
     };
   }
+
+  /**
+   * Send email verification email with three-tier fallback system
+   * Tier 1: Strapi Email Plugin (if configured)
+   * Tier 2: Custom Hook Function (if provided in config)
+   * Tier 3: Development Console Logging (dev mode only)
+   */
+  async sendVerificationEmail(
+    user: any,
+    verificationLink: string
+  ): Promise<{ success: boolean; message: string }> {
+    // Validation
+    if (!user.email) {
+      throw new errors.ValidationError("User does not have an email address");
+    }
+
+    // Build template variables
+    const variables: Partial<TemplateVariables> = {
+      user: {
+        email: user.email,
+        firstName: user.firstName || user.displayName?.split(" ")[0],
+        lastName: user.lastName,
+        displayName: user.displayName,
+        phoneNumber: user.phoneNumber,
+        uid: user.uid,
+      },
+      verificationLink,
+      expiresIn: "1 hour",
+    };
+
+    // Get database configuration for custom subject
+    const settingsService = strapi.plugin("firebase-authentication").service("settingsService");
+    const dbConfig = await settingsService.getFirebaseConfigJson();
+    const customSubject = dbConfig?.emailVerificationEmailSubject;
+
+    // Get configuration for building complete variables
+    const pluginConfig: any = strapi.config.get("plugin::firebase-authentication");
+    const appConfig: any = pluginConfig?.app || {};
+
+    // Build complete template variables for compilation
+    const completeVariables: TemplateVariables = {
+      ...variables,
+      appName: appConfig?.name || "Your Application",
+      appUrl: appConfig?.url || process.env.PUBLIC_URL || "http://localhost:3000",
+      supportEmail: appConfig?.supportEmail,
+      year: new Date().getFullYear(),
+      expiresIn: variables.expiresIn || "1 hour",
+    } as TemplateVariables;
+
+    // Get template service
+    const templateService = strapi.plugin("firebase-authentication").service("templateService");
+    const template = await templateService.getTemplate("emailVerification");
+
+    // Use custom subject from database if set, otherwise use template default
+    const subjectTemplate = customSubject || template.subject;
+    const compiledSubject = _.template(subjectTemplate)(completeVariables);
+
+    // TIER 1: Try Strapi email plugin
+    try {
+      const compiledHtml = template.html ? _.template(template.html)(completeVariables) : undefined;
+      const compiledText = template.text ? _.template(template.text)(completeVariables) : undefined;
+
+      // Check if email plugin exists before trying to use it
+      const emailPlugin = strapi.plugin("email");
+      if (!emailPlugin) {
+        throw new Error("Email plugin not found");
+      }
+
+      const emailService = emailPlugin.service("email");
+      await emailService.send({
+        to: user.email,
+        subject: compiledSubject,
+        html: compiledHtml,
+        text: compiledText,
+      });
+
+      strapi.log.info(`✅ Email verification sent via Strapi email plugin to ${user.email}`);
+      return {
+        success: true,
+        message: `Verification email sent to ${user.email}`,
+      };
+    } catch (tier1Error: any) {
+      strapi.log.debug(`Strapi email plugin failed: ${tier1Error.message}. Trying fallback options...`);
+    }
+
+    // TIER 2: Try custom hook function
+    const customSender = pluginConfig?.sendVerificationEmail;
+    if (customSender && typeof customSender === "function") {
+      try {
+        // Compile the templates
+        const compiledHtml = template.html ? _.template(template.html)(completeVariables) : undefined;
+        const compiledText = template.text ? _.template(template.text)(completeVariables) : undefined;
+
+        // Call custom sender
+        await customSender({
+          to: user.email,
+          subject: compiledSubject,
+          html: compiledHtml,
+          text: compiledText,
+          verificationLink,
+          variables: completeVariables,
+        });
+
+        strapi.log.info(`✅ Email verification sent via custom hook to ${user.email}`);
+        return {
+          success: true,
+          message: `Verification email sent to ${user.email}`,
+        };
+      } catch (tier2Error: any) {
+        strapi.log.error(`Custom hook failed: ${tier2Error.message}. Continuing to next fallback...`);
+      }
+    }
+
+    // TIER 3: Development fallback
+    if (process.env.NODE_ENV !== "production") {
+      try {
+        // Log to console with nice formatting
+        // NOTE: This output appears in the SERVER TERMINAL where Strapi is running,
+        // not in the browser console. Check your terminal for the verification link.
+        strapi.log.info("\n" + "=".repeat(80));
+        strapi.log.info("EMAIL VERIFICATION (Development Mode)");
+        strapi.log.info("=".repeat(80));
+        strapi.log.info(`To: ${user.email}`);
+        strapi.log.info(`Subject: ${compiledSubject}`);
+        strapi.log.info(`Verification Link: ${verificationLink}`);
+        strapi.log.info(`Expires In: 1 hour`);
+        strapi.log.info("=".repeat(80));
+        strapi.log.info("Note: Email not sent - no email service configured");
+        strapi.log.info("Copy the link above and open in your browser to verify");
+        strapi.log.info("=".repeat(80) + "\n");
+
+        return {
+          success: true,
+          message: "Verification link logged to console (development mode)",
+        };
+      } catch (tier3Error: any) {
+        strapi.log.error(`Development fallback failed: ${tier3Error.message}`);
+      }
+    }
+
+    // Production error if no fallback worked
+    throw new errors.ApplicationError(
+      "Email service is not configured. Please configure Strapi email plugin or provide custom sendVerificationEmail function in plugin config."
+    );
+  }
 }
 
 export default ({ strapi }: { strapi: any }) => new EmailService();

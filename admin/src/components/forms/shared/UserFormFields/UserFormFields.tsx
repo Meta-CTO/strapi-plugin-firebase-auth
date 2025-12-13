@@ -9,26 +9,10 @@ import { User } from "../../../../../../model/User";
 let PhoneInputTemp: any = PhoneInputModule;
 let unwrapCount = 0;
 while (PhoneInputTemp && typeof PhoneInputTemp === "object" && PhoneInputTemp.default && unwrapCount < 5) {
-  console.log(`🔧 Unwrapping PhoneInput layer ${unwrapCount}:`, PhoneInputTemp);
   PhoneInputTemp = PhoneInputTemp.default;
   unwrapCount++;
 }
 const PhoneInput = PhoneInputTemp;
-
-// DEBUG: Verify we got the actual component (CRITICAL - keep this to verify fix)
-console.log("🔍 ==================== PhoneInput Final Check ====================");
-console.log("  Unwrap iterations:", unwrapCount);
-console.log("  PhoneInput FINAL:", PhoneInput);
-console.log("  PhoneInput type:", typeof PhoneInput);
-console.log("  PhoneInput $$typeof:", (PhoneInput as any)?.$$typeof);
-console.log("  PhoneInput name:", (PhoneInput as any)?.name);
-console.log("  PhoneInput displayName:", (PhoneInput as any)?.displayName);
-console.log("  Is function?:", typeof PhoneInput === "function");
-console.log(
-  "  Is valid React component?:",
-  typeof PhoneInput === "function" || (PhoneInput && (PhoneInput as any).$$typeof)
-);
-console.log("🔍 ================================================================");
 
 const StyledPhoneInputWrapper = styled.div`
   width: 100%;

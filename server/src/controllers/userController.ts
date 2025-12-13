@@ -141,4 +141,21 @@ export default {
       throw new errors.ApplicationError(error.message || "Failed to send password reset email");
     }
   },
+
+  sendVerificationEmail: async (ctx) => {
+    const userId = ctx.params.id;
+
+    if (!userId) {
+      throw new errors.ValidationError("User ID is required");
+    }
+
+    try {
+      ctx.body = await strapi
+        .plugin("firebase-authentication")
+        .service("userService")
+        .sendVerificationEmail(userId);
+    } catch (error) {
+      throw new errors.ApplicationError(error.message || "Failed to send verification email");
+    }
+  },
 };

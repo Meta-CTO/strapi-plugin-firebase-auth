@@ -63,6 +63,15 @@
       "minimum": 1,
       "maximum": 72,
       "description": "How long the magic link remains valid (in hours)"
+    },
+    "emailVerificationUrl": {
+      "type": "string",
+      "default": "http://localhost:3000/verify-email",
+      "description": "URL where users will be redirected to verify their email"
+    },
+    "emailVerificationEmailSubject": {
+      "type": "string",
+      "default": "Verify Your Email"
     }
   }
 }

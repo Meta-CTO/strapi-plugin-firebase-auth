@@ -46,6 +46,14 @@ export default {
       },
     },
     {
+      method: "PUT",
+      path: "/users/sendVerificationEmail/:id",
+      handler: "userController.sendVerificationEmail",
+      config: {
+        policies: ["admin::isAuthenticatedAdmin"],
+      },
+    },
+    {
       method: "GET",
       path: "/users/:id",
       handler: "userController.get",

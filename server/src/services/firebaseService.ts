@@ -1,7 +1,6 @@
 import { errors } from "@strapi/utils";
 import { processMeData } from "../utils/fetch-me";
 import { generateReferralCode } from "../utils";
-import { promiseHandler } from "../utils/promiseHandler";
 
 // Default email pattern - matches the default in server/config/index.ts
 const DEFAULT_EMAIL_PATTERN = "{randomString}@phone-user.firebase.local";
@@ -1017,6 +1016,229 @@ export default ({ strapi }) => ({
         requiresFrontend: true,
         verificationUrl: magicLinkUrl,
       };
+    }
+  },
+
+  /**
+   * Send email verification - public endpoint
+   * Generates a verification token and sends an email to the user
+   * Security: Always returns generic success message to prevent email enumeration
+   */
+  async sendVerificationEmail(email: string) {
+    strapi.log.info(`[sendVerificationEmail] Starting email verification for: ${email}`);
+
+    if (!email) {
+      throw new errors.ValidationError("Email is required");
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new errors.ValidationError("Invalid email format");
+    }
+
+    // Get verification URL from config
+    const config = await strapi
+      .plugin("firebase-authentication")
+      .service("settingsService")
+      .getFirebaseConfigJson();
+
+    const verificationUrl = config?.emailVerificationUrl;
+    if (!verificationUrl) {
+      throw new errors.ApplicationError("Email verification URL is not configured");
+    }
+
+    // Validate URL security in production
+    if (process.env.NODE_ENV === "production" && !verificationUrl.startsWith("https://")) {
+      throw new errors.ApplicationError("Email verification URL must use HTTPS in production");
+    }
+
+    // Validate URL format
+    try {
+      new URL(verificationUrl);
+    } catch (error) {
+      throw new errors.ApplicationError("Email verification URL is not a valid URL format");
+    }
+
+    try {
+      // Try to find user in Firebase
+      let firebaseUser;
+      try {
+        firebaseUser = await strapi.firebase.auth().getUserByEmail(email);
+      } catch (fbError) {
+        strapi.log.debug("User not found in Firebase");
+      }
+
+      if (!firebaseUser) {
+        strapi.log.warn(`⚠️ [sendVerificationEmail] User not found in Firebase for email: ${email}`);
+        // Security: Don't reveal if email exists or not
+        return { message: "If an account with that email exists, a verification link has been sent." };
+      }
+
+      // Check if already verified
+      if (firebaseUser.emailVerified) {
+        strapi.log.info(`[sendVerificationEmail] User ${email} is already verified`);
+        return { message: "Email is already verified." };
+      }
+
+      // Get the firebase-user-data record
+      const firebaseData = await strapi
+        .plugin("firebase-authentication")
+        .service("firebaseUserDataService")
+        .getByFirebaseUID(firebaseUser.uid);
+
+      if (!firebaseData) {
+        strapi.log.warn(`⚠️ [sendVerificationEmail] No firebase-user-data record for: ${email}`);
+        // Security: Don't reveal if email exists or not
+        return { message: "If an account with that email exists, a verification link has been sent." };
+      }
+
+      strapi.log.info(
+        `✅ [sendVerificationEmail] User found: ${JSON.stringify({
+          firebaseUID: firebaseUser.uid,
+          email: firebaseUser.email,
+          emailVerified: firebaseUser.emailVerified,
+        })}`
+      );
+
+      // Generate custom JWT token using tokenService (with email for change detection)
+      const tokenService = strapi.plugin("firebase-authentication").service("tokenService");
+      const token = await tokenService.generateVerificationToken(firebaseData.documentId, email);
+
+      // Build the verification link using admin-configured URL + our token
+      const verificationLink = `${verificationUrl}?token=${token}`;
+
+      strapi.log.info(`✅ [sendVerificationEmail] Verification link generated for ${email}`);
+
+      // Send email using our three-tier fallback system
+      strapi.log.info(`[sendVerificationEmail] Attempting to send verification email to: ${email}`);
+      await strapi
+        .plugin("firebase-authentication")
+        .service("emailService")
+        .sendVerificationEmail(firebaseUser, verificationLink);
+
+      strapi.log.info(`✅ [sendVerificationEmail] Verification email sent successfully to: ${email}`);
+
+      // Security: Always return same message
+      return {
+        message: "If an account with that email exists, a verification link has been sent.",
+      };
+    } catch (error) {
+      strapi.log.error(
+        `❌ [sendVerificationEmail] ERROR: ${JSON.stringify({
+          email,
+          message: error.message,
+          code: error.code,
+          name: error.name,
+          stack: error.stack,
+        })}`
+      );
+      // Security: Don't reveal internal errors
+      return {
+        message: "If an account with that email exists, a verification link has been sent.",
+      };
+    }
+  },
+
+  /**
+   * Verify email with token - public endpoint
+   * Validates the token and marks the user's email as verified in Firebase
+   */
+  async verifyEmail(token: string) {
+    strapi.log.info(`[verifyEmail] Starting email verification with token`);
+
+    if (!token) {
+      throw new errors.ValidationError("Verification token is required");
+    }
+
+    // Validate token using tokenService
+    const tokenService = strapi.plugin("firebase-authentication").service("tokenService");
+    const validationResult = await tokenService.validateVerificationToken(token);
+
+    if (!validationResult.valid) {
+      strapi.log.warn(`[verifyEmail] Token validation failed: ${validationResult.error}`);
+      throw new errors.ValidationError(validationResult.error || "Invalid verification link");
+    }
+
+    const { firebaseUID, firebaseUserDataDocumentId, email: tokenEmail } = validationResult;
+
+    try {
+      // Get current Firebase user to check if email has changed
+      const firebaseUser = await strapi.firebase.auth().getUser(firebaseUID);
+
+      // Check if email has changed since token was issued
+      if (tokenEmail && firebaseUser.email !== tokenEmail) {
+        strapi.log.warn(
+          `[verifyEmail] Email changed: token email ${tokenEmail} != current email ${firebaseUser.email}`
+        );
+        // Invalidate the token since email changed
+        await tokenService.invalidateVerificationToken(firebaseUserDataDocumentId);
+        throw new errors.ValidationError(
+          "Email address has changed since verification was requested. Please request a new verification link."
+        );
+      }
+
+      // Check if already verified
+      if (firebaseUser.emailVerified) {
+        strapi.log.info(`[verifyEmail] User ${firebaseUser.email} is already verified`);
+        // Still invalidate the token to prevent reuse
+        await tokenService.invalidateVerificationToken(firebaseUserDataDocumentId);
+        return {
+          success: true,
+          message: "Email is already verified.",
+        };
+      }
+
+      // Mark email as verified in Firebase
+      await strapi.firebase.auth().updateUser(firebaseUID, {
+        emailVerified: true,
+      });
+
+      // Also update Strapi user's confirmed status (non-blocking)
+      try {
+        const firebaseUserDataService = strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService");
+        const firebaseUserData = await firebaseUserDataService.getByFirebaseUID(firebaseUID);
+
+        if (firebaseUserData?.user?.documentId) {
+          await strapi.db.query("plugin::users-permissions.user").update({
+            where: { documentId: firebaseUserData.user.documentId },
+            data: { confirmed: true },
+          });
+          strapi.log.info(`✅ [verifyEmail] Strapi user confirmed for: ${firebaseUserData.user.documentId}`);
+        }
+      } catch (strapiUpdateError) {
+        // Log but don't fail - Firebase verification succeeded, that's what matters
+        strapi.log.warn(
+          `[verifyEmail] Failed to update Strapi user confirmed status: ${strapiUpdateError.message}`
+        );
+      }
+
+      strapi.log.info(`✅ [verifyEmail] Email verified successfully for: ${firebaseUser.email}`);
+
+      // Invalidate token (one-time use)
+      await tokenService.invalidateVerificationToken(firebaseUserDataDocumentId);
+
+      return {
+        success: true,
+        message: "Email verified successfully.",
+      };
+    } catch (error) {
+      strapi.log.error(
+        `❌ [verifyEmail] ERROR: ${JSON.stringify({
+          firebaseUID,
+          message: error.message,
+          code: error.code,
+          name: error.name,
+        })}`
+      );
+
+      if (error instanceof errors.ValidationError) {
+        throw error;
+      }
+
+      throw new errors.ApplicationError("Failed to verify email. Please try again.");
     }
   },
 });
