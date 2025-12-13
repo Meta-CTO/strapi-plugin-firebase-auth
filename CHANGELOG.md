@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.2.0
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.12...v1.2.0)
+
+### 🚀 Enhancements
+
+- Add email verification functionality with resend option and configuration settings ([30ccab9](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/30ccab9))
+
+### 🏡 Chore
+
+- Update CHANGELOG.md to standardize formatting and remove contributor section ([1b7dffc](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/1b7dffc))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.1.12
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.1.11...v1.1.12)
