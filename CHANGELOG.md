@@ -4,17 +4,13 @@
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.2.0...v1.2.1)
 
-### 💅 Refactors
+### Refactors
 
 - Enhance firebaseController to utilize is-authenticated policy for secure endpoints and improve error handling ([7df3b90](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/7df3b90))
 
-### 🏡 Chore
+### Chore
 
 - Update CHANGELOG.md to enhance formatting and remove contributor section ([5733a6d](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/5733a6d))
-
-### ❤️ Contributors
-
-- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
 
 ## v1.2.0
 
