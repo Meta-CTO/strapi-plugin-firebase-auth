@@ -822,22 +822,19 @@ export default ({ strapi }) => ({
    * 2. User-initiated password change (when already authenticated)
    *
    * NOT used for forgot password email flow - that now uses Firebase's hosted UI
+   *
+   * @param password - New password to set
+   * @param user - Authenticated user from ctx.state.user (populated by is-authenticated policy)
+   * @param populate - Fields to populate in response
    */
-  resetPassword: async (password: string, token: string, populate: any[]) => {
+  resetPassword: async (password: string, user: any, populate: any[]) => {
     if (!password) {
       throw new errors.ValidationError("Password is required");
     }
 
-    if (!token) {
-      throw new errors.UnauthorizedError("Authorization token is required");
-    }
-
-    let decoded;
-    try {
-      const jwtService = strapi.plugin("users-permissions").service("jwt");
-      decoded = await jwtService.verify(token);
-    } catch (error) {
-      throw new errors.UnauthorizedError("Invalid or expired token");
+    // User already authenticated by policy - just validate it exists
+    if (!user || !user.id) {
+      throw new errors.UnauthorizedError("Authentication required");
     }
 
     // Get configuration
@@ -857,9 +854,10 @@ export default ({ strapi }) => ({
     }
 
     try {
-      // Get Strapi user using Query Engine API with numeric id from JWT
+      // User is already authenticated by policy - ctx.state.user has the basic user info
+      // Fetch fresh user data to ensure we have latest state
       const strapiUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-        where: { id: decoded.id }, // Use numeric id from JWT
+        where: { id: user.id },
       });
 
       if (!strapiUser) {

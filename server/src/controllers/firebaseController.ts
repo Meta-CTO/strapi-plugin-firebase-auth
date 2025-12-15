@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const strapi: any;
 import { Context } from "koa";
+import { errors } from "@strapi/utils";
 import { pluginName } from "../firebaseAuthentication/types";
 import { ERROR_MESSAGES } from "../constants";
 
@@ -34,9 +35,14 @@ const firebaseController = {
   },
 
   async deleteByEmail(email) {
-    const user = await strapi.firebase.auth().getUserByEmail(email);
-    await strapi.plugin(pluginName).service("firebaseService").delete(user.toJSON().uid);
-    return user.toJSON();
+    try {
+      const user = await strapi.firebase.auth().getUserByEmail(email);
+      await strapi.plugin(pluginName).service("firebaseService").delete(user.toJSON().uid);
+      return user.toJSON();
+    } catch (error) {
+      strapi.log.error("deleteByEmail error:", error);
+      throw error;
+    }
   },
 
   async overrideAccess(ctx) {
@@ -90,15 +96,7 @@ const firebaseController = {
       ctx.body = result;
     } catch (error) {
       strapi.log.error("emailLogin controller error:", error);
-      // Set appropriate status code for different error types
-      if (error.name === "ValidationError") {
-        ctx.status = 400;
-      } else if (error.name === "ApplicationError") {
-        ctx.status = 500;
-      } else {
-        ctx.status = 500;
-      }
-      ctx.body = { error: error.message };
+      throw error;
     }
   },
 
@@ -114,21 +112,14 @@ const firebaseController = {
       ctx.body = await strapi.plugin(pluginName).service("firebaseService").forgotPassword(email);
     } catch (error) {
       strapi.log.error("forgotPassword controller error:", error);
-      if (error.name === "ValidationError") {
-        ctx.status = 400;
-      } else if (error.name === "NotFoundError") {
-        ctx.status = 404;
-      } else {
-        ctx.status = 500;
-      }
-      ctx.body = { error: error.message };
+      throw error;
     }
   },
 
   /**
    * Reset password - authenticated password change
    * POST /api/firebase-authentication/resetPassword
-   * Public endpoint - requires valid JWT in Authorization header
+   * Authenticated endpoint - requires valid JWT (enforced by is-authenticated policy)
    * Used for admin-initiated resets or user self-service password changes
    * NOT used for forgot password email flow (which uses Firebase's hosted UI)
    */
@@ -136,21 +127,16 @@ const firebaseController = {
     strapi.log.debug("resetPassword endpoint called");
     try {
       const { password } = ctx.request.body || {};
-      const token = ctx.request.headers.authorization?.replace("Bearer ", "");
+      const user = ctx.state.user; // User populated by is-authenticated policy
       const populate = ctx.request.query.populate || [];
 
       ctx.body = await strapi
         .plugin(pluginName)
         .service("firebaseService")
-        .resetPassword(password, token, populate);
+        .resetPassword(password, user, populate);
     } catch (error) {
       strapi.log.error("resetPassword controller error:", error);
-      if (error.name === "ValidationError" || error.name === "UnauthorizedError") {
-        ctx.status = 401;
-      } else {
-        ctx.status = 500;
-      }
-      ctx.body = { error: error.message };
+      throw error;
     }
   },
 
@@ -191,15 +177,11 @@ const firebaseController = {
       const { token, newPassword } = (ctx.request.body as { token?: string; newPassword?: string }) || {};
 
       if (!token) {
-        ctx.status = 400;
-        ctx.body = { error: "Token is required" };
-        return;
+        throw new errors.ValidationError("Token is required");
       }
 
       if (!newPassword) {
-        ctx.status = 400;
-        ctx.body = { error: "New password is required" };
-        return;
+        throw new errors.ValidationError("New password is required");
       }
 
       const result = await strapi
@@ -210,42 +192,24 @@ const firebaseController = {
       ctx.body = result;
     } catch (error) {
       strapi.log.error("resetPasswordWithToken controller error:", error);
-
-      if (error.name === "ValidationError") {
-        ctx.status = 400;
-        ctx.body = { error: error.message };
-        return;
-      }
-
-      if (error.name === "NotFoundError") {
-        ctx.status = 404;
-        ctx.body = { error: error.message };
-        return;
-      }
-
-      ctx.status = 500;
-      ctx.body = { error: "An error occurred while resetting your password" };
+      throw error;
     }
   },
 
   /**
    * Send email verification - public endpoint
    * POST /api/firebase-authentication/sendVerificationEmail
-   * Public endpoint - no authentication required
+   * Authenticated endpoint - sends verification email to the logged-in user's email
    */
   async sendVerificationEmail(ctx: Context) {
     strapi.log.debug("sendVerificationEmail endpoint called");
     try {
-      const { email } = (ctx.request.body as { email?: string }) || {};
+      const user = ctx.state.user;
+      const email = user.email; // Use authenticated user's email for security
       ctx.body = await strapi.plugin(pluginName).service("firebaseService").sendVerificationEmail(email);
     } catch (error) {
       strapi.log.error("sendVerificationEmail controller error:", error);
-      if (error.name === "ValidationError") {
-        ctx.status = 400;
-      } else {
-        ctx.status = 500;
-      }
-      ctx.body = { error: error.message };
+      throw error;
     }
   },
 
@@ -263,9 +227,7 @@ const firebaseController = {
       const { token } = (ctx.request.body as { token?: string }) || {};
 
       if (!token) {
-        ctx.status = 400;
-        ctx.body = { error: "Token is required" };
-        return;
+        throw new errors.ValidationError("Token is required");
       }
 
       const result = await strapi.plugin(pluginName).service("firebaseService").verifyEmail(token);
@@ -273,21 +235,7 @@ const firebaseController = {
       ctx.body = result;
     } catch (error) {
       strapi.log.error("verifyEmail controller error:", error);
-
-      if (error.name === "ValidationError") {
-        ctx.status = 400;
-        ctx.body = { error: error.message };
-        return;
-      }
-
-      if (error.name === "NotFoundError") {
-        ctx.status = 404;
-        ctx.body = { error: error.message };
-        return;
-      }
-
-      ctx.status = 500;
-      ctx.body = { error: "An error occurred while verifying your email" };
+      throw error;
     }
   },
 };

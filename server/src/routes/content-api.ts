@@ -33,8 +33,7 @@ export default {
       path: "/resetPassword",
       handler: "firebaseController.resetPassword",
       config: {
-        auth: false, // Public endpoint - authenticated password change, requires valid JWT in Authorization header
-        policies: [],
+        policies: ["plugin::firebase-authentication.is-authenticated"],
       },
     },
     {
@@ -69,8 +68,7 @@ export default {
       path: "/sendVerificationEmail",
       handler: "firebaseController.sendVerificationEmail",
       config: {
-        auth: false, // Public endpoint - sends email verification link
-        policies: [],
+        policies: ["plugin::firebase-authentication.is-authenticated"],
       },
     },
     {
