@@ -227,7 +227,7 @@ const firebaseController = {
       const { token } = (ctx.request.body as { token?: string }) || {};
 
       if (!token) {
-        throw new errors.ValidationError("Token is required");
+        return ctx.badRequest("Token is required");
       }
 
       const result = await strapi.plugin(pluginName).service("firebaseService").verifyEmail(token);
@@ -235,6 +235,9 @@ const firebaseController = {
       ctx.body = result;
     } catch (error) {
       strapi.log.error("verifyEmail controller error:", error);
+      if (error.name === "ValidationError") {
+        return ctx.badRequest(error.message);
+      }
       throw error;
     }
   },

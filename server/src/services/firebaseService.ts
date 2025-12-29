@@ -1154,6 +1154,24 @@ export default ({ strapi }) => ({
     const validationResult = await tokenService.validateVerificationToken(token);
 
     if (!validationResult.valid) {
+      // Special case: token was already used, but check if email is actually verified
+      if (validationResult.code === "TOKEN_ALREADY_USED" && validationResult.firebaseUID) {
+        try {
+          const firebaseUser = await strapi.firebase.auth().getUser(validationResult.firebaseUID);
+          if (firebaseUser.emailVerified) {
+            strapi.log.info(
+              `[verifyEmail] Token already used but email is verified for: ${firebaseUser.email}`
+            );
+            return {
+              success: true,
+              message: "This email has already been verified.",
+            };
+          }
+        } catch (checkError) {
+          strapi.log.warn(`[verifyEmail] Could not verify Firebase user status: ${checkError.message}`);
+        }
+      }
+
       strapi.log.warn(`[verifyEmail] Token validation failed: ${validationResult.error}`);
       throw new errors.ValidationError(validationResult.error || "Invalid verification link");
     }

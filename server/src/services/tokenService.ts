@@ -34,6 +34,7 @@ export interface TokenValidationResult {
 
 export interface VerificationTokenValidationResult extends TokenValidationResult {
   email?: string; // Email from token payload
+  code?: string; // Error code for specific handling (e.g., "TOKEN_ALREADY_USED")
 }
 
 export default ({ strapi }) => {
@@ -282,9 +283,10 @@ export default ({ strapi }) => {
         if (firebaseUserData.verificationTokenHash !== tokenHash) {
           return {
             valid: false,
-            firebaseUserDataDocumentId: "",
-            firebaseUID: "",
+            firebaseUserDataDocumentId: firebaseUserData.documentId,
+            firebaseUID: firebaseUserData.firebaseUserID,
             error: "Verification link has already been used or is invalid",
+            code: "TOKEN_ALREADY_USED",
           };
         }
 
