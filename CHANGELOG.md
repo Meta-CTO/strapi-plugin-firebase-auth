@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.2.2
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.2.1...v1.2.2)
+
+### 💅 Refactors
+
+- Improve email verification handling in firebaseController and firebaseService, enhancing error responses and token validation logic ([6f901d5](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/6f901d5))
+
+### 🏡 Chore
+
+- Update CHANGELOG.md to improve formatting and remove contributor section ([a48dccb](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/a48dccb))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.2.1
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.2.0...v1.2.1)
