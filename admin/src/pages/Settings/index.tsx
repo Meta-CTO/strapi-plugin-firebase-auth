@@ -843,16 +843,20 @@ function SettingsPage() {
             </Box>
 
             <Box marginBottom={3}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
+                Include Login Credentials in Link
+              </Typography>
               <Flex alignItems="center" gap={2}>
                 <Toggle
                   name="includeCredentialsInPasswordResetLink"
-                  label="Include Login Credentials in Link"
                   checked={includeCredentialsInPasswordResetLink}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setIncludeCredentialsInPasswordResetLink(e.target.checked)
                   }
-                  hint="Append a Firebase custom token to the reset link, allowing users to be automatically logged in when they click the link"
                 />
+                <Typography variant="omega" textColor="neutral600">
+                  Append a Firebase custom token to the reset link, allowing users to be automatically logged in
+                </Typography>
               </Flex>
             </Box>
 
@@ -912,16 +916,20 @@ function SettingsPage() {
             </Box>
 
             <Box marginBottom={3}>
+              <Typography variant="omega" fontWeight="bold" style={{ display: "block", marginBottom: "8px" }}>
+                Include Login Credentials in Link
+              </Typography>
               <Flex alignItems="center" gap={2}>
                 <Toggle
                   name="includeCredentialsInVerificationLink"
-                  label="Include Login Credentials in Link"
                   checked={includeCredentialsInVerificationLink}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setIncludeCredentialsInVerificationLink(e.target.checked)
                   }
-                  hint="Append a Firebase custom token to the verification link, allowing users to be automatically logged in when they click the link"
                 />
+                <Typography variant="omega" textColor="neutral600">
+                  Append a Firebase custom token to the verification link, allowing users to be automatically logged in
+                </Typography>
               </Flex>
             </Box>
 
