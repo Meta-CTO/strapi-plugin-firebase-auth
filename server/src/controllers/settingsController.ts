@@ -126,6 +126,8 @@ export default {
         magicLinkExpiryHours = 1,
         emailVerificationUrl = "http://localhost:3000/verify-email",
         emailVerificationEmailSubject = "Verify Your Email",
+        includeCredentialsInPasswordResetLink = false,
+        includeCredentialsInVerificationLink = false,
       } = requestBody;
 
       // Check if configuration exists
@@ -150,6 +152,8 @@ export default {
               magicLinkExpiryHours,
               emailVerificationUrl,
               emailVerificationEmailSubject,
+              includeCredentialsInPasswordResetLink,
+              includeCredentialsInVerificationLink,
             },
           });
       } else {
@@ -169,6 +173,8 @@ export default {
               magicLinkExpiryHours,
               emailVerificationUrl,
               emailVerificationEmailSubject,
+              includeCredentialsInPasswordResetLink,
+              includeCredentialsInVerificationLink,
             },
           });
       }
@@ -184,6 +190,8 @@ export default {
         magicLinkExpiryHours: result.magicLinkExpiryHours,
         emailVerificationUrl: result.emailVerificationUrl,
         emailVerificationEmailSubject: result.emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink: result.includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink: result.includeCredentialsInVerificationLink,
       };
     } catch (error) {
       throw new errors.ApplicationError("Error saving password configuration", {

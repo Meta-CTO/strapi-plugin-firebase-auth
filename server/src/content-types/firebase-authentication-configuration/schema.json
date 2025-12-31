@@ -72,6 +72,16 @@
     "emailVerificationEmailSubject": {
       "type": "string",
       "default": "Verify Your Email"
+    },
+    "includeCredentialsInPasswordResetLink": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include Firebase custom token in password reset links for auto-login"
+    },
+    "includeCredentialsInVerificationLink": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include Firebase custom token in email verification links for auto-login"
     }
   }
 }

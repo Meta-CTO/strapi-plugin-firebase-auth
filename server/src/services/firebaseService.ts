@@ -775,7 +775,19 @@ export default ({ strapi }) => ({
       const token = await tokenService.generateResetToken(firebaseData.documentId);
 
       // Build the reset link using admin-configured URL + our token
-      const resetLink = `${resetUrl}?token=${token}`;
+      let resetLink = `${resetUrl}?token=${token}`;
+
+      // If credentials should be included, generate Firebase custom token
+      if (config?.includeCredentialsInPasswordResetLink) {
+        try {
+          const customToken = await strapi.firebase.auth().createCustomToken(firebaseUser.uid);
+          resetLink = `${resetLink}&fjwt=${customToken}`;
+          strapi.log.info(`[forgotPassword] Added Firebase custom token to reset link`);
+        } catch (tokenError: any) {
+          strapi.log.warn(`[forgotPassword] Could not generate custom token: ${tokenError.message}`);
+          // Continue with link without token
+        }
+      }
 
       strapi.log.info(`✅ [forgotPassword] Custom reset link generated for ${email}`);
 
@@ -1104,7 +1116,19 @@ export default ({ strapi }) => ({
       const token = await tokenService.generateVerificationToken(firebaseData.documentId, email);
 
       // Build the verification link using admin-configured URL + our token
-      const verificationLink = `${verificationUrl}?token=${token}`;
+      let verificationLink = `${verificationUrl}?token=${token}`;
+
+      // If credentials should be included, generate Firebase custom token
+      if (config?.includeCredentialsInVerificationLink) {
+        try {
+          const customToken = await strapi.firebase.auth().createCustomToken(firebaseUser.uid);
+          verificationLink = `${verificationLink}&fjwt=${customToken}`;
+          strapi.log.info(`[sendVerificationEmail] Added Firebase custom token to verification link`);
+        } catch (tokenError: any) {
+          strapi.log.warn(`[sendVerificationEmail] Could not generate custom token: ${tokenError.message}`);
+          // Continue with link without token
+        }
+      }
 
       strapi.log.info(`✅ [sendVerificationEmail] Verification link generated for ${email}`);
 

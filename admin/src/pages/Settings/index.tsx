@@ -49,6 +49,11 @@ function SettingsPage() {
   );
   const [emailVerificationEmailSubject, setEmailVerificationEmailSubject] =
     useState<string>("Verify Your Email");
+  // Include credentials in link settings
+  const [includeCredentialsInPasswordResetLink, setIncludeCredentialsInPasswordResetLink] =
+    useState<boolean>(false);
+  const [includeCredentialsInVerificationLink, setIncludeCredentialsInVerificationLink] =
+    useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editWebApiKey, setEditWebApiKey] = useState<string>("");
@@ -82,6 +87,9 @@ function SettingsPage() {
         // Load email verification configuration
         setEmailVerificationUrl(data?.emailVerificationUrl || "http://localhost:3000/verify-email");
         setEmailVerificationEmailSubject(data?.emailVerificationEmailSubject || "Verify Your Email");
+        // Load include credentials in link settings
+        setIncludeCredentialsInPasswordResetLink(data?.includeCredentialsInPasswordResetLink || false);
+        setIncludeCredentialsInVerificationLink(data?.includeCredentialsInVerificationLink || false);
       })
       .catch((error) => {
         setLoading(false);
@@ -115,6 +123,9 @@ function SettingsPage() {
       // Reset email verification configuration to default
       setEmailVerificationUrl("http://localhost:3000/verify-email");
       setEmailVerificationEmailSubject("Verify Your Email");
+      // Reset include credentials in link settings
+      setIncludeCredentialsInPasswordResetLink(false);
+      setIncludeCredentialsInVerificationLink(false);
       // restartServer();
       setLoading(false);
       toggleNotification({
@@ -149,6 +160,8 @@ function SettingsPage() {
         magicLinkExpiryHours,
         emailVerificationUrl,
         emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink,
       });
 
       if (!data || !data.firebase_config_json) {
@@ -189,6 +202,8 @@ function SettingsPage() {
         magicLinkExpiryHours,
         emailVerificationUrl,
         emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink,
       });
 
       // Update local state with returned values
@@ -203,6 +218,12 @@ function SettingsPage() {
         setMagicLinkExpiryHours(data.magicLinkExpiryHours || magicLinkExpiryHours);
         setEmailVerificationUrl(data.emailVerificationUrl || emailVerificationUrl);
         setEmailVerificationEmailSubject(data.emailVerificationEmailSubject || emailVerificationEmailSubject);
+        setIncludeCredentialsInPasswordResetLink(
+          data.includeCredentialsInPasswordResetLink ?? includeCredentialsInPasswordResetLink
+        );
+        setIncludeCredentialsInVerificationLink(
+          data.includeCredentialsInVerificationLink ?? includeCredentialsInVerificationLink
+        );
       }
 
       setLoading(false);
@@ -235,6 +256,8 @@ function SettingsPage() {
         magicLinkExpiryHours,
         emailVerificationUrl,
         emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink,
       });
 
       // Update local state with returned values
@@ -277,12 +300,17 @@ function SettingsPage() {
         magicLinkExpiryHours,
         emailVerificationUrl,
         emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink,
       });
 
       // Update local state with returned values
       if (data) {
         setEmailVerificationUrl(data.emailVerificationUrl || emailVerificationUrl);
         setEmailVerificationEmailSubject(data.emailVerificationEmailSubject || emailVerificationEmailSubject);
+        setIncludeCredentialsInVerificationLink(
+          data.includeCredentialsInVerificationLink ?? includeCredentialsInVerificationLink
+        );
       }
 
       setLoading(false);
@@ -328,6 +356,8 @@ function SettingsPage() {
         magicLinkExpiryHours,
         emailVerificationUrl,
         emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink,
       });
 
       if (!data || !data.firebase_config_json) {
@@ -367,6 +397,8 @@ function SettingsPage() {
         magicLinkExpiryHours,
         emailVerificationUrl,
         emailVerificationEmailSubject,
+        includeCredentialsInPasswordResetLink,
+        includeCredentialsInVerificationLink,
       });
 
       if (!data || !data.firebase_config_json) {
@@ -810,6 +842,20 @@ function SettingsPage() {
               />
             </Box>
 
+            <Box marginBottom={3}>
+              <Flex alignItems="center" gap={2}>
+                <Toggle
+                  name="includeCredentialsInPasswordResetLink"
+                  label="Include Login Credentials in Link"
+                  checked={includeCredentialsInPasswordResetLink}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setIncludeCredentialsInPasswordResetLink(e.target.checked)
+                  }
+                  hint="Append a Firebase custom token to the reset link, allowing users to be automatically logged in when they click the link"
+                />
+              </Flex>
+            </Box>
+
             <Flex
               style={{
                 marginTop: 24,
@@ -863,6 +909,20 @@ function SettingsPage() {
                 placeholder="Verify Your Email"
                 hint="Subject line for email verification emails"
               />
+            </Box>
+
+            <Box marginBottom={3}>
+              <Flex alignItems="center" gap={2}>
+                <Toggle
+                  name="includeCredentialsInVerificationLink"
+                  label="Include Login Credentials in Link"
+                  checked={includeCredentialsInVerificationLink}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setIncludeCredentialsInVerificationLink(e.target.checked)
+                  }
+                  hint="Append a Firebase custom token to the verification link, allowing users to be automatically logged in when they click the link"
+                />
+              </Flex>
             </Box>
 
             <Flex

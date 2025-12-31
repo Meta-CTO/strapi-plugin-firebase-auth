@@ -136,6 +136,9 @@ export default ({ strapi }) => {
           // Include email verification configuration fields
           emailVerificationUrl: configObject.emailVerificationUrl || "http://localhost:3000/verify-email",
           emailVerificationEmailSubject: configObject.emailVerificationEmailSubject || "Verify Your Email",
+          // Include credentials in link settings
+          includeCredentialsInPasswordResetLink: configObject.includeCredentialsInPasswordResetLink || false,
+          includeCredentialsInVerificationLink: configObject.includeCredentialsInVerificationLink || false,
         };
       } catch (error) {
         strapi.log.error(`Firebase config error: ${error.message}`);
@@ -183,6 +186,8 @@ export default ({ strapi }) => {
           magicLinkExpiryHours = 1,
           emailVerificationUrl = "http://localhost:3000/verify-email",
           emailVerificationEmailSubject = "Verify Your Email",
+          includeCredentialsInPasswordResetLink = false,
+          includeCredentialsInVerificationLink = false,
         } = requestBody;
 
         if (!requestBody) throw new ValidationError(ERROR_MESSAGES.MISSING_DATA);
@@ -229,6 +234,8 @@ export default ({ strapi }) => {
               magicLinkExpiryHours,
               emailVerificationUrl,
               emailVerificationEmailSubject,
+              includeCredentialsInPasswordResetLink,
+              includeCredentialsInVerificationLink,
             },
           });
         } else {
@@ -247,6 +254,8 @@ export default ({ strapi }) => {
               magicLinkExpiryHours,
               emailVerificationUrl,
               emailVerificationEmailSubject,
+              includeCredentialsInPasswordResetLink,
+              includeCredentialsInVerificationLink,
             },
           });
         }
@@ -299,6 +308,11 @@ export default ({ strapi }) => {
         res.emailVerificationUrl = res.emailVerificationUrl || emailVerificationUrl;
         res.emailVerificationEmailSubject =
           res.emailVerificationEmailSubject || emailVerificationEmailSubject;
+        // Include credentials in link settings - use ?? for boolean
+        res.includeCredentialsInPasswordResetLink =
+          res.includeCredentialsInPasswordResetLink ?? includeCredentialsInPasswordResetLink;
+        res.includeCredentialsInVerificationLink =
+          res.includeCredentialsInVerificationLink ?? includeCredentialsInVerificationLink;
         return res;
       } catch (error: any) {
         // Detailed error logging for diagnostics
