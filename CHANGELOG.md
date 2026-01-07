@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.3.0
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.2.2...v1.3.0)
+
+### 🚀 Enhancements
+
+- Add option to include Firebase custom token in email links ([1dbf03d](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/1dbf03d))
+
+### 🩹 Fixes
+
+- Display label for include credentials toggle ([c7beadd](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/c7beadd))
+
+### 🏡 Chore
+
+- **release:** V1.2.2 ([99edab8](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/99edab8))
+- Update CHANGELOG.md to refine formatting and remove contributor section ([beebc5e](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/beebc5e))
+
+### ❤️ Contributors
+
+- Garrett Fritz
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.2.2
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.2.1...v1.2.2)
