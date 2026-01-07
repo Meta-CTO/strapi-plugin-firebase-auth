@@ -855,7 +855,8 @@ function SettingsPage() {
                   }
                 />
                 <Typography variant="omega" textColor="neutral600">
-                  Append a Firebase custom token to the reset link, allowing users to be automatically logged in
+                  Append a Firebase custom token to the reset link, allowing users to be automatically logged
+                  in
                 </Typography>
               </Flex>
             </Box>
@@ -928,7 +929,8 @@ function SettingsPage() {
                   }
                 />
                 <Typography variant="omega" textColor="neutral600">
-                  Append a Firebase custom token to the verification link, allowing users to be automatically logged in
+                  Append a Firebase custom token to the verification link, allowing users to be automatically
+                  logged in
                 </Typography>
               </Flex>
             </Box>

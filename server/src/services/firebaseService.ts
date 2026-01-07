@@ -1281,4 +1281,77 @@ export default ({ strapi }) => ({
       throw new errors.ApplicationError("Failed to verify email. Please try again.");
     }
   },
+
+  /**
+   * Check if a password is valid for the authenticated user
+   * Uses Firebase Identity Toolkit API to verify the password
+   *
+   * @param user - Authenticated user from ctx.state.user
+   * @param password - Password to check
+   * @returns { valid: true } or { valid: false }
+   */
+  async checkPassword(user: any, password: string) {
+    if (!user || !user.email) {
+      throw new errors.ValidationError("User email is required");
+    }
+
+    // Get Firebase Web API key from settings
+    const config = await strapi
+      .plugin("firebase-authentication")
+      .service("settingsService")
+      .getFirebaseConfigJson();
+
+    if (!config || !config.firebaseWebApiKey) {
+      throw new errors.ApplicationError(
+        "Password verification is not available. Web API Key is not configured.\n\n" +
+          "To enable password verification:\n" +
+          "1. Go to Firebase Console > Project Settings > General\n" +
+          "2. Copy your Web API Key\n" +
+          "3. Add it in Strapi Admin > Settings > Firebase Authentication > Optional Settings"
+      );
+    }
+
+    try {
+      // Call Firebase Identity Toolkit API to verify password
+      const response = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${config.firebaseWebApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: user.email,
+            password,
+            returnSecureToken: false,
+          }),
+        }
+      );
+
+      const data: any = await response.json();
+
+      if (!response.ok) {
+        const errorMessage = data.error?.message || "Authentication failed";
+        strapi.log.debug(`checkPassword: password invalid for user ${user.email}: ${errorMessage}`);
+
+        // Password is invalid
+        if (
+          errorMessage === "INVALID_PASSWORD" ||
+          errorMessage === "INVALID_LOGIN_CREDENTIALS" ||
+          errorMessage.includes("INVALID")
+        ) {
+          return { valid: false };
+        }
+
+        // Other errors (user disabled, etc.) - still return valid: false for security
+        return { valid: false };
+      }
+
+      // Password is valid
+      return { valid: true };
+    } catch (error) {
+      strapi.log.error("checkPassword error:", error);
+      throw new errors.ApplicationError("Failed to verify password");
+    }
+  },
 });

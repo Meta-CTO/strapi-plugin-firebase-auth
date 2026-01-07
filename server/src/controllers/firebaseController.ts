@@ -241,6 +241,33 @@ const firebaseController = {
       throw error;
     }
   },
+
+  /**
+   * Check password - validates a password against the authenticated user's Firebase account
+   * POST /api/firebase-authentication/checkPassword
+   * Authenticated endpoint - requires valid JWT (enforced by is-authenticated policy)
+   *
+   * @param ctx - Koa context with { password } in body
+   * @returns { valid: true } or { valid: false }
+   */
+  async checkPassword(ctx: Context) {
+    strapi.log.debug("checkPassword endpoint called");
+    try {
+      const { password } = (ctx.request.body as { password?: string }) || {};
+      const user = ctx.state.user; // User populated by is-authenticated policy
+
+      if (!password) {
+        throw new errors.ValidationError("Password is required");
+      }
+
+      const result = await strapi.plugin(pluginName).service("firebaseService").checkPassword(user, password);
+
+      ctx.body = result;
+    } catch (error) {
+      strapi.log.error("checkPassword controller error:", error);
+      throw error;
+    }
+  },
 };
 
 export default firebaseController;

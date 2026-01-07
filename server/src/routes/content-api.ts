@@ -80,5 +80,13 @@ export default {
         policies: [],
       },
     },
+    {
+      method: "POST",
+      path: "/checkPassword",
+      handler: "firebaseController.checkPassword",
+      config: {
+        policies: ["plugin::firebase-authentication.is-authenticated"],
+      },
+    },
   ],
 };
