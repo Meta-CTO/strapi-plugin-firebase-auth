@@ -1,6 +1,6 @@
 {
   "name": "strapi-plugin-firebase-authentication",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Allows easy integration between clients utilizing Firebase for authentication and Strapi",
   "license": "MIT",
   "repository": {

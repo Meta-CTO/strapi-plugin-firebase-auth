@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.1
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.3.0...v1.3.1)
+
 ## v1.3.0
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.2.2...v1.3.0)
