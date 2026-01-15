@@ -77,5 +77,14 @@ export default {
         policies: ["admin::isAuthenticatedAdmin"],
       },
     },
+    // Activity log routes
+    {
+      method: "GET",
+      path: "/activity-logs",
+      handler: "activityLogController.list",
+      config: {
+        policies: ["admin::isAuthenticatedAdmin"],
+      },
+    },
   ],
 };

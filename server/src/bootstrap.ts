@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import migrateFirebaseUserData from "./migrations/migrate-firebase-user-data";
+import type { FirebaseAuthConfig } from "./config";
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   // Register permission actions.
@@ -60,6 +61,33 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       strapi.log.error(`Auto-linking failed: ${error.message}`);
     }
   });
+
+  // Activity log cleanup cron job (optional - based on env config)
+  const pluginConfig: FirebaseAuthConfig = strapi.config.get("plugin::firebase-authentication");
+  const retentionDays = pluginConfig?.activityLogRetentionDays;
+
+  if (retentionDays && retentionDays > 0) {
+    strapi.log.info(`[Firebase Auth] Activity log cleanup enabled: ${retentionDays} days retention`);
+
+    strapi.cron.add({
+      firebaseActivityLogCleanup: {
+        task: async ({ strapi: strapiInstance }) => {
+          try {
+            const deleted = await strapiInstance
+              .plugin("firebase-authentication")
+              .service("activityLogService")
+              .cleanupOldLogs(retentionDays);
+            strapiInstance.log.info(`[Firebase Auth] Activity log cleanup: deleted ${deleted} old entries`);
+          } catch (error) {
+            strapiInstance.log.error("[Firebase Auth] Activity log cleanup failed:", error);
+          }
+        },
+        options: {
+          rule: "0 0 3 * * *", // Run daily at 3 AM
+        },
+      },
+    });
+  }
 };
 
 export default bootstrap;

@@ -19,6 +19,7 @@ import {
 import { useUserForm } from "../../../hooks/useUserForm";
 import { PasswordResetButton } from "../../PasswordResetButton";
 import { ResetPassword, ResendVerification } from "../../user-management";
+import { ActivityLog } from "../../ActivityLog";
 
 const MetaWrapper = styled(Box)`
   width: 100%;
@@ -410,6 +411,22 @@ const EditUserForm = ({ data }: EditFormProps) => {
             hasBeenTouched={true}
           />
         </UserFormLayout>
+
+        {/* Activity Log Section - Below main form */}
+        <Box marginTop={6}>
+          <Box
+            background="neutral0"
+            borderColor="neutral150"
+            hasRadius
+            paddingBottom={4}
+            paddingLeft={4}
+            paddingRight={4}
+            paddingTop={4}
+            shadow="tableShadow"
+          >
+            <ActivityLog firebaseUserId={userData.uid || userData.firebaseUserID || ""} />
+          </Box>
+        </Box>
       </Layouts.Content>
 
       {/* Reset Password Modal */}

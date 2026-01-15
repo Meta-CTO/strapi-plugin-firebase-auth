@@ -1,0 +1,81 @@
+{
+  "kind": "collectionType",
+  "collectionName": "firebase_activity_logs",
+  "info": {
+    "singularName": "firebase-activity-log",
+    "pluralName": "firebase-activity-logs",
+    "displayName": "Firebase Activity Log",
+    "description": "Logs Firebase authentication activity and field changes"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "firebaseUserId": {
+      "type": "string",
+      "required": true
+    },
+    "strapiUserId": {
+      "type": "string"
+    },
+    "activityType": {
+      "type": "enumeration",
+      "enum": [
+        "authentication",
+        "tokenValidation",
+        "fieldUpdate",
+        "passwordReset",
+        "emailVerification",
+        "accountCreation",
+        "accountDeletion",
+        "adminAction"
+      ],
+      "required": true
+    },
+    "action": {
+      "type": "string",
+      "required": true
+    },
+    "endpoint": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "ipAddress": {
+      "type": "string"
+    },
+    "userAgent": {
+      "type": "text"
+    },
+    "changes": {
+      "type": "json"
+    },
+    "metadata": {
+      "type": "json"
+    },
+    "success": {
+      "type": "boolean",
+      "default": true
+    },
+    "errorMessage": {
+      "type": "text"
+    },
+    "performedBy": {
+      "type": "string"
+    },
+    "performedByType": {
+      "type": "enumeration",
+      "enum": ["user", "admin", "system"],
+      "default": "user"
+    }
+  }
+}

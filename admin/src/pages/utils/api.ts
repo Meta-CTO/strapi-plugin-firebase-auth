@@ -185,6 +185,50 @@ const sendVerificationEmail = async (userId: string) => {
   return result;
 };
 
+interface ActivityLogFilters {
+  activityType?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface ActivityLogQuery {
+  page?: number;
+  pageSize?: number;
+  filters?: ActivityLogFilters;
+}
+
+/**
+ * @description Fetch activity logs for a Firebase user
+ * @param {String} firebaseUserId - The Firebase UID
+ * @param {ActivityLogQuery} query - Pagination and filter options
+ * @returns {Object} { data: logs[], meta: { total, page, pageSize } }
+ */
+const fetchActivityLogs = async (firebaseUserId: string, query: ActivityLogQuery = {}) => {
+  const { page = 1, pageSize = 10, filters = {} } = query;
+
+  let url = `/${PLUGIN_ID}/activity-logs?firebaseUserId=${encodeURIComponent(firebaseUserId)}&page=${page}&pageSize=${pageSize}`;
+
+  if (filters.activityType && filters.activityType !== "all") {
+    url += `&activityType=${encodeURIComponent(filters.activityType)}`;
+  }
+
+  if (filters.startDate) {
+    url += `&startDate=${encodeURIComponent(filters.startDate)}`;
+  }
+
+  if (filters.endDate) {
+    url += `&endDate=${encodeURIComponent(filters.endDate)}`;
+  }
+
+  try {
+    const { get } = getFetchClient();
+    const { data } = await get(url);
+    return data;
+  } catch (e) {
+    return { data: [], meta: { total: 0, page: 1, pageSize: 10 } };
+  }
+};
+
 export {
   fetchUsers,
   fetchUserByID,
@@ -198,4 +242,5 @@ export {
   getFirebaseConfig,
   sendPasswordResetEmail,
   sendVerificationEmail,
+  fetchActivityLogs,
 };

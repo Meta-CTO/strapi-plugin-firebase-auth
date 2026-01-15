@@ -43,6 +43,14 @@ export type FirebaseAuthConfig = {
    * @default '{randomString}@phone-user.firebase.local'
    */
   emailPattern?: string;
+
+  /**
+   * Number of days to retain activity logs. If not set, logs are kept forever.
+   * Set via FIREBASE_ACTIVITY_LOG_RETENTION_DAYS environment variable.
+   *
+   * @default null (never delete)
+   */
+  activityLogRetentionDays?: number | null;
 };
 
 export default {
@@ -50,6 +58,7 @@ export default {
     firebaseJsonEncryptionKey: env("FIREBASE_JSON_ENCRYPTION_KEY", "your-key-here"),
     emailRequired: env.bool("FIREBASE_EMAIL_REQUIRED", false),
     emailPattern: "{randomString}@phone-user.firebase.local",
+    activityLogRetentionDays: env.int("FIREBASE_ACTIVITY_LOG_RETENTION_DAYS", null),
   }),
   validator(config: FirebaseAuthConfig) {
     if (!config.firebaseJsonEncryptionKey) {
