@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.4.0
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.3.2...v1.4.0)
+
+### 🚀 Enhancements
+
+- Implement activity logging feature ([3bde592](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/3bde592))
+
+### 🩹 Fixes
+
+- Enhance user linking and data handling in autoLinkService and firebaseUserDataService ([158024a](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/158024a))
+
+### 💅 Refactors
+
+- Replace ApplicationError with ValidationError in email, firebase, token, and user services ([013ba28](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/013ba28))
+
+### 🏡 Chore
+
+- **release:** V1.3.2 ([5cebb0a](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/5cebb0a))
+- **release:** V1.3.2 - Update package version and add @strapi/utils as a peer dependency ([e0c6850](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/e0c6850))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+- Garrett Fritz
+
 ## v1.3.2
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.3.1...v1.3.2)
