@@ -32,8 +32,10 @@ const FilterRow = styled(Flex)`
 `;
 
 const ScrollContainer = styled(Box)`
-  max-height: 400px;
+  max-height: calc(100vh - 500px);
+  min-height: 200px;
   overflow-y: auto;
+  padding-right: 12px;
 `;
 
 const PaginationRow = styled(Flex)`
@@ -47,6 +49,8 @@ const ExpandableDetails = styled(Box)`
   padding: 12px;
   background: ${({ theme }) => theme.colors.neutral100};
   border-radius: 4px;
+  text-align: left;
+  width: 100%;
 `;
 
 const ResponseBodyContainer = styled(Box)`
@@ -293,18 +297,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
               <LogItem key={log.documentId}>
                 <Flex justifyContent="space-between" alignItems="flex-start">
                   <Flex direction="column" gap={1} alignItems="flex-start" style={{ flex: 1 }}>
-                    <Flex gap={2} alignItems="center">
-                      {/* Expand/Collapse Button */}
-                      {hasExpandableContent(log) && (
-                        <IconButton
-                          onClick={() => toggleExpand(log.documentId)}
-                          label={expandedRows.has(log.documentId) ? "Collapse" : "Expand"}
-                          variant="ghost"
-                          size="S"
-                        >
-                          {expandedRows.has(log.documentId) ? <ChevronDown /> : <ChevronRight />}
-                        </IconButton>
-                      )}
+                    <Flex gap={2} alignItems="center" wrap="wrap">
                       <Badge textColor={getActivityTypeBadgeColor(log.activityType)} size="S">
                         {formatActivityType(log.activityType)}
                       </Badge>
@@ -342,10 +335,22 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
                       </Typography>
                     )}
 
+                    {/* Expand/Collapse Button - below error message */}
+                    {hasExpandableContent(log) && (
+                      <Button
+                        onClick={() => toggleExpand(log.documentId)}
+                        variant="ghost"
+                        size="S"
+                        startIcon={expandedRows.has(log.documentId) ? <ChevronDown /> : <ChevronRight />}
+                      >
+                        {expandedRows.has(log.documentId) ? "Hide details" : "Show details"}
+                      </Button>
+                    )}
+
                     {/* Expandable Details Section */}
                     {expandedRows.has(log.documentId) && hasExpandableContent(log) && (
                       <ExpandableDetails>
-                        <Flex direction="column" gap={2}>
+                        <Flex direction="column" gap={2} alignItems="flex-start">
                           {log.endpoint && (
                             <Typography variant="pi" textColor="neutral600">
                               <strong>Endpoint:</strong> {log.method} {log.endpoint}

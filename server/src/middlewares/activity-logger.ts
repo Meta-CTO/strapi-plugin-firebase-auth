@@ -177,6 +177,8 @@ function getClientIP(ctx: Koa.Context): string {
  * Factory function that creates the activity logger middleware
  */
 export default ({ strapi }: { strapi: Core.Strapi }) => {
+  strapi.log.info("[Activity Logger] Middleware registered");
+
   return async (ctx: Koa.Context, next: Koa.Next) => {
     const startTime = Date.now();
 
@@ -186,7 +188,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     // After request completes, check if this route should be logged
     const routeConfig = LOGGED_ROUTES.find((r) => ctx.path === r.path && ctx.method === r.method);
 
-    if (!routeConfig) return;
+    if (!routeConfig) {
+      return;
+    }
 
     // Capture values needed for logging before the IIFE
     // (In Koa, code after await next() runs before response is sent)
@@ -202,7 +206,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     (async () => {
       try {
         const firebaseUserId = await extractFirebaseUserId(ctx, strapi);
-        if (!firebaseUserId) return;
+        if (!firebaseUserId) {
+          return;
+        }
 
         await strapi
           .plugin("firebase-authentication")
@@ -225,7 +231,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             },
           });
       } catch (err) {
-        strapi.log.error("[Activity Logger] Failed:", err);
+        strapi.log.error("[Activity Logger] Failed to log activity:", err);
       }
     })();
   };
