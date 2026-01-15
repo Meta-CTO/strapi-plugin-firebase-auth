@@ -133,7 +133,11 @@ export default {
               populate: ["user"],
             });
 
-          if (existingUIDLink && existingUIDLink.user?.documentId !== strapiUser.documentId) {
+          if (
+            existingUIDLink &&
+            existingUIDLink.user &&
+            existingUIDLink.user.documentId !== strapiUser.documentId
+          ) {
             // This Firebase UID is already linked to a different Strapi user
             strapi.log.warn(
               `⚠️ [Auto-Link] Skipping '${strapiUser.username || strapiUser.email}' - Firebase UID already linked`

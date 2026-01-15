@@ -44,6 +44,7 @@ export default ({ strapi }) => ({
 
   /**
    * Update Firebase-specific fields for a user (creates if doesn't exist)
+   * Handles orphaned records and race conditions gracefully
    * @param userId - Strapi user documentId
    * @param data - Fields to update
    */
@@ -54,59 +55,59 @@ export default ({ strapi }) => ({
       appleEmail?: string;
     }
   ) {
-    // Try to find existing record
-    // Use Document Service API with filters
-    let firebaseData = await strapi
+    // 1. Check by firebaseUserID first (handles orphan case proactively)
+    // This fixes the bug where deleted users leave orphaned firebase_user_data records
+    if (data.firebaseUserID) {
+      const existingByUID = await this.getByFirebaseUID(data.firebaseUserID);
+      if (existingByUID) {
+        strapi.log.info(
+          `[Orphan Recovery] Adopting firebase_user_data for UID ${data.firebaseUserID} to user ${userId}`
+        );
+        return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
+          documentId: existingByUID.documentId,
+          data: { user: userId, ...data },
+        });
+      }
+    }
+
+    // 2. Check if user already has a record
+    const existingByUser = await strapi
       .documents("plugin::firebase-authentication.firebase-user-data")
       .findFirst({
         filters: { user: { documentId: { $eq: userId } } },
       });
 
-    if (!firebaseData) {
-      // Create new record - firebaseUserID is required
-      if (!data.firebaseUserID) {
-        throw new Error("firebaseUserID is required when creating firebase_user_data");
-      }
-
-      try {
-        // Use Document Service API - accepts documentId for relations
-        return await strapi.documents("plugin::firebase-authentication.firebase-user-data").create({
-          data: {
-            user: userId,
-            ...data,
-          },
-        });
-      } catch (error) {
-        // Handle race condition: another request created the record first
-        // Catch both PostgreSQL constraint violation (23505) and Strapi application-level validation error
-        if (error.code === "23505" || error.name === "ValidationError") {
-          // PostgreSQL unique violation OR Strapi validation error
-          strapi.log.warn(`Race condition detected for user ${userId}, retrying findFirst`);
-          // Use Document Service API with filters
-          firebaseData = await strapi
-            .documents("plugin::firebase-authentication.firebase-user-data")
-            .findFirst({
-              filters: { user: { documentId: { $eq: userId } } },
-            });
-
-          if (firebaseData) {
-            // Update the existing record that was created by the concurrent request
-            // Use Document Service API
-            return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
-              documentId: firebaseData.documentId,
-              data,
-            });
-          }
-        }
-        throw error;
-      }
+    if (existingByUser) {
+      return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
+        documentId: existingByUser.documentId,
+        data,
+      });
     }
 
-    // Update existing record
-    // Use Document Service API
-    return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
-      documentId: firebaseData.documentId,
-      data,
-    });
+    // 3. Create new record
+    if (!data.firebaseUserID) {
+      throw new Error("firebaseUserID is required when creating firebase_user_data");
+    }
+
+    try {
+      return await strapi.documents("plugin::firebase-authentication.firebase-user-data").create({
+        data: { user: userId, ...data },
+      });
+    } catch (error) {
+      // Race condition: another request created/claimed the record first
+      if (error.code === "23505" || error.name === "ValidationError") {
+        const raceWinner = await this.getByFirebaseUID(data.firebaseUserID);
+        if (raceWinner) {
+          strapi.log.warn(
+            `[Race Condition] Resolved for firebaseUserID ${data.firebaseUserID}, updating to user ${userId}`
+          );
+          return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
+            documentId: raceWinner.documentId,
+            data: { user: userId, ...data },
+          });
+        }
+      }
+      throw error;
+    }
   },
 });
