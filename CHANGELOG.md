@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.4.1
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.4.0...v1.4.1)
+
+### 💅 Refactors
+
+- Improve ActivityLog component and enhance activity logger middleware ([41feef3](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/41feef3))
+
+### 🏡 Chore
+
+- **release:** V1.4.0 - Update package dependencies and remove yarn.lock file ([b7150fb](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/b7150fb))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.4.0
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.3.2...v1.4.0)
