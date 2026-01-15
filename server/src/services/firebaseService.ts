@@ -605,7 +605,7 @@ export default ({ strapi }) => ({
       .getFirebaseConfigJson();
 
     if (!config || !config.firebaseWebApiKey) {
-      throw new errors.ApplicationError(
+      throw new errors.ValidationError(
         "Email/password authentication is not available. Web API Key is not configured.\n\n" +
           "To enable email/password authentication:\n" +
           "1. Go to Firebase Console > Project Settings > General\n" +
@@ -720,19 +720,19 @@ export default ({ strapi }) => ({
 
     const resetUrl = config?.passwordResetUrl;
     if (!resetUrl) {
-      throw new errors.ApplicationError("Password reset URL is not configured");
+      throw new errors.ValidationError("Password reset URL is not configured");
     }
 
     // Validate URL security in production
     if (process.env.NODE_ENV === "production" && !resetUrl.startsWith("https://")) {
-      throw new errors.ApplicationError("Password reset URL must use HTTPS in production");
+      throw new errors.ValidationError("Password reset URL must use HTTPS in production");
     }
 
     // Validate URL format
     try {
       new URL(resetUrl);
     } catch (error) {
-      throw new errors.ApplicationError("Password reset URL is not a valid URL format");
+      throw new errors.ValidationError("Password reset URL is not a valid URL format");
     }
 
     try {
@@ -954,8 +954,8 @@ export default ({ strapi }) => ({
 
     // Check if magic link is enabled
     if (!config?.enableMagicLink) {
-      throw new errors.ApplicationError(
-        "Magic link authentication is not enabled. " + "Enable it in Settings > Firebase Authentication"
+      throw new errors.ValidationError(
+        "Magic link authentication is not enabled. Enable it in Settings > Firebase Authentication"
       );
     }
 
@@ -1013,7 +1013,7 @@ export default ({ strapi }) => ({
 
       // If it's a Firebase error, it might be a configuration issue
       if (error.code === "auth/operation-not-allowed") {
-        throw new errors.ApplicationError(
+        throw new errors.ValidationError(
           "Magic link sign-in is not enabled in Firebase Console. " +
             "Please enable Email/Password provider and Email link sign-in method."
         );
@@ -1055,19 +1055,19 @@ export default ({ strapi }) => ({
 
     const verificationUrl = config?.emailVerificationUrl;
     if (!verificationUrl) {
-      throw new errors.ApplicationError("Email verification URL is not configured");
+      throw new errors.ValidationError("Email verification URL is not configured");
     }
 
     // Validate URL security in production
     if (process.env.NODE_ENV === "production" && !verificationUrl.startsWith("https://")) {
-      throw new errors.ApplicationError("Email verification URL must use HTTPS in production");
+      throw new errors.ValidationError("Email verification URL must use HTTPS in production");
     }
 
     // Validate URL format
     try {
       new URL(verificationUrl);
     } catch (error) {
-      throw new errors.ApplicationError("Email verification URL is not a valid URL format");
+      throw new errors.ValidationError("Email verification URL is not a valid URL format");
     }
 
     try {
@@ -1189,6 +1189,7 @@ export default ({ strapi }) => ({
             return {
               success: true,
               message: "This email has already been verified.",
+              uid: validationResult.firebaseUID,
             };
           }
         } catch (checkError) {
@@ -1226,6 +1227,7 @@ export default ({ strapi }) => ({
         return {
           success: true,
           message: "Email is already verified.",
+          uid: firebaseUID,
         };
       }
 
@@ -1263,6 +1265,7 @@ export default ({ strapi }) => ({
       return {
         success: true,
         message: "Email verified successfully.",
+        uid: firebaseUID,
       };
     } catch (error) {
       strapi.log.error(
@@ -1302,7 +1305,7 @@ export default ({ strapi }) => ({
       .getFirebaseConfigJson();
 
     if (!config || !config.firebaseWebApiKey) {
-      throw new errors.ApplicationError(
+      throw new errors.ValidationError(
         "Password verification is not available. Web API Key is not configured.\n\n" +
           "To enable password verification:\n" +
           "1. Go to Firebase Console > Project Settings > General\n" +

@@ -207,7 +207,7 @@ class EmailService {
     }
 
     // Production error if no fallback worked
-    throw new errors.ApplicationError(
+    throw new errors.ValidationError(
       "Email service is not configured. Please configure Strapi email plugin or provide custom sendPasswordResetEmail function in plugin config."
     );
   }
@@ -330,7 +330,7 @@ class EmailService {
     }
 
     // Production error if no fallback worked
-    throw new errors.ApplicationError(
+    throw new errors.ValidationError(
       "Email service is not configured. Please configure Strapi email plugin or provide custom sendMagicLinkEmail function in plugin config."
     );
   }
@@ -594,7 +594,7 @@ class EmailService {
     }
 
     // Production error if no fallback worked
-    throw new errors.ApplicationError(
+    throw new errors.ValidationError(
       "Email service is not configured. Please configure Strapi email plugin or provide custom sendVerificationEmail function in plugin config."
     );
   }

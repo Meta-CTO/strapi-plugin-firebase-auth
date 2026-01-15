@@ -3,7 +3,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { PLUGIN_UID, ERROR_MESSAGES, TIME_CONSTANTS, CONFIG_KEYS } from "../constants";
 
-const { ApplicationError } = errors;
+const { ApplicationError, ValidationError } = errors;
 
 // Content type for firebase user data
 const FIREBASE_USER_DATA_CONTENT_TYPE = `${PLUGIN_UID}.firebase-user-data`;
@@ -42,7 +42,7 @@ export default ({ strapi }) => {
   const getSigningKey = (): string => {
     const encryptionKey = strapi.config.get(CONFIG_KEYS.ENCRYPTION_KEY);
     if (!encryptionKey) {
-      throw new ApplicationError(
+      throw new ValidationError(
         "FIREBASE_JSON_ENCRYPTION_KEY is not configured. Cannot generate secure tokens."
       );
     }

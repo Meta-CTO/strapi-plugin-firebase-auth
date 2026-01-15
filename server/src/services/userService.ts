@@ -6,7 +6,7 @@ export default ({ strapi }) => {
   // Helper function to check if Firebase is initialized
   const ensureFirebaseInitialized = () => {
     if (!strapi.firebase) {
-      throw new errors.ApplicationError(
+      throw new errors.ValidationError(
         "Firebase is not initialized. Please upload Firebase service account configuration via Settings → Firebase Authentication."
       );
     }
@@ -36,7 +36,7 @@ export default ({ strapi }) => {
         } else if (payload.phoneNumber) {
           getUserPromise = strapi.firebase.auth().getUserByPhoneNumber(payload.phoneNumber);
         } else {
-          throw new errors.ApplicationError("Either email or phoneNumber is required");
+          throw new errors.ValidationError("Either email or phoneNumber is required");
         }
 
         const userRecord = await getUserPromise.catch(async (e) => {
@@ -306,6 +306,9 @@ export default ({ strapi }) => {
       try {
         ensureFirebaseInitialized();
 
+        // Get existing user data for change tracking (activity log)
+        const existingUser = await strapi.firebase.auth().getUser(entityId);
+
         // Get Strapi user via firebase_user_data link
         const firebaseData = await strapi
           .plugin("firebase-authentication")
@@ -386,6 +389,36 @@ export default ({ strapi }) => {
             firebaseError: results[0].status === "rejected" ? results[0].reason : null,
             strapiError: results[1].status === "rejected" ? results[1].reason : null,
           });
+        }
+
+        // Track field changes for activity log (non-blocking)
+        const trackedFields = ["email", "displayName", "phoneNumber", "disabled", "emailVerified"];
+        const changes: Record<string, { old: any; new: any }> = {};
+
+        for (const field of trackedFields) {
+          if (payload[field] !== undefined && payload[field] !== existingUser[field]) {
+            changes[field] = {
+              old: existingUser[field],
+              new: payload[field],
+            };
+          }
+        }
+
+        // Log activity if there were changes (non-blocking)
+        if (Object.keys(changes).length > 0) {
+          strapi
+            .plugin("firebase-authentication")
+            .service("activityLogService")
+            .logActivity({
+              firebaseUserId: entityId,
+              strapiUserId: firebaseData?.user?.documentId,
+              activityType: "fieldUpdate",
+              action: "updateProfile",
+              changes,
+              performedByType: "admin",
+              metadata: { updatedFields: Object.keys(changes) },
+            })
+            .catch((err: Error) => strapi.log.error("Activity log failed:", err));
         }
 
         return results;
@@ -599,7 +632,7 @@ export default ({ strapi }) => {
         const user = await strapi.firebase.auth().getUser(entityId);
 
         if (!user.email) {
-          throw new errors.ApplicationError("User does not have an email address");
+          throw new errors.ValidationError("User does not have an email address");
         }
 
         // Get the password reset URL from configuration
@@ -616,7 +649,7 @@ export default ({ strapi }) => {
           .getByFirebaseUID(entityId);
 
         if (!firebaseUserData) {
-          throw new errors.ApplicationError("User is not linked to Firebase authentication");
+          throw new errors.ValidationError("User is not linked to Firebase authentication");
         }
 
         // Generate custom JWT token using tokenService
@@ -724,7 +757,7 @@ export default ({ strapi }) => {
           strapi.log.warn(`Could not send password changed confirmation: ${emailError.message}`);
         }
 
-        return { success: true, message: "Password has been reset successfully" };
+        return { success: true, message: "Password has been reset successfully", uid: firebaseUID };
       } catch (e: any) {
         strapi.log.error(`resetPasswordWithToken error: ${e.message}`);
 
@@ -757,7 +790,7 @@ export default ({ strapi }) => {
         const user = await strapi.firebase.auth().getUser(entityId);
 
         if (!user.email) {
-          throw new errors.ApplicationError("User does not have an email address");
+          throw new errors.ValidationError("User does not have an email address");
         }
 
         // Check if already verified
@@ -772,7 +805,7 @@ export default ({ strapi }) => {
 
         const emailVerificationUrl = config?.emailVerificationUrl;
         if (!emailVerificationUrl) {
-          throw new errors.ApplicationError("Email verification URL is not configured");
+          throw new errors.ValidationError("Email verification URL is not configured");
         }
 
         // Find the firebase-user-data record for this Firebase user
@@ -782,7 +815,7 @@ export default ({ strapi }) => {
           .getByFirebaseUID(entityId);
 
         if (!firebaseUserData) {
-          throw new errors.ApplicationError("User is not linked to Firebase authentication");
+          throw new errors.ValidationError("User is not linked to Firebase authentication");
         }
 
         // Generate custom JWT token using tokenService (with email for change detection)
