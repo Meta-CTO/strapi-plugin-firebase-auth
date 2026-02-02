@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.5.1
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.5.0...v1.5.1)
+
+### 💅 Refactors
+
+- Enhance ActivityLog component and improve pagination ([54d1724](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/54d1724))
+
+### 🏡 Chore
+
+- **release:** Update dependencies and version bump to v1.5.0 ([d23e613](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/d23e613))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.5.0
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.4.1...v1.5.0)
