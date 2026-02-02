@@ -547,6 +547,7 @@ export default ({ strapi }) => ({
     return {
       user: await processMeData(user, populate || []),
       jwt,
+      uid: decodedToken.uid, // Firebase UID for activity logging
     };
   },
 
@@ -690,6 +691,7 @@ export default ({ strapi }) => ({
       return {
         user: await processMeData(user, populate || []),
         jwt,
+        uid: decodedToken.uid, // Firebase UID for activity logging
       };
     } catch (error) {
       strapi.log.error("emailLogin error:", error);
