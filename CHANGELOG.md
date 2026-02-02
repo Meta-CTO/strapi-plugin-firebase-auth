@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.5.0
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.4.1...v1.5.0)
+
+### 🚀 Enhancements
+
+- Add Firebase UID to user response for activity logging ([3307b96](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/3307b96))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.4.1
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.4.0...v1.4.1)
