@@ -4,12 +4,14 @@ import {
   Typography,
   Flex,
   Badge,
-  Loader,
   SingleSelect,
   SingleSelectOption,
   TextInput,
   Button,
-  IconButton,
+  Pagination,
+  PreviousLink,
+  NextLink,
+  PageLink,
 } from "@strapi/design-system";
 import { ChevronDown, ChevronRight } from "@strapi/icons";
 import { format } from "date-fns";
@@ -29,19 +31,16 @@ const FilterRow = styled(Flex)`
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
+  align-items: flex-end;
 `;
 
 const ScrollContainer = styled(Box)`
-  max-height: calc(100vh - 500px);
+  max-height: 400px;
   min-height: 200px;
   overflow-y: auto;
-  padding-right: 12px;
-`;
-
-const PaginationRow = styled(Flex)`
-  margin-top: 16px;
-  justify-content: center;
-  gap: 8px;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.neutral200};
+  border-radius: 4px;
 `;
 
 const ExpandableDetails = styled(Box)`
@@ -101,13 +100,9 @@ interface ActivityLogResponse {
 const ACTIVITY_TYPE_OPTIONS = [
   { value: "all", label: "All Types" },
   { value: "authentication", label: "Authentication" },
-  { value: "tokenValidation", label: "Token Validation" },
   { value: "fieldUpdate", label: "Field Update" },
   { value: "passwordReset", label: "Password Reset" },
   { value: "emailVerification", label: "Email Verification" },
-  { value: "accountCreation", label: "Account Creation" },
-  { value: "accountDeletion", label: "Account Deletion" },
-  { value: "adminAction", label: "Admin Action" },
 ];
 
 const getActivityTypeBadgeColor = (activityType: string): string => {
@@ -139,7 +134,6 @@ const formatActivityType = (type: string): string => {
 
 const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
   const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
@@ -170,7 +164,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
   const loadLogs = useCallback(async () => {
     if (!firebaseUserId) return;
 
-    setIsLoading(true);
     try {
       const response: ActivityLogResponse = await fetchActivityLogs(firebaseUserId, {
         page,
@@ -187,8 +180,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
     } catch (error) {
       console.error("Failed to fetch activity logs:", error);
       setLogs([]);
-    } finally {
-      setIsLoading(false);
     }
   }, [firebaseUserId, page, pageSize, filters]);
 
@@ -273,19 +264,14 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
             size="S"
           />
         </Box>
-        <Box style={{ alignSelf: "flex-end" }}>
+        <Box>
           <Button variant="tertiary" size="S" onClick={handleClearFilters}>
             Clear
           </Button>
         </Box>
       </FilterRow>
 
-      {/* Loading State */}
-      {isLoading ? (
-        <Flex justifyContent="center" padding={4}>
-          <Loader small>Loading activity logs...</Loader>
-        </Flex>
-      ) : logs.length === 0 ? (
+      {logs.length === 0 ? (
         <Typography variant="pi" textColor="neutral600">
           No activity logs found.
         </Typography>
@@ -403,27 +389,40 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ firebaseUserId }) => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <PaginationRow>
-              <Button
-                variant="tertiary"
-                size="S"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </Button>
-              <Typography variant="pi" textColor="neutral600">
-                Page {page} of {totalPages}
-              </Typography>
-              <Button
-                variant="tertiary"
-                size="S"
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </Button>
-            </PaginationRow>
+            <Box paddingTop={4}>
+              <Flex justifyContent="flex-end">
+                <Pagination activePage={page} pageCount={totalPages}>
+                  <PreviousLink
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      setPage((p) => Math.max(1, p - 1));
+                    }}
+                  >
+                    Previous
+                  </PreviousLink>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <PageLink
+                      key={pageNum}
+                      number={pageNum}
+                      onClick={(e: React.MouseEvent) => {
+                        e.preventDefault();
+                        setPage(pageNum);
+                      }}
+                    >
+                      {pageNum}
+                    </PageLink>
+                  ))}
+                  <NextLink
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      setPage((p) => Math.min(totalPages, p + 1));
+                    }}
+                  >
+                    Next
+                  </NextLink>
+                </Pagination>
+              </Flex>
+            </Box>
           )}
         </>
       )}

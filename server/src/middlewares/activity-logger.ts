@@ -61,6 +61,12 @@ const LOGGED_ROUTES: RouteConfig[] = [
     action: "requestMagicLink",
     type: "authentication",
   },
+  {
+    path: "/api/firebase-authentication/checkPassword",
+    method: "POST",
+    action: "checkPassword",
+    type: "authentication",
+  },
 ];
 
 // Type for response body

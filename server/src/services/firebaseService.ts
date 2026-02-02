@@ -922,6 +922,7 @@ export default ({ strapi }) => ({
       return {
         user: await processMeData(strapiUser, populate),
         jwt,
+        uid: firebaseData.firebaseUserID, // Firebase UID for activity logging
       };
     } catch (error) {
       strapi.log.error("resetPassword error:", error);
@@ -1300,6 +1301,20 @@ export default ({ strapi }) => ({
       throw new errors.ValidationError("User email is required");
     }
 
+    // Get Firebase UID for activity logging
+    let firebaseUID: string | null = null;
+    try {
+      const firebaseData = await strapi
+        .documents("plugin::firebase-authentication.firebase-user-data")
+        .findFirst({
+          filters: { user: { documentId: { $eq: user.documentId } } },
+          fields: ["firebaseUserID"],
+        });
+      firebaseUID = firebaseData?.firebaseUserID || null;
+    } catch (err) {
+      strapi.log.warn("[checkPassword] Failed to get Firebase UID for logging:", err);
+    }
+
     // Get Firebase Web API key from settings
     const config = await strapi
       .plugin("firebase-authentication")
@@ -1345,15 +1360,15 @@ export default ({ strapi }) => ({
           errorMessage === "INVALID_LOGIN_CREDENTIALS" ||
           errorMessage.includes("INVALID")
         ) {
-          return { valid: false };
+          return { valid: false, uid: firebaseUID };
         }
 
         // Other errors (user disabled, etc.) - still return valid: false for security
-        return { valid: false };
+        return { valid: false, uid: firebaseUID };
       }
 
       // Password is valid
-      return { valid: true };
+      return { valid: true, uid: firebaseUID };
     } catch (error) {
       strapi.log.error("checkPassword error:", error);
       throw new errors.ApplicationError("Failed to verify password");

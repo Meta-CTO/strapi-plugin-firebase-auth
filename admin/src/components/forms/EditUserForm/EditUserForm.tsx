@@ -413,7 +413,7 @@ const EditUserForm = ({ data }: EditFormProps) => {
         </UserFormLayout>
 
         {/* Activity Log Section - Below main form */}
-        <Box marginTop={6}>
+        <Box marginTop={6} marginBottom={6}>
           <Box
             background="neutral0"
             borderColor="neutral150"

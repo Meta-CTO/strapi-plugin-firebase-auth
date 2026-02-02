@@ -32,7 +32,7 @@ const useQueryParams = (initialParams?: QueryParams) => {
         nextQuery = { ...query, ...nextParams };
       }
 
-      navigate({ search: stringify(nextQuery, { encode: false }) });
+      navigate({ search: stringify(nextQuery) });
     },
     [navigate, query]
   );
