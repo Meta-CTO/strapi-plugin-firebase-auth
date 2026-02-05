@@ -6,6 +6,17 @@ import { generateReferralCode } from "../utils";
 const DEFAULT_EMAIL_PATTERN = "{randomString}@phone-user.firebase.local";
 
 /**
+ * Normalize email for consistent lookup and storage
+ * Prevents whitespace bypass attacks (e.g., " user@example.com " != "user@example.com")
+ * @param email - Email address to normalize
+ * @returns Normalized email (trimmed and lowercased) or null if input is falsy
+ */
+const normalizeEmail = (email: string | null | undefined): string | null => {
+  if (!email) return null;
+  return email.trim().toLowerCase();
+};
+
+/**
  * Generate a fake email for phone-only users based on configured pattern
  * @param phoneNumber - Optional phone number (e.g., "+1-234-567-8900")
  * @param pattern - Optional email pattern template with tokens
@@ -261,8 +272,10 @@ export default ({ strapi }) => ({
 
     // Fallback 1: Email lookup (for users not yet migrated or created before plugin)
     if (decodedToken.email) {
+      // Normalize email to prevent whitespace bypass attacks
+      const normalizedEmail = normalizeEmail(decodedToken.email);
       const userByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
-        where: { email: decodedToken.email },
+        where: { email: normalizedEmail },
         populate: ["role"],
       });
 
@@ -386,88 +399,108 @@ export default ({ strapi }) => ({
   },
 
   async createStrapiUser(decodedToken, idToken, profileMetaData) {
-    let newUser;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const userPayload: any = {};
+    // PRE-CHECK: Ensure Firebase UID isn't already linked to another user
+    // This prevents the "same person, two accounts" scenario from race conditions
+    const existingLink = await strapi
+      .plugin("firebase-authentication")
+      .service("firebaseUserDataService")
+      .getByFirebaseUID(decodedToken.uid);
 
-      const pluginStore = await strapi.store({
-        environment: "",
-        type: "plugin",
-        name: "users-permissions",
-      });
+    if (existingLink && existingLink.user) {
+      strapi.log.warn(
+        `[Duplicate Prevention] Firebase UID ${decodedToken.uid} already linked to user ` +
+          `${existingLink.user.email || existingLink.user.documentId}. Returning existing user instead of creating new one.`
+      );
+      return existingLink.user;
+    }
 
-      const settings = await pluginStore.get({
-        key: "advanced",
-      });
+    // Prepare user payload OUTSIDE transaction (async operations like username generation)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userPayload: any = {};
 
-      const role = await strapi.db
-        .query("plugin::users-permissions.role")
-        .findOne({ where: { type: settings.default_role } });
-      userPayload.role = role.id;
-      // NO firebaseUserID here - it goes in firebase_user_data table
-      userPayload.confirmed = true;
-      userPayload.provider = "firebase";
+    const pluginStore = await strapi.store({
+      environment: "",
+      type: "plugin",
+      name: "users-permissions",
+    });
 
-      userPayload.email = decodedToken.email;
-      userPayload.phoneNumber = decodedToken.phone_number;
-      // NO idToken stored - Firebase best practice: verify and discard
-      if (profileMetaData) {
-        userPayload.firstName = profileMetaData?.firstName;
-        userPayload.lastName = profileMetaData?.lastName;
-        userPayload.phoneNumber = profileMetaData?.phoneNumber;
+    const settings = await pluginStore.get({
+      key: "advanced",
+    });
+
+    const role = await strapi.db
+      .query("plugin::users-permissions.role")
+      .findOne({ where: { type: settings.default_role } });
+    userPayload.role = role.id;
+    // NO firebaseUserID here - it goes in firebase_user_data table
+    userPayload.confirmed = true;
+    userPayload.provider = "firebase";
+
+    // Normalize email from Firebase token to prevent whitespace bypass
+    userPayload.email = normalizeEmail(decodedToken.email);
+    userPayload.phoneNumber = decodedToken.phone_number;
+    // NO idToken stored - Firebase best practice: verify and discard
+    if (profileMetaData) {
+      userPayload.firstName = profileMetaData?.firstName;
+      userPayload.lastName = profileMetaData?.lastName;
+      userPayload.phoneNumber = profileMetaData?.phoneNumber;
+    }
+
+    let appleEmail = null;
+    if (decodedToken.email) {
+      // Generate a valid username from the email
+      userPayload.username = await generateUsernameFromEmail(decodedToken.email);
+
+      // Check for Apple Private Relay email - store in firebase_user_data, not user table
+      const emailComponents = decodedToken.email.split("@");
+      if (emailComponents[1].includes("privaterelay.appleid.com")) {
+        appleEmail = decodedToken.email;
       }
+    } else {
+      // Phone-only user - generate valid username from phone number
+      userPayload.username = await generateUsernameFromPhone(userPayload.phoneNumber);
 
-      let appleEmail = null;
-      if (decodedToken.email) {
-        // Generate a valid username from the email
-        userPayload.username = await generateUsernameFromEmail(decodedToken.email);
+      const emailRequired = strapi.plugin("firebase-authentication").config("emailRequired");
+      const emailPattern = strapi.plugin("firebase-authentication").config("emailPattern");
 
-        // Check for Apple Private Relay email - store in firebase_user_data, not user table
-        const emailComponents = decodedToken.email.split("@");
-        if (emailComponents[1].includes("privaterelay.appleid.com")) {
-          appleEmail = decodedToken.email;
-        }
+      if (profileMetaData?.email) {
+        // Use email from profileMetaData if provided (normalized)
+        userPayload.email = normalizeEmail(profileMetaData.email);
+      } else if (emailRequired) {
+        // Generate fake email using configured pattern
+        userPayload.email = await createFakeEmail(userPayload.phoneNumber, emailPattern);
       } else {
-        // Phone-only user - generate valid username from phone number
-        userPayload.username = await generateUsernameFromPhone(userPayload.phoneNumber);
+        // Allow null email
+        userPayload.email = null;
+      }
+    }
 
-        const emailRequired = strapi.plugin("firebase-authentication").config("emailRequired");
-        const emailPattern = strapi.plugin("firebase-authentication").config("emailPattern");
+    // Wrap user creation + Firebase link in transaction for atomicity
+    // If linking fails, user creation is automatically rolled back
+    try {
+      return await strapi.db.transaction(async () => {
+        // Step 1: Create Strapi user (no Firebase-specific fields)
+        const newUser = await strapi.db.query("plugin::users-permissions.user").create({ data: userPayload });
 
-        if (profileMetaData?.email) {
-          // Use email from profileMetaData if provided
-          userPayload.email = profileMetaData.email;
-        } else if (emailRequired) {
-          // Generate fake email using configured pattern
-          userPayload.email = await createFakeEmail(userPayload.phoneNumber, emailPattern);
-        } else {
-          // Allow null email
-          userPayload.email = null;
+        // Step 2: Link Firebase UID and appleEmail to Strapi user in firebase_user_data table
+        const firebaseDataPayload: any = { firebaseUserID: decodedToken.uid };
+        if (appleEmail) {
+          firebaseDataPayload.appleEmail = appleEmail;
         }
-      }
 
-      // Step 1: Create Strapi user (no Firebase-specific fields)
-      newUser = await strapi.db.query("plugin::users-permissions.user").create({ data: userPayload });
+        await strapi
+          .plugin("firebase-authentication")
+          .service("firebaseUserDataService")
+          .updateForUser(newUser.documentId, firebaseDataPayload);
 
-      // Step 2: Link Firebase UID and appleEmail to Strapi user in firebase_user_data table
-      const firebaseDataPayload: any = { firebaseUserID: decodedToken.uid };
-      if (appleEmail) {
-        firebaseDataPayload.appleEmail = appleEmail;
-      }
+        strapi.log.info(`Created user ${newUser.username} and linked to Firebase UID ${decodedToken.uid}`);
 
-      await strapi
-        .plugin("firebase-authentication")
-        .service("firebaseUserDataService")
-        .updateForUser(newUser.documentId, firebaseDataPayload);
-
-      strapi.log.info(`Created user ${newUser.username} and linked to Firebase UID ${decodedToken.uid}`);
-
-      return newUser;
+        return newUser;
+      });
     } catch (error) {
       // Handle race condition: duplicate firebaseUserID from concurrent requests
-      if (error.code === "23505") {
-        // PostgreSQL unique constraint violation
+      if (error.code === "23505" || error.message?.includes("unique constraint")) {
+        // PostgreSQL unique constraint violation - another request won the race
         strapi.log.warn(
           `[Race Condition] User creation conflict for Firebase UID ${decodedToken.uid}. ` +
             `Another concurrent request created the user first. Retrying lookup...`
@@ -494,19 +527,7 @@ export default ({ strapi }) => ({
         );
       }
 
-      // Cleanup orphaned user (only for non-race-condition errors)
-      if (error.code !== "23505" && newUser) {
-        try {
-          await strapi.db.query("plugin::users-permissions.user").delete({
-            where: { documentId: newUser.documentId },
-          });
-          strapi.log.warn(
-            `Cleaned up orphaned user ${newUser.documentId} after ` + `firebase_user_data creation failed`
-          );
-        } catch (cleanupError) {
-          strapi.log.error("Failed to cleanup orphaned user", cleanupError);
-        }
-      }
+      // Transaction automatically rolled back - no manual cleanup needed
       throw error;
     }
   },

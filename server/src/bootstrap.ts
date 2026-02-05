@@ -1,5 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import migrateFirebaseUserData from "./migrations/migrate-firebase-user-data";
+import ensureUserLinkUniqueConstraint from "./migrations/ensure-user-link-unique-constraint";
+import reportOrphanUsers from "./migrations/report-orphan-users";
 import type { FirebaseAuthConfig } from "./config";
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
@@ -43,6 +45,13 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     userPermissionsService.initialize();
   }
 
+  // Run safe database migrations (idempotent, cannot delete data)
+  try {
+    await ensureUserLinkUniqueConstraint(strapi);
+  } catch (error) {
+    strapi.log.warn(`[Firebase Auth] Migration warning: ${error.message}`);
+  }
+
   // TEMPORARY: Run Firebase user data migration on startup
   // Remove this after migration is complete in production
   if (process.env.RUN_FIREBASE_MIGRATION === "true") {
@@ -52,15 +61,26 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     await migrateFirebaseUserData(strapi, dryRun);
   }
 
-  // Auto-link Strapi users with Firebase users in the background
-  // Runs on every startup (non-blocking)
-  setImmediate(async () => {
-    try {
-      await strapi.plugin("firebase-authentication").service("autoLinkService").linkAllUsers(strapi);
-    } catch (error) {
-      strapi.log.error(`Auto-linking failed: ${error.message}`);
-    }
-  });
+  // Auto-link Strapi users with Firebase users (OPT-IN)
+  // Also runs orphan user report AFTER linking completes
+  if (process.env.FIREBASE_AUTO_LINK_ON_STARTUP === "true") {
+    setImmediate(async () => {
+      try {
+        strapi.log.info("[Firebase Auth] Auto-link enabled via FIREBASE_AUTO_LINK_ON_STARTUP");
+        await strapi.plugin("firebase-authentication").service("autoLinkService").linkAllUsers(strapi);
+
+        // Run orphan user report AFTER auto-link completes (READ-ONLY, does not delete)
+        // Shows remaining orphan users that weren't auto-linked
+        await reportOrphanUsers(strapi);
+      } catch (error) {
+        strapi.log.error(`Auto-linking failed: ${error.message}`);
+      }
+    });
+  } else {
+    strapi.log.debug(
+      "[Firebase Auth] Startup auto-link disabled (set FIREBASE_AUTO_LINK_ON_STARTUP=true to enable)"
+    );
+  }
 
   // Activity log cleanup cron job (optional - based on env config)
   const pluginConfig: FirebaseAuthConfig = strapi.config.get("plugin::firebase-authentication");

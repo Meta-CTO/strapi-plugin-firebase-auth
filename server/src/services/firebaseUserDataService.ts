@@ -56,12 +56,35 @@ export default ({ strapi }) => ({
     }
   ) {
     // 1. Check by firebaseUserID first (handles orphan case proactively)
-    // This fixes the bug where deleted users leave orphaned firebase_user_data records
     if (data.firebaseUserID) {
       const existingByUID = await this.getByFirebaseUID(data.firebaseUserID);
       if (existingByUID) {
+        // Check if this is the SAME user (re-linking) or truly orphaned
+        const existingUserId = existingByUID.user?.documentId;
+
+        if (existingUserId === userId) {
+          // Same user - just update the record
+          return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
+            documentId: existingByUID.documentId,
+            data,
+          });
+        }
+
+        if (existingUserId) {
+          // UID is linked to a DIFFERENT active user - do NOT steal it
+          strapi.log.warn(
+            `[UID Conflict] Cannot link Firebase UID ${data.firebaseUserID} to user ${userId}. ` +
+              `Already linked to user ${existingUserId}.`
+          );
+          throw new Error(
+            `Firebase UID already linked to another user. ` +
+              `Please contact support if you believe this is an error.`
+          );
+        }
+
+        // Truly orphaned (user is null) - safe to adopt
         strapi.log.info(
-          `[Orphan Recovery] Adopting firebase_user_data for UID ${data.firebaseUserID} to user ${userId}`
+          `[Orphan Recovery] Adopting orphaned firebase_user_data for UID ${data.firebaseUserID} to user ${userId}`
         );
         return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
           documentId: existingByUID.documentId,
@@ -94,17 +117,25 @@ export default ({ strapi }) => ({
         data: { user: userId, ...data },
       });
     } catch (error) {
-      // Race condition: another request created/claimed the record first
-      if (error.code === "23505" || error.name === "ValidationError") {
+      // Race condition: another request created the record first (unique constraint violation)
+      if (error.code === "23505" || error.message?.includes("unique constraint")) {
+        strapi.log.info(
+          `[Race Condition] Concurrent request created firebase_user_data for UID ${data.firebaseUserID}. Fetching existing record.`
+        );
+
+        // Fetch the record created by the concurrent request
         const raceWinner = await this.getByFirebaseUID(data.firebaseUserID);
         if (raceWinner) {
+          // Check if it belongs to the same user
+          if (raceWinner.user?.documentId === userId) {
+            return raceWinner; // Same user - return the existing record
+          }
+
+          // Different user won the race - don't overwrite
           strapi.log.warn(
-            `[Race Condition] Resolved for firebaseUserID ${data.firebaseUserID}, updating to user ${userId}`
+            `[Race Condition] UID ${data.firebaseUserID} was linked to different user ${raceWinner.user?.documentId} by concurrent request.`
           );
-          return await strapi.documents("plugin::firebase-authentication.firebase-user-data").update({
-            documentId: raceWinner.documentId,
-            data: { user: userId, ...data },
-          });
+          throw new Error("Firebase UID was linked to another user by a concurrent request.");
         }
       }
       throw error;

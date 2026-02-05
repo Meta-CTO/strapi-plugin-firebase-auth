@@ -4,7 +4,9 @@ export interface LinkResult {
   totalStrapiUsers: number;
   totalFirebaseUsers: number;
   linked: number;
-  skipped: number;
+  alreadyLinked: number;
+  noFirebaseMatch: number;
+  uidConflict: number;
   errors: number;
 }
 
@@ -31,7 +33,9 @@ export default {
       totalStrapiUsers: 0,
       totalFirebaseUsers: 0,
       linked: 0,
-      skipped: 0,
+      alreadyLinked: 0,
+      noFirebaseMatch: 0,
+      uidConflict: 0,
       errors: 0,
     };
 
@@ -105,14 +109,15 @@ export default {
             });
 
           if (existing) {
-            result.skipped++;
+            result.alreadyLinked++;
             continue;
           }
 
-          // Try to find matching Firebase user by email
+          // Try to find matching Firebase user by email (normalized to prevent whitespace issues)
           firebaseUser = null;
           if (strapiUser.email) {
-            firebaseUser = firebaseByEmail.get(strapiUser.email.toLowerCase());
+            const normalizedStrapiEmail = strapiUser.email.trim().toLowerCase();
+            firebaseUser = firebaseByEmail.get(normalizedStrapiEmail);
           }
 
           // Fallback: Try phone number
@@ -121,7 +126,7 @@ export default {
           }
 
           if (!firebaseUser) {
-            result.skipped++;
+            result.noFirebaseMatch++;
             continue;
           }
 
@@ -148,7 +153,7 @@ export default {
               `   Already linked to: ${existingUIDLink.user?.email} (documentId: ${existingUIDLink.user?.documentId})`
             );
             strapi.log.warn(`   Action: Resolve duplicate users or manually unlink conflicting record`);
-            result.skipped++;
+            result.uidConflict++;
             continue;
           }
 
@@ -173,7 +178,7 @@ export default {
           } catch (createError: any) {
             // Handle unique constraint violations (Firebase UID already linked)
             if (createError.code === "23505") {
-              result.skipped++;
+              result.uidConflict++;
               continue;
             }
             throw createError;
@@ -192,7 +197,7 @@ export default {
                 `   Action: Query firebase_user_data table to find conflict - WHERE firebase_user_id = '${firebaseUser.uid}'`
               );
             }
-            result.skipped++;
+            result.uidConflict++;
           } else {
             // Unexpected errors
             result.errors++;
@@ -204,15 +209,29 @@ export default {
       }
 
       // Log summary
+      const summaryParts = [
+        `${result.linked} linked`,
+        `${result.alreadyLinked} already linked`,
+        `${result.noFirebaseMatch} no match`,
+      ];
+      if (result.uidConflict > 0) {
+        summaryParts.push(`${result.uidConflict} UID conflicts`);
+      }
       if (result.errors > 0) {
-        strapi.log.error(
-          `❌ Auto-linking completed with unexpected errors: ${result.linked} linked, ${result.skipped} skipped, ${result.errors} errors`
-        );
-        strapi.log.error(`   Review error logs above for resolution steps`);
+        summaryParts.push(`${result.errors} errors`);
+      }
+      const summary = summaryParts.join(", ");
+
+      if (result.errors > 0 || result.uidConflict > 0) {
+        strapi.log.warn(`⚠️ Auto-linking complete: ${summary}`);
+        if (result.uidConflict > 0) {
+          strapi.log.warn(`   UID conflicts require manual resolution - see warnings above`);
+        }
+        if (result.errors > 0) {
+          strapi.log.error(`   Review error logs above for resolution steps`);
+        }
       } else {
-        strapi.log.info(
-          `✅ Auto-linking complete: ${result.linked} linked, ${result.skipped} skipped, ${result.errors} errors`
-        );
+        strapi.log.info(`✅ Auto-linking complete: ${summary}`);
       }
       strapi.log.info(
         `   Total: ${result.totalStrapiUsers} Strapi users, ${result.totalFirebaseUsers} Firebase users`
