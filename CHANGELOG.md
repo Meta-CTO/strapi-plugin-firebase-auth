@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.6.0
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.5.1...v1.6.0)
+
+### 🚀 Enhancements
+
+- Implement user link uniqueness and orphan user reporting ([795e7db](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/795e7db))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.5.1
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.5.0...v1.5.1)
