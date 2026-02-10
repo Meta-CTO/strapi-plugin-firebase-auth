@@ -442,7 +442,11 @@ function SettingsPage() {
         <Box style={{ width: "100%" }}>
           {/* Section 1: Firebase Authentication Configuration */}
           <Box marginBottom={6} padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow">
-            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
+            <Typography
+              variant="alpha"
+              as="h2"
+              style={{ display: "block", marginBottom: "8px", fontSize: "2.4rem", fontWeight: 600 }}
+            >
               Firebase Authentication
             </Typography>
             <Typography
@@ -664,7 +668,7 @@ function SettingsPage() {
                   <Box padding={4} background="neutral0">
                     {/* Service Account Section */}
                     <Box marginBottom={4}>
-                      <Typography variant="delta" fontWeight="bold" style={{ marginBottom: "8px" }}>
+                      <Typography variant="beta" fontWeight="bold" style={{ marginBottom: "8px" }}>
                         Service Account Configuration
                       </Typography>
                       <Box marginBottom={3}>
@@ -675,18 +679,25 @@ function SettingsPage() {
                       </Box>
                       <Flex gap={2} alignItems="center" justifyContent="space-between">
                         <Flex gap={2} alignItems="center">
-                          <Typography variant="omega" textColor="neutral600">
-                            Project:{" "}
-                            {firebaseJsonValue?.firebaseConfigJson &&
-                              (() => {
-                                try {
-                                  const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
-                                  return config.project_id || config.projectId || "Unknown Project";
-                                } catch (e) {
-                                  return "Invalid Config";
-                                }
-                              })()}
-                          </Typography>
+                          {firebaseJsonValue?.firebaseConfigJson &&
+                            (() => {
+                              try {
+                                const config = JSON.parse(firebaseJsonValue.firebaseConfigJson);
+                                const projectId = config.project_id || config.projectId || "Unknown Project";
+                                const keyId = config.private_key_id || "N/A";
+                                return (
+                                  <Typography variant="omega" textColor="neutral600">
+                                    Project: {projectId} | Key: {keyId}
+                                  </Typography>
+                                );
+                              } catch (e) {
+                                return (
+                                  <Typography variant="omega" textColor="neutral600">
+                                    Invalid Config
+                                  </Typography>
+                                );
+                              }
+                            })()}
                           <Badge backgroundColor="success200" textColor="success700" size="S">
                             ✓ CONFIGURED
                           </Badge>
@@ -699,7 +710,7 @@ function SettingsPage() {
 
                     {/* Web API Key Section */}
                     <Box paddingTop={4} style={{ borderTop: "1px solid #eaeaef" }}>
-                      <Typography variant="delta" fontWeight="bold" style={{ marginBottom: "8px" }}>
+                      <Typography variant="beta" fontWeight="bold" style={{ marginBottom: "8px" }}>
                         Web API Key Configuration
                       </Typography>
                       <Box marginBottom={3}>
@@ -712,7 +723,7 @@ function SettingsPage() {
                         <Flex gap={2} alignItems="center">
                           {firebaseWebApiKey?.trim() && (
                             <Typography variant="omega" textColor="neutral600">
-                              {`${firebaseWebApiKey.substring(0, 10)}...`}
+                              Key: {firebaseWebApiKey}
                             </Typography>
                           )}
                           {firebaseWebApiKey?.trim() ? (
@@ -745,7 +756,11 @@ function SettingsPage() {
 
           {/* Section 2: Password Reset Configuration - Always Visible */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
-            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
+            <Typography
+              variant="alpha"
+              as="h2"
+              style={{ display: "block", marginBottom: "8px", fontSize: "2.4rem", fontWeight: 600 }}
+            >
               Password Reset Settings
             </Typography>
             <Typography
@@ -876,7 +891,11 @@ function SettingsPage() {
 
           {/* Section 3: Email Verification */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
-            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
+            <Typography
+              variant="alpha"
+              as="h2"
+              style={{ display: "block", marginBottom: "8px", fontSize: "2.4rem", fontWeight: 600 }}
+            >
               Email Verification
             </Typography>
             <Typography
@@ -955,7 +974,11 @@ function SettingsPage() {
 
           {/* Section 4: Magic Link Settings */}
           <Box padding={4} background="neutral0" borderRadius="4px" shadow="filterShadow" marginBottom={6}>
-            <Typography variant="alpha" as="h2" style={{ display: "block", marginBottom: "8px" }}>
+            <Typography
+              variant="alpha"
+              as="h2"
+              style={{ display: "block", marginBottom: "8px", fontSize: "2.4rem", fontWeight: 600 }}
+            >
               Magic Link Authentication
             </Typography>
             <Typography

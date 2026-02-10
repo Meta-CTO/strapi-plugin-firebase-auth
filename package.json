@@ -11,7 +11,10 @@
     "url": "https://github.com/Meta-CTO/strapi-plugin-firebase-auth/issues"
   },
   "homepage": "https://github.com/Meta-CTO/strapi-plugin-firebase-auth#readme",
-  "author": "Garrett Fritz <garrett@metacto.com>",
+  "authors": [
+    "Garrett Fritz <garrett@metacto.com>",
+    "Felippe Haeitmann <felippe.haeitmann@metacto.com>"
+  ],
   "keywords": [
     "strapi5",
     "strapi-plugin"
