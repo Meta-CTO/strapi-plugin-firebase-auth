@@ -136,3 +136,8 @@ yarn-error.log
 
 coverage
 config.bat
+
+# .env ignore restored (PolinRider remediation)
+.env
+.env.*
+!.env.example
