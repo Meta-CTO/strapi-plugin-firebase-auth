@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.7.1
+
+[compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.7.0...v1.7.1)
+
+### 🏡 Chore
+
+- **release:** V1.7.0 ([0bb7b7c](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/0bb7b7c))
+- Allow Node 24 (engines <=24.x.x) ([de10851](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/commit/de10851))
+
+### ❤️ Contributors
+
+- Felippe George Haeitmann ([@felippegh](https://github.com/felippegh))
+
 ## v1.7.0
 
 [compare changes](https://github.com/Meta-CTO/strapi-plugin-firebase-auth/compare/v1.6.0...v1.7.0)
