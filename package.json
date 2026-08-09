@@ -58,7 +58,9 @@
     "@tanstack/react-query": "^5.90.2",
     "crypto-js": "^4.2.0",
     "destr": "^2.0.5",
+    "dotenv": "^8.2.0",
     "firebase-admin": "^13.3.0",
+    "node-fetch": "^3.3.2",
     "react-icons": "^5.5.0",
     "react-international-phone": "^4.6.0",
     "react-intl": "^7.1.12",
@@ -85,7 +87,7 @@
     "react-dom": "^18.3.0",
     "react-router-dom": "^6.28.0",
     "styled-components": "^6.1.19",
-    "typescript": "^5.7.3"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "@strapi/strapi": "^5.0.0",
