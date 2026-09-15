@@ -35,3 +35,69 @@ export function normalizeAdminLoginConfig(raw: unknown): AdminLoginConfig {
     autoCreateRole: role.length > 0 ? role : null,
   };
 }
+
+export const ADMIN_CLAIM = "strapiAdmin";
+
+export type AdminLoginToken = {
+  uid: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+} & Record<string, unknown>;
+
+export type AuthorizeResult =
+  | { allowed: true; via: "email" | "domain" | "claim"; email: string }
+  | { allowed: false; reason: "email_missing" | "email_unverified" | "not_allowlisted" };
+
+/**
+ * Decide whether a verified Firebase user may log into the Strapi admin panel.
+ * Pure function: no I/O, no strapi access. Order of checks:
+ *   1. email present            -> else email_missing
+ *   2. email verified           -> else email_unverified
+ *   3. exact email allowlisted  -> via "email"
+ *   4. email domain allowlisted -> via "domain"
+ *   5. custom claim truthy      -> via "claim"
+ *   6. otherwise                -> not_allowlisted
+ */
+export function authorizeAdminLogin(token: AdminLoginToken, config: AdminLoginConfig): AuthorizeResult {
+  const rawEmail = typeof token.email === "string" ? token.email.trim().toLowerCase() : "";
+  if (!rawEmail) {
+    return { allowed: false, reason: "email_missing" };
+  }
+  if (token.email_verified !== true) {
+    return { allowed: false, reason: "email_unverified" };
+  }
+
+  if (config.allowedEmails.includes(rawEmail)) {
+    return { allowed: true, via: "email", email: rawEmail };
+  }
+
+  const at = rawEmail.lastIndexOf("@");
+  const domain = at >= 0 ? rawEmail.slice(at + 1) : "";
+  if (domain && config.allowedDomains.includes(domain)) {
+    return { allowed: true, via: "domain", email: rawEmail };
+  }
+
+  if (token[ADMIN_CLAIM]) {
+    return { allowed: true, via: "claim", email: rawEmail };
+  }
+
+  return { allowed: false, reason: "not_allowlisted" };
+}
+
+/**
+ * Strapi admin users require both firstname and lastname.
+ * Derive them from the Firebase display name, falling back to the email local part.
+ */
+export function splitDisplayName(
+  name: string | undefined,
+  email: string
+): { firstname: string; lastname: string } {
+  const words = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    const local = email.split("@")[0] || email;
+    return { firstname: local, lastname: "-" };
+  }
+  const [firstname, ...rest] = words;
+  return { firstname, lastname: rest.length > 0 ? rest.join(" ") : "-" };
+}
