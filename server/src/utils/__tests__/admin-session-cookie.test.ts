@@ -104,6 +104,17 @@ describe("admin-session-cookie", () => {
     expect(opts.maxAge).toBe(60 * 1000);
   });
 
+  it("falls back to the idle lifespan with a warning when the absolute expiry is malformed", () => {
+    const strapi = makeStrapi();
+    const now = Date.now();
+    const opts = buildRefreshCookieOptions(strapi, "refresh", "not-a-date");
+    const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+    expect(opts.expires?.getTime()).toBe(now + fourteenDays);
+    expect(opts.maxAge).toBe(fourteenDays);
+    expect(Number.isNaN(opts.maxAge)).toBe(false);
+    expect(strapi.log.warn).toHaveBeenCalledWith(expect.stringContaining("invalid session expiry"));
+  });
+
   it("uses admin.auth.sessions.idleRefreshTokenLifespan when configured", () => {
     const now = Date.now();
     const opts = buildRefreshCookieOptions(

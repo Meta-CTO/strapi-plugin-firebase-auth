@@ -104,7 +104,17 @@ export function buildRefreshCookieOptions(
   );
   const now = Date.now();
   const idleExpiry = now + idleSeconds * 1000;
-  const absoluteExpiry = absoluteExpiresAtISO ? new Date(absoluteExpiresAtISO).getTime() : idleExpiry;
+  const parsedAbsolute = absoluteExpiresAtISO ? new Date(absoluteExpiresAtISO).getTime() : Number.NaN;
+  let absoluteExpiry = idleExpiry;
+  if (absoluteExpiresAtISO !== undefined) {
+    if (Number.isNaN(parsedAbsolute)) {
+      strapi.log.warn(
+        `[Firebase Auth Plugin] Ignoring invalid session expiry "${absoluteExpiresAtISO}"; using the idle refresh lifespan instead.`
+      );
+    } else {
+      absoluteExpiry = parsedAbsolute;
+    }
+  }
   const chosen = new Date(Math.min(idleExpiry, absoluteExpiry));
 
   return { ...base, expires: chosen, maxAge: Math.max(0, chosen.getTime() - now) };
