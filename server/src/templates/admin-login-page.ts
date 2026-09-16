@@ -165,10 +165,10 @@ export function renderAdminLoginPage(options: AdminLoginPageOptions): string {
         if (remember) {
           localStorage.setItem("jwtToken", JSON.stringify(json.data.token));
         } else {
-          var adminPath = "/admin";
-          try { adminPath = new URL(settings.adminUrl, window.location.href).pathname || "/admin"; } catch (e) {}
+          // Path=/ mirrors core's setCookie; core's logout deleteCookie also scopes to / and would
+          // not remove a cookie stored under a narrower path.
           var secure = window.location.protocol === "https:" ? "; Secure" : "";
-          document.cookie = "jwtToken=" + encodeURIComponent(json.data.token) + "; Path=" + adminPath + "; SameSite=Lax" + secure;
+          document.cookie = "jwtToken=" + encodeURIComponent(json.data.token) + "; Path=/; SameSite=Lax" + secure;
         }
         localStorage.setItem("isLoggedIn", "true");
         window.location.assign(settings.adminUrl);

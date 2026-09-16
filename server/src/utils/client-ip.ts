@@ -6,7 +6,7 @@ export type ClientIpContext = {
 
 export type ClientIpOptions = {
   /**
-   * When Strapi's `server.proxy` is configured, Koa already resolves the real client IP from the
+   * When Strapi sets `server.proxy.koa` (the only key Koa reads), Koa already resolves the real client IP from the
    * trusted proxy headers into `ctx.request.ip`, so forwarded headers must not be re-read (they
    * would let a client spoof its own address). When no proxy is configured we keep the legacy
    * first-hop behaviour for installs sitting behind an unconfigured proxy.

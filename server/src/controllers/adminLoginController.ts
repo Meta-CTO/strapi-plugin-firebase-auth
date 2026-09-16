@@ -14,8 +14,10 @@ const MESSAGES = {
   forbidden: "You are not authorized to access the admin panel",
 } as const;
 
-// RFC 4122 shape, any version; core validates its own login deviceId as a UUID too.
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Same shape yup's .uuid() accepts, which is what core uses to validate its own login deviceId:
+// versions 1-5 with an RFC 4122 variant nibble, or the nil UUID.
+const UUID_RE =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
 
 type LogParams = {
   ctx: Context;
@@ -57,7 +59,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       action: success ? "admin_login" : "admin_login_denied",
       endpoint: ctx.path,
       method: ctx.method,
-      ipAddress: getClientIP(ctx, { proxyConfigured: Boolean(s.config.get("server.proxy")) }),
+      ipAddress: getClientIP(ctx, { proxyConfigured: Boolean(s.config.get("server.proxy.koa")) }),
       userAgent: ctx.request.headers["user-agent"],
       success,
       errorMessage: success ? undefined : reason,

@@ -306,6 +306,25 @@ describe("adminLoginController.login", () => {
     expect(deviceId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   });
 
+  it("rejects a UUID-shaped string with a non-RFC-4122 version or variant", async () => {
+    for (const bad of ["123e4567-e89b-62d3-a456-426614174000", "123e4567-e89b-42d3-c456-426614174000"]) {
+      service.createSession.mockClear();
+      const ctx = makeCtx({ idToken: "id-1", deviceId: bad, rememberMe: false });
+      await createController({ strapi: strapi as never }).login(ctx as never);
+      expect(service.createSession.mock.calls[0][1]).not.toBe(bad);
+    }
+  });
+
+  it("accepts the nil UUID, like core's validator", async () => {
+    const ctx = makeCtx({
+      idToken: "id-1",
+      deviceId: "00000000-0000-0000-0000-000000000000",
+      rememberMe: false,
+    });
+    await createController({ strapi: strapi as never }).login(ctx as never);
+    expect(service.createSession.mock.calls[0][1]).toBe("00000000-0000-0000-0000-000000000000");
+  });
+
   it("keeps a well-formed deviceId", async () => {
     const ctx = makeCtx({
       idToken: "id-1",

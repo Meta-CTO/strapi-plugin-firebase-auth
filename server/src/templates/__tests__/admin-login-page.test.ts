@@ -72,6 +72,11 @@ describe("renderAdminLoginPage", () => {
     expect(html).toContain('"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"');
   });
 
+  it("scopes the session cookie to Path=/ so core's logout deletes it", () => {
+    expect(html).toContain('"; Path=/; SameSite=Lax"');
+    expect(html).not.toContain('Path=" + adminPath');
+  });
+
   it("pins the SDK scripts with subresource integrity", () => {
     expect(html).toContain(`integrity="${FIREBASE_COMPAT_SRI.app}" crossorigin="anonymous"`);
     expect(html).toContain(`integrity="${FIREBASE_COMPAT_SRI.auth}" crossorigin="anonymous"`);

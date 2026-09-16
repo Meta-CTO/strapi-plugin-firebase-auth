@@ -119,7 +119,7 @@ describe("admin-login rate limiter", () => {
     expect(revisit.status).toBe(200);
   });
 
-  it("reads server.proxy from strapi config in the Strapi factory", async () => {
+  it("reads server.proxy.koa from strapi config in the Strapi factory", async () => {
     const factory = (await import("../admin-login-rate-limit")).default;
     const strapi = { config: { get: vi.fn(() => true) } };
     const mw = factory({ max: 1, windowMs: 60_000 }, { strapi: strapi as never });
@@ -134,7 +134,7 @@ describe("admin-login rate limiter", () => {
     };
     await mw(a as never, next);
     await mw(b as never, next);
-    expect(strapi.config.get).toHaveBeenCalledWith("server.proxy");
+    expect(strapi.config.get).toHaveBeenCalledWith("server.proxy.koa");
     expect(b.status).toBe(429);
   });
 });

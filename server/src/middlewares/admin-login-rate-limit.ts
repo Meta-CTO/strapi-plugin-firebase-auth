@@ -7,7 +7,7 @@ export type AdminLoginRateLimitOptions = {
   max?: number;
   /** Window length in milliseconds. Default 5 minutes. */
   windowMs?: number;
-  /** Whether Strapi's server.proxy is configured; see getClientIP. */
+  /** Whether Strapi configured Koa as proxy-aware (server.proxy.koa); see getClientIP. */
   proxyConfigured?: boolean;
   /** Hard cap on tracked IPs. Default 10000. */
   maxEntries?: number;
@@ -84,5 +84,5 @@ export function createAdminLoginRateLimiter(options: AdminLoginRateLimitOptions 
 export default (config: AdminLoginRateLimitOptions, { strapi }: { strapi: Core.Strapi }) =>
   createAdminLoginRateLimiter({
     ...(config ?? {}),
-    proxyConfigured: Boolean(strapi.config.get("server.proxy")),
+    proxyConfigured: Boolean(strapi.config.get("server.proxy.koa")),
   }).middleware;

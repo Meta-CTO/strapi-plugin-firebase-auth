@@ -190,7 +190,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const method = ctx.method;
     const stateUser = ctx.state?.user as { documentId?: string } | undefined;
     const userAgent = ctx.request.headers["user-agent"];
-    const clientIP = getClientIP(ctx, { proxyConfigured: Boolean(strapi.config.get("server.proxy")) });
+    const clientIP = getClientIP(ctx, { proxyConfigured: Boolean(strapi.config.get("server.proxy.koa")) });
 
     // Fire-and-forget: Don't block response for logging (async DB queries)
     (async () => {

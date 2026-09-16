@@ -333,7 +333,7 @@ await admin.auth().setCustomUserClaims(uid, { strapiAdmin: true });
 
 - Feature is off by default. Enabling it with an empty allowlist means only the `strapiAdmin` claim grants access; the plugin logs a warning at boot.
 - All 403 denials return the same message, so the endpoint cannot be used to find out which emails have admin accounts. The exact reason is written to the plugin activity log (`admin_login_denied`).
-- The endpoint is rate limited to 5 attempts per 5 minutes per client IP. When Strapi runs behind a reverse proxy, set Strapi's server.proxy option so the real client address is used; without it, forwarded headers are trusted as-is and a client could spoof its address.
+- The endpoint is rate limited to 5 attempts per 5 minutes per client IP. When Strapi runs behind a reverse proxy, set `server.proxy.koa` to `true` in `config/server.ts` so Koa resolves the real client address; without it, forwarded headers are trusted as-is and a client could spoof its address.
 - Auto-created admins have no password. Password login for existing admins stays available; disabling it requires Strapi's paid SSO feature.
 - The admin panel must be served from the same origin as the API (Strapi default).
 
