@@ -1,3 +1,5 @@
+import type { AdminLoginConfig } from "../utils/admin-login-authorize";
+
 /**
  * Config for Firebase Authentication Plugin
  *
@@ -51,6 +53,19 @@ export type FirebaseAuthConfig = {
    * @default null (never delete)
    */
   activityLogRetentionDays?: number | null;
+
+  /**
+   * Admin panel login with Firebase. Off by default.
+   * Settings live only here (never in the database) because they decide who can become an admin.
+   *
+   * @example
+   * adminLogin: {
+   *   enabled: env.bool("FIREBASE_ADMIN_LOGIN_ENABLED", false),
+   *   allowedDomains: ["example.com"],
+   *   autoCreateRole: "strapi-editor",
+   * }
+   */
+  adminLogin?: Partial<AdminLoginConfig>;
 };
 
 export default {
@@ -59,6 +74,12 @@ export default {
     emailRequired: env.bool("FIREBASE_EMAIL_REQUIRED", false),
     emailPattern: "{randomString}@phone-user.firebase.local",
     activityLogRetentionDays: env.int("FIREBASE_ACTIVITY_LOG_RETENTION_DAYS", null),
+    adminLogin: {
+      enabled: env.bool("FIREBASE_ADMIN_LOGIN_ENABLED", false),
+      allowedEmails: [],
+      allowedDomains: [],
+      autoCreateRole: null,
+    },
   }),
   validator(config: FirebaseAuthConfig) {
     if (!config.firebaseJsonEncryptionKey) {
@@ -87,6 +108,31 @@ export default {
             '  - "phone_{phoneNumber}_{randomString}@myapp.local"\n' +
             '  - "user_{timestamp}@temp.local"\n' +
             '  - "{randomString}@phone-user.firebase.local"'
+        );
+      }
+    }
+
+    if (config.adminLogin !== undefined && config.adminLogin !== null) {
+      const block = config.adminLogin as Record<string, unknown>;
+      const isStringArray = (value: unknown) =>
+        Array.isArray(value) && value.every((item) => typeof item === "string");
+
+      if (block.enabled !== undefined && typeof block.enabled !== "boolean") {
+        throw new Error("[Firebase Auth Plugin] adminLogin.enabled must be a boolean");
+      }
+      if (block.allowedEmails !== undefined && !isStringArray(block.allowedEmails)) {
+        throw new Error("[Firebase Auth Plugin] adminLogin.allowedEmails must be an array of strings");
+      }
+      if (block.allowedDomains !== undefined && !isStringArray(block.allowedDomains)) {
+        throw new Error("[Firebase Auth Plugin] adminLogin.allowedDomains must be an array of strings");
+      }
+      if (
+        block.autoCreateRole !== undefined &&
+        block.autoCreateRole !== null &&
+        typeof block.autoCreateRole !== "string"
+      ) {
+        throw new Error(
+          "[Firebase Auth Plugin] adminLogin.autoCreateRole must be a role code string or null"
         );
       }
     }

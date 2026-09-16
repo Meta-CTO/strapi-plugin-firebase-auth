@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import type Koa from "koa";
+import { getClientIP } from "../utils/client-ip";
 
 interface RouteConfig {
   path: string;
@@ -160,23 +161,6 @@ async function extractFirebaseUserId(ctx: Koa.Context, strapi: Core.Strapi): Pro
   }
 
   return null;
-}
-
-/**
- * Get client IP address from request
- */
-function getClientIP(ctx: Koa.Context): string {
-  const forwardedFor = ctx.request.headers["x-forwarded-for"];
-  if (forwardedFor) {
-    return (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor).split(",")[0].trim();
-  }
-
-  const realIP = ctx.request.headers["x-real-ip"];
-  if (realIP) {
-    return Array.isArray(realIP) ? realIP[0] : realIP;
-  }
-
-  return ctx.request.ip || "unknown";
 }
 
 /**

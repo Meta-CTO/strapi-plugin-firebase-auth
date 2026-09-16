@@ -8,6 +8,7 @@ import autoLinkService from "./autoLinkService";
 import firebaseStrapiLinkService from "./firebaseStrapiLinkService";
 import tokenService from "./tokenService";
 import activityLogService from "./activityLogService";
+import adminLoginService from "./adminLoginService";
 
 export default {
   settingsService,
@@ -20,4 +21,5 @@ export default {
   firebaseStrapiLinkService,
   tokenService,
   activityLogService,
+  adminLoginService,
 };
