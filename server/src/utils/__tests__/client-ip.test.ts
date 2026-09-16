@@ -26,4 +26,13 @@ describe("getClientIP", () => {
     expect(getClientIP(ctx({}, "9.9.9.9"))).toBe("9.9.9.9");
     expect(getClientIP(ctx({}))).toBe("unknown");
   });
+
+  it("ignores forwarded headers and uses ctx.request.ip when a proxy is configured", () => {
+    expect(
+      getClientIP(ctx({ "x-forwarded-for": "1.1.1.1", "x-real-ip": "5.5.5.5" }, "9.9.9.9"), {
+        proxyConfigured: true,
+      })
+    ).toBe("9.9.9.9");
+    expect(getClientIP(ctx({}), { proxyConfigured: true })).toBe("unknown");
+  });
 });

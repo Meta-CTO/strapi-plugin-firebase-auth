@@ -182,6 +182,43 @@ describe("adminLoginService.resolveAdminUser", () => {
     });
   });
 
+  it("re-reads and returns the winner when a concurrent first login races the unique index", async () => {
+    strapi = makeStrapi({
+      config: {
+        "plugin::firebase-authentication": {
+          adminLogin: { enabled: true, allowedDomains: ["metacto.com"], autoCreateRole: "strapi-editor" },
+        },
+      },
+    });
+    const user = { id: 11, email: "ana@metacto.com", isActive: true, blocked: false, roles: [] };
+    strapi._adminUser.findOneByEmail.mockResolvedValueOnce(null).mockResolvedValueOnce(user);
+    strapi._adminRole.findOne.mockResolvedValue({ id: 3, code: "strapi-editor" });
+    strapi._adminUser.create.mockRejectedValue(new Error("unique constraint"));
+
+    const svc = createService({ strapi: strapi as never });
+    await expect(svc.resolveAdminUser(token(), "ana@metacto.com")).resolves.toEqual({
+      ok: true,
+      user,
+      created: false,
+    });
+  });
+
+  it("rethrows the create error when the re-read also finds nothing", async () => {
+    strapi = makeStrapi({
+      config: {
+        "plugin::firebase-authentication": {
+          adminLogin: { enabled: true, allowedDomains: ["metacto.com"], autoCreateRole: "strapi-editor" },
+        },
+      },
+    });
+    strapi._adminUser.findOneByEmail.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    strapi._adminRole.findOne.mockResolvedValue({ id: 3, code: "strapi-editor" });
+    strapi._adminUser.create.mockRejectedValue(new Error("unique constraint"));
+
+    const svc = createService({ strapi: strapi as never });
+    await expect(svc.resolveAdminUser(token(), "ana@metacto.com")).rejects.toThrow(/unique constraint/);
+  });
+
   it("denies when the configured role does not exist", async () => {
     strapi = makeStrapi({
       config: {

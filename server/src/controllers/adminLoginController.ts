@@ -14,6 +14,9 @@ const MESSAGES = {
   forbidden: "You are not authorized to access the admin panel",
 } as const;
 
+// RFC 4122 shape, any version; core validates its own login deviceId as a UUID too.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type LogParams = {
   ctx: Context;
   success: boolean;
@@ -54,7 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       action: success ? "admin_login" : "admin_login_denied",
       endpoint: ctx.path,
       method: ctx.method,
-      ipAddress: getClientIP(ctx),
+      ipAddress: getClientIP(ctx, { proxyConfigured: Boolean(s.config.get("server.proxy")) }),
       userAgent: ctx.request.headers["user-agent"],
       success,
       errorMessage: success ? undefined : reason,
@@ -129,7 +132,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return ctx.unauthorized(MESSAGES.authFailed);
       }
 
-      const resolved = await service.resolveAdminUser(decoded, authz.email);
+      let resolved: Awaited<ReturnType<typeof service.resolveAdminUser>>;
+      try {
+        resolved = await service.resolveAdminUser(decoded, authz.email);
+      } catch (error) {
+        s.log.error(
+          `[Firebase Auth Plugin] Admin login failed to resolve admin user: ${(error as Error).message}`
+        );
+        log({
+          ctx,
+          success: false,
+          token: decoded,
+          email: authz.email,
+          reason: "resolve_error",
+          via: authz.via,
+        });
+        ctx.status = 500;
+        ctx.body = { error: { status: 500, name: "InternalServerError", message: "Internal Server Error" } };
+        return;
+      }
       if (!resolved.ok) {
         log({
           ctx,
@@ -142,7 +163,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return ctx.forbidden(MESSAGES.forbidden);
       }
 
-      const deviceId = typeof body.deviceId === "string" && body.deviceId ? body.deviceId : randomUUID();
+      const deviceId =
+        typeof body.deviceId === "string" && UUID_RE.test(body.deviceId) ? body.deviceId : randomUUID();
       const rememberMe = body.rememberMe === true;
 
       let session: Awaited<ReturnType<typeof service.createSession>>;

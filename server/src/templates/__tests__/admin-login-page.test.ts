@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { renderAdminLoginPage, buildAdminLoginCsp, FIREBASE_COMPAT_VERSION } from "../admin-login-page";
+import {
+  renderAdminLoginPage,
+  buildAdminLoginCsp,
+  FIREBASE_COMPAT_VERSION,
+  FIREBASE_COMPAT_SRI,
+} from "../admin-login-page";
 
 const options = {
   nonce: "abc123",
@@ -43,6 +48,7 @@ describe("renderAdminLoginPage", () => {
 
   it("writes the Strapi admin storage keys and redirects", () => {
     expect(html).toContain('localStorage.setItem("jwtToken", JSON.stringify(');
+    expect(html).toContain('document.cookie = "jwtToken=" + encodeURIComponent(');
     expect(html).toContain('localStorage.setItem("isLoggedIn", "true")');
     expect(html).toContain("window.location.assign(");
   });
@@ -63,6 +69,14 @@ describe("renderAdminLoginPage", () => {
   it("stores the device id under the admin UI's key so logout revokes the session", () => {
     expect(html).toContain('"strapi.admin.deviceId"');
     expect(html).not.toContain("firebaseAdminLoginDeviceId");
+    expect(html).toContain('"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"');
+  });
+
+  it("pins the SDK scripts with subresource integrity", () => {
+    expect(html).toContain(`integrity="${FIREBASE_COMPAT_SRI.app}" crossorigin="anonymous"`);
+    expect(html).toContain(`integrity="${FIREBASE_COMPAT_SRI.auth}" crossorigin="anonymous"`);
+    expect(FIREBASE_COMPAT_SRI.app).toMatch(/^sha384-[A-Za-z0-9+/]+=*$/);
+    expect(FIREBASE_COMPAT_SRI.auth).toMatch(/^sha384-[A-Za-z0-9+/]+=*$/);
   });
 });
 

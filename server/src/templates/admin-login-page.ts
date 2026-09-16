@@ -9,6 +9,12 @@
 
 export const FIREBASE_COMPAT_VERSION = "10.14.1";
 
+/** SHA-384 of the pinned gstatic files, computed 2026-09-15. Recompute when FIREBASE_COMPAT_VERSION changes. */
+export const FIREBASE_COMPAT_SRI = {
+  app: "sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1",
+  auth: "sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj",
+} as const;
+
 export type AdminLoginPageOptions = {
   nonce: string;
   configUrl: string;
@@ -93,8 +99,8 @@ export function renderAdminLoginPage(options: AdminLoginPageOptions): string {
   <div id="error" class="error" role="alert"></div>
 </main>
 
-<script nonce="${nonce}" src="${sdk}/firebase-app-compat.js"></script>
-<script nonce="${nonce}" src="${sdk}/firebase-auth-compat.js"></script>
+<script nonce="${nonce}" src="${sdk}/firebase-app-compat.js" integrity="${FIREBASE_COMPAT_SRI.app}" crossorigin="anonymous"></script>
+<script nonce="${nonce}" src="${sdk}/firebase-auth-compat.js" integrity="${FIREBASE_COMPAT_SRI.auth}" crossorigin="anonymous"></script>
 <script nonce="${nonce}">
 (function () {
   var settings = ${settings};
@@ -112,7 +118,10 @@ export function renderAdminLoginPage(options: AdminLoginPageOptions): string {
     var key = "strapi.admin.deviceId";
     var existing = localStorage.getItem(key);
     if (existing) return existing;
-    var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+    var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
     localStorage.setItem(key, id);
     return id;
   }
@@ -152,7 +161,15 @@ export function renderAdminLoginPage(options: AdminLoginPageOptions): string {
           var message = json && json.error && json.error.message ? json.error.message : "Sign in failed.";
           throw new Error(message);
         }
-        localStorage.setItem("jwtToken", JSON.stringify(json.data.token));
+        var remember = document.getElementById("remember").checked;
+        if (remember) {
+          localStorage.setItem("jwtToken", JSON.stringify(json.data.token));
+        } else {
+          var adminPath = "/admin";
+          try { adminPath = new URL(settings.adminUrl, window.location.href).pathname || "/admin"; } catch (e) {}
+          var secure = window.location.protocol === "https:" ? "; Secure" : "";
+          document.cookie = "jwtToken=" + encodeURIComponent(json.data.token) + "; Path=" + adminPath + "; SameSite=Lax" + secure;
+        }
         localStorage.setItem("isLoggedIn", "true");
         window.location.assign(settings.adminUrl);
       });

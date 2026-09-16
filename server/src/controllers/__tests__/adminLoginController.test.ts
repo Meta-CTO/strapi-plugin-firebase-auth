@@ -52,7 +52,9 @@ const makeStrapi = (service: ReturnType<typeof makeService>, over: Record<string
   };
 };
 
-const makeCtx = (body: unknown = { idToken: "id-1", deviceId: "dev-1", rememberMe: true }) => {
+const makeCtx = (
+  body: unknown = { idToken: "id-1", deviceId: "123e4567-e89b-42d3-a456-426614174000", rememberMe: true }
+) => {
   const ctx: Record<string, unknown> & { status: number; body: unknown } = {
     request: { body, headers: { "user-agent": "vitest" }, ip: "1.2.3.4", secure: false },
     path: "/api/firebase-authentication/admin-login",
@@ -217,6 +219,20 @@ describe("adminLoginController.login", () => {
     }
   });
 
+  it("returns 500 when resolveAdminUser throws unexpectedly", async () => {
+    service.resolveAdminUser.mockRejectedValue(new Error("db down"));
+    const ctx = makeCtx();
+    await createController({ strapi: strapi as never }).login(ctx as never);
+    expect(ctx.status).toBe(500);
+    expect(ctx.body).toEqual({
+      error: { status: 500, name: "InternalServerError", message: "Internal Server Error" },
+    });
+    expect(ctx.cookies.set).not.toHaveBeenCalled();
+    expect(strapi._logActivity).toHaveBeenCalledWith(
+      expect.objectContaining({ errorMessage: "resolve_error" })
+    );
+  });
+
   it("returns 500 when the session cannot be minted", async () => {
     service.createSession.mockRejectedValue(new Error("Session manager error: boom"));
     const ctx = makeCtx();
@@ -238,7 +254,12 @@ describe("adminLoginController.login", () => {
       "ana@metacto.com"
     );
     expect(service.resolveAdminUser).not.toHaveBeenCalledWith(expect.anything(), "  Ana@MetaCTO.com ");
-    expect(service.createSession).toHaveBeenCalledWith(7, "dev-1", true, false);
+    expect(service.createSession).toHaveBeenCalledWith(
+      7,
+      "123e4567-e89b-42d3-a456-426614174000",
+      true,
+      false
+    );
     expect(ctx.cookies.set).toHaveBeenCalledWith(
       "strapi_admin_refresh",
       "refresh-1",
@@ -275,5 +296,23 @@ describe("adminLoginController.login", () => {
     expect(typeof deviceId).toBe("string");
     expect((deviceId as string).length).toBeGreaterThan(0);
     expect(rememberMe).toBe(false);
+  });
+
+  it("replaces a non-UUID deviceId with a fresh UUID", async () => {
+    const ctx = makeCtx({ idToken: "id-1", deviceId: "x".repeat(300), rememberMe: false });
+    await createController({ strapi: strapi as never }).login(ctx as never);
+    const [, deviceId] = service.createSession.mock.calls[0];
+    expect(deviceId).not.toBe("x".repeat(300));
+    expect(deviceId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  });
+
+  it("keeps a well-formed deviceId", async () => {
+    const ctx = makeCtx({
+      idToken: "id-1",
+      deviceId: "123e4567-e89b-42d3-a456-426614174000",
+      rememberMe: false,
+    });
+    await createController({ strapi: strapi as never }).login(ctx as never);
+    expect(service.createSession.mock.calls[0][1]).toBe("123e4567-e89b-42d3-a456-426614174000");
   });
 });

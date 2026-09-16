@@ -86,4 +86,50 @@ describe("admin-login rate limiter", () => {
     expect(blocked.status).toBe(429);
     expect(blocked.set).toHaveBeenCalledWith("Retry-After", "300");
   });
+
+  it("keys on ctx.request.ip and ignores x-forwarded-for when a proxy is configured", async () => {
+    const { middleware } = createAdminLoginRateLimiter({ max: 1, windowMs: 60_000, proxyConfigured: true });
+    const next = vi.fn(async () => {});
+    const first = {
+      ...makeCtx("9.9.9.9"),
+      request: { headers: { "x-forwarded-for": "1.1.1.1" }, ip: "9.9.9.9" },
+    };
+    const second = {
+      ...makeCtx("9.9.9.9"),
+      request: { headers: { "x-forwarded-for": "2.2.2.2" }, ip: "9.9.9.9" },
+    };
+    await middleware(first as never, next);
+    await middleware(second as never, next);
+    expect(second.status).toBe(429);
+  });
+
+  it("never tracks more than maxEntries IPs", async () => {
+    const { middleware } = createAdminLoginRateLimiter({ max: 5, windowMs: 60_000, maxEntries: 3 });
+    const next = vi.fn(async () => {});
+    for (let i = 0; i < 10; i += 1) await middleware(makeCtx(`10.0.0.${i}`) as never, next);
+    // The oldest IPs were evicted, so 10.0.0.0 starts a fresh window and is allowed again.
+    const revisit = makeCtx("10.0.0.0");
+    await middleware(revisit as never, next);
+    expect(revisit.status).toBe(200);
+    expect(next).toHaveBeenCalledTimes(11);
+  });
+
+  it("reads server.proxy from strapi config in the Strapi factory", async () => {
+    const factory = (await import("../admin-login-rate-limit")).default;
+    const strapi = { config: { get: vi.fn(() => true) } };
+    const mw = factory({ max: 1, windowMs: 60_000 }, { strapi: strapi as never });
+    const next = vi.fn(async () => {});
+    const a = {
+      ...makeCtx("9.9.9.9"),
+      request: { headers: { "x-forwarded-for": "1.1.1.1" }, ip: "9.9.9.9" },
+    };
+    const b = {
+      ...makeCtx("9.9.9.9"),
+      request: { headers: { "x-forwarded-for": "2.2.2.2" }, ip: "9.9.9.9" },
+    };
+    await mw(a as never, next);
+    await mw(b as never, next);
+    expect(strapi.config.get).toHaveBeenCalledWith("server.proxy");
+    expect(b.status).toBe(429);
+  });
 });

@@ -101,14 +101,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (!role) return { ok: false, reason: "role_not_found" };
 
       const { firstname, lastname } = splitDisplayName(token.name, email);
-      const created = await userService.create({
-        email,
-        firstname,
-        lastname,
-        roles: [role.id],
-        isActive: true,
-        registrationToken: null,
-      });
+      let created: AdminUserRecord;
+      try {
+        created = await userService.create({
+          email,
+          firstname,
+          lastname,
+          roles: [role.id],
+          isActive: true,
+          registrationToken: null,
+        });
+      } catch (error) {
+        // Two first logins for the same email can race; the loser hits the unique index. Re-read and continue.
+        const raced = await userService.findOneByEmail(email, ["roles"]);
+        if (!raced) throw error;
+        if (raced.blocked) return { ok: false, reason: "blocked" };
+        if (raced.isActive !== true) return { ok: false, reason: "inactive" };
+        return { ok: true, user: raced, created: false };
+      }
       return { ok: true, user: created, created: true };
     },
 

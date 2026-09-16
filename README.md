@@ -286,7 +286,7 @@ Requires Strapi 5.24.0 or newer (the plugin detects this at runtime and answers 
 1. Admin opens `https://<your-api-host>/api/firebase-authentication/admin-login`.
 2. Signs in with Firebase on that page.
 3. The plugin verifies the Firebase ID token, checks the allowlist or the `strapiAdmin` custom claim, finds (or creates) the Strapi admin by email, and mints a normal Strapi admin session.
-4. The browser lands in `/admin`, logged in. Session renewal and logout work exactly as with a password login.
+4. The browser lands in `/admin`, logged in. Session renewal and logout work exactly as with a password login. With "Remember me" off, the access token is kept only for the browser session, like Strapi's own login.
 
 ### Configuration
 
@@ -333,7 +333,7 @@ await admin.auth().setCustomUserClaims(uid, { strapiAdmin: true });
 
 - Feature is off by default. Enabling it with an empty allowlist means only the `strapiAdmin` claim grants access; the plugin logs a warning at boot.
 - All 403 denials return the same message, so the endpoint cannot be used to find out which emails have admin accounts. The exact reason is written to the plugin activity log (`admin_login_denied`).
-- The endpoint is rate limited to 5 attempts per 5 minutes per IP.
+- The endpoint is rate limited to 5 attempts per 5 minutes per client IP. When Strapi runs behind a reverse proxy, set Strapi's server.proxy option so the real client address is used; without it, forwarded headers are trusted as-is and a client could spoof its address.
 - Auto-created admins have no password. Password login for existing admins stays available; disabling it requires Strapi's paid SSO feature.
 - The admin panel must be served from the same origin as the API (Strapi default).
 
