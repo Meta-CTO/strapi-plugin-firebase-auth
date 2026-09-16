@@ -36,9 +36,7 @@ SSO license is required.
   - `admin::user.findOneByEmail(email)` (case-insensitive since 5.53),
     `admin::user.create({ email, firstname, lastname, roles, isActive: true })`,
     `admin::user.sanitizeUser(user)`, `admin::role.findOne({ code })`.
-  - Core `POST /admin/login` uses middleware `admin::rateLimit`
-    (5 requests per 5 minutes, keyed by email + path + IP; falls back to
-    `unknownEmail` when the body has no email).
+  - Core POST /admin/login uses an admin-namespaced rate-limit middleware. The plugin does not reference it: a route middleware from another namespace that fails to resolve would break plugin boot for every install. The plugin ships its own per-IP limiter instead (5 requests per 5 minutes).
 - The admin login page in Community Edition cannot be customised, so the
   plugin serves its own sign-in page.
 
@@ -118,7 +116,8 @@ Startup validation (in `register`):
 | `server/src/utils/admin-session-cookie.ts` (new) | `REFRESH_COOKIE_NAME`, `buildRefreshCookieOptions(type, absoluteExpiresAt, secureRequest)`. Mirrors Strapi 5.53 `session-auth.ts` including the RFC 6265 validation of `admin.auth.cookie.domain` and `admin.auth.cookie.path`, `sameSite` default `lax`, secure rules, and the refresh-type expiry `min(idle refresh lifespan, absoluteExpiresAt)` |
 | `server/src/controllers/adminLoginController.ts` (new) | `page(ctx)` for GET, `login(ctx)` for POST. Maps service outcomes to HTTP codes, sets the cookie, logs activity |
 | `server/src/templates/admin-login-page.ts` (new) | Returns the HTML string. Loads the Firebase Web SDK (compat build) from `https://www.gstatic.com`, fetches `firebaseConfig` from the existing public `GET /api/firebase-authentication/config`, renders Google button, email/password form, "remember me" checkbox |
-| `server/src/routes/content-api.ts` | Adds `GET /admin-login` and `POST /admin-login`, both `auth: false`. POST adds `middlewares: ['admin::rateLimit']` |
+| `server/src/routes/content-api.ts` | Adds `GET /admin-login` and `POST /admin-login`, both `auth: false`. POST adds middlewares: ['plugin::firebase-authentication.admin-login-rate-limit'] |
+| `server/src/middlewares/admin-login-rate-limit.ts` (new) | Fixed-window per-IP limiter, 5 per 5 minutes, in memory |
 | `server/src/services/index.ts`, `server/src/controllers/index.ts` | Register the new service and controller |
 | `server/src/register.ts` | Startup validation described in section 4 |
 | `vitest.config.ts`, `package.json` | Vitest dev dependency and `test` script |
@@ -193,9 +192,7 @@ the request.
 - `email_verified` is required. The custom claim must be truthy, not just present.
 - Auto-created admins have no password. The returned user goes through
   Strapi's `sanitizeUser`.
-- The POST route reuses Strapi's `admin::rateLimit` middleware. Because the
-  body carries no `email`, the limit is effectively per IP: 5 attempts per
-  5 minutes.
+- The POST route is rate limited by the plugin's own middleware: 5 attempts per 5 minutes per client IP (x-forwarded-for aware). The limit is per process; multi-instance deployments get a per-instance limit.
 - The refresh cookie is `httpOnly`, `sameSite=lax`, `path=/admin` by default,
   identical to core login, so logout and renewal work unchanged.
 - The Firebase project must list the API host under Authentication >
