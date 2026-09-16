@@ -3,6 +3,8 @@ import migrateFirebaseUserData from "./migrations/migrate-firebase-user-data";
 import ensureUserLinkUniqueConstraint from "./migrations/ensure-user-link-unique-constraint";
 import reportOrphanUsers from "./migrations/report-orphan-users";
 import type { FirebaseAuthConfig } from "./config";
+import { normalizeAdminLoginConfig } from "./utils/admin-login-authorize";
+import { reportAdminLoginStartup } from "./utils/admin-login-startup";
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   // Register permission actions.
@@ -36,6 +38,16 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   await strapi.admin.services.permission.actionProvider.registerMany(actions);
+
+  // Admin login via Firebase: report configuration problems once at boot
+  const adminLoginPluginConfig = (strapi.config.get("plugin::firebase-authentication") ?? {}) as {
+    adminLogin?: unknown;
+  };
+  reportAdminLoginStartup(normalizeAdminLoginConfig(adminLoginPluginConfig.adminLogin), {
+    // @ts-ignore - sessionManager exists from Strapi 5.24 and is not in older type definitions
+    hasSessionManager: typeof strapi.sessionManager === "function",
+    log: strapi.log,
+  });
 
   // Register content-api permissions for public access
   if (strapi.plugin("users-permissions")) {

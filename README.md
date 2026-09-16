@@ -275,6 +275,68 @@ Access at **Plugins → Firebase Authentication**:
 - Send password reset emails
 - View activity logs
 
+## Admin Panel Login with Firebase
+
+Let Strapi administrators sign in to `/admin` with Firebase (Google or email/password) instead of a Strapi password. Works on Strapi Community Edition; no SSO license needed.
+
+Requires Strapi 5.24.0 or newer (the plugin detects this at runtime and answers 503 on older versions).
+
+### How it works
+
+1. Admin opens `https://<your-api-host>/api/firebase-authentication/admin-login`.
+2. Signs in with Firebase on that page.
+3. The plugin verifies the Firebase ID token, checks the allowlist or the `strapiAdmin` custom claim, finds (or creates) the Strapi admin by email, and mints a normal Strapi admin session.
+4. The browser lands in `/admin`, logged in. Session renewal and logout work exactly as with a password login.
+
+### Configuration
+
+Settings live only in `config/plugins.ts` because they decide who can become an administrator.
+
+```ts
+// config/plugins.ts
+export default ({ env }) => ({
+  "firebase-authentication": {
+    enabled: true,
+    config: {
+      firebaseJsonEncryptionKey: env("FIREBASE_JSON_ENCRYPTION_KEY"),
+      adminLogin: {
+        enabled: env.bool("FIREBASE_ADMIN_LOGIN_ENABLED", false),
+        allowedEmails: ["cto@example.com"],          // optional, exact emails
+        allowedDomains: ["example.com"],             // optional, email domains
+        autoCreateRole: "strapi-editor",             // optional; omit to require pre-existing admins
+      },
+    },
+  },
+});
+```
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `false` | Turns the page and the endpoint on. Off returns 404. |
+| `allowedEmails` | `[]` | Exact emails allowed to log in (case-insensitive). |
+| `allowedDomains` | `[]` | Email domains allowed to log in (case-insensitive). |
+| `autoCreateRole` | `null` | Role `code` (for example `strapi-editor`, `strapi-author`, `strapi-super-admin`) given to admins created on first login. `null` means the admin must already exist. |
+
+A Firebase user is allowed when the email is verified and either it is allowlisted (email or domain) or the token carries a truthy custom claim named `strapiAdmin`:
+
+```ts
+await admin.auth().setCustomUserClaims(uid, { strapiAdmin: true });
+```
+
+### Firebase project setup
+
+- Enable the sign-in providers you want (Google, Email/Password) in Firebase Console > Authentication > Sign-in method.
+- Add your API host (for example `api.example.com`) to Firebase Console > Authentication > Settings > Authorized domains. Google sign-in fails without it.
+- Set the Web API key in the plugin settings (Settings > Firebase Authentication). The sign-in page reads it from the public config endpoint.
+
+### Security notes
+
+- Feature is off by default. Enabling it with an empty allowlist means only the `strapiAdmin` claim grants access; the plugin logs a warning at boot.
+- All 403 denials return the same message, so the endpoint cannot be used to find out which emails have admin accounts. The exact reason is written to the plugin activity log (`admin_login_denied`).
+- The endpoint is rate limited to 5 attempts per 5 minutes per IP.
+- Auto-created admins have no password. Password login for existing admins stays available; disabling it requires Strapi's paid SSO feature.
+- The admin panel must be served from the same origin as the API (Strapi default).
+
 ## Troubleshooting
 
 ### "Firebase is not initialized"

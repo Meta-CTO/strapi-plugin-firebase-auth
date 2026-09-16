@@ -136,3 +136,9 @@ yarn-error.log
 ############################
 
 coverage
+
+############################
+# Claude Code / superpowers scratch
+############################
+
+.superpowers/
