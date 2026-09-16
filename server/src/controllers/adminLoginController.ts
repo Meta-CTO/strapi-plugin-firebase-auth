@@ -145,36 +145,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const deviceId = typeof body.deviceId === "string" && body.deviceId ? body.deviceId : randomUUID();
       const rememberMe = body.rememberMe === true;
 
+      let session: Awaited<ReturnType<typeof service.createSession>>;
       try {
-        const session = await service.createSession(
-          resolved.user.id,
-          deviceId,
-          rememberMe,
-          ctx.request.secure
-        );
-        ctx.cookies.set(REFRESH_COOKIE_NAME, session.refreshToken, session.cookieOptions);
-
-        const sanitizeUser = (
-          s.service("admin::user") as { sanitizeUser: (user: AdminUserRecord) => unknown }
-        ).sanitizeUser;
-        log({
-          ctx,
-          success: true,
-          token: decoded,
-          email: authz.email,
-          via: authz.via,
-          created: resolved.created,
-          user: resolved.user,
-        });
-
-        ctx.status = 200;
-        ctx.body = {
-          data: {
-            token: session.accessToken,
-            accessToken: session.accessToken,
-            user: sanitizeUser(resolved.user),
-          },
-        };
+        session = await service.createSession(resolved.user.id, deviceId, rememberMe, ctx.request.secure);
       } catch (error) {
         s.log.error(
           `[Firebase Auth Plugin] Admin login failed to create session: ${(error as Error).message}`
@@ -189,7 +162,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         });
         ctx.status = 500;
         ctx.body = { error: { status: 500, name: "InternalServerError", message: "Internal Server Error" } };
+        return;
       }
+
+      ctx.cookies.set(REFRESH_COOKIE_NAME, session.refreshToken, session.cookieOptions);
+      const sanitizeUser = (s.service("admin::user") as { sanitizeUser: (user: AdminUserRecord) => unknown })
+        .sanitizeUser;
+      log({
+        ctx,
+        success: true,
+        token: decoded,
+        email: authz.email,
+        via: authz.via,
+        created: resolved.created,
+        user: resolved.user,
+      });
+
+      ctx.status = 200;
+      ctx.body = {
+        data: {
+          token: session.accessToken,
+          accessToken: session.accessToken,
+          user: sanitizeUser(resolved.user),
+        },
+      };
     },
   };
 };

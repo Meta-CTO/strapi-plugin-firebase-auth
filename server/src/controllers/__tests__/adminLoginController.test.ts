@@ -27,7 +27,11 @@ const makeService = (over: Record<string, unknown> = {}) => ({
 const makeStrapi = (service: ReturnType<typeof makeService>, over: Record<string, unknown> = {}) => {
   const logActivity = vi.fn(async () => undefined);
   const sanitizeUser = vi.fn((user: Record<string, unknown>) => ({ ...user, sanitized: true }));
-  const verifyIdToken = vi.fn(async () => ({ uid: "uid-1", email: "ana@metacto.com", email_verified: true }));
+  const verifyIdToken = vi.fn(async () => ({
+    uid: "uid-1",
+    email: "  Ana@MetaCTO.com ",
+    email_verified: true,
+  }));
   return {
     config: {
       get: vi.fn((key: string, fallback?: unknown) => {
@@ -81,6 +85,7 @@ describe("adminLoginController.page", () => {
     const ctx = makeCtx();
     await controller.page(ctx as never);
     expect(ctx.status).toBe(404);
+    expect(ctx.notFound).toHaveBeenCalled();
   });
 
   it("returns 503 when unavailable", async () => {
@@ -137,6 +142,7 @@ describe("adminLoginController.login", () => {
     const ctx = makeCtx();
     await createController({ strapi: strapi as never }).login(ctx as never);
     expect(ctx.status).toBe(404);
+    expect(ctx.notFound).toHaveBeenCalled();
     expect(strapi._logActivity).not.toHaveBeenCalled();
   });
 
@@ -220,6 +226,7 @@ describe("adminLoginController.login", () => {
       error: { status: 500, name: "InternalServerError", message: "Internal Server Error" },
     });
     expect(strapi.log.error).toHaveBeenCalled();
+    expect(ctx.cookies.set).not.toHaveBeenCalled();
   });
 
   it("on success sets the refresh cookie and returns the core login body shape", async () => {
@@ -230,6 +237,7 @@ describe("adminLoginController.login", () => {
       expect.objectContaining({ uid: "uid-1" }),
       "ana@metacto.com"
     );
+    expect(service.resolveAdminUser).not.toHaveBeenCalledWith(expect.anything(), "  Ana@MetaCTO.com ");
     expect(service.createSession).toHaveBeenCalledWith(7, "dev-1", true, false);
     expect(ctx.cookies.set).toHaveBeenCalledWith(
       "strapi_admin_refresh",
