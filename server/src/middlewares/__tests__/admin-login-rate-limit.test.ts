@@ -104,14 +104,19 @@ describe("admin-login rate limiter", () => {
   });
 
   it("never tracks more than maxEntries IPs", async () => {
-    const { middleware } = createAdminLoginRateLimiter({ max: 5, windowMs: 60_000, maxEntries: 3 });
+    const { middleware } = createAdminLoginRateLimiter({ max: 1, windowMs: 60_000, maxEntries: 3 });
     const next = vi.fn(async () => {});
-    for (let i = 0; i < 10; i += 1) await middleware(makeCtx(`10.0.0.${i}`) as never, next);
-    // The oldest IPs were evicted, so 10.0.0.0 starts a fresh window and is allowed again.
+    // 10.0.0.0 uses its single allowed attempt.
+    await middleware(makeCtx("10.0.0.0") as never, next);
+    const blockedBeforeEviction = makeCtx("10.0.0.0");
+    await middleware(blockedBeforeEviction as never, next);
+    expect(blockedBeforeEviction.status).toBe(429);
+    // Nine other IPs push the map past maxEntries, evicting the oldest bucket (10.0.0.0).
+    for (let i = 1; i < 10; i += 1) await middleware(makeCtx(`10.0.0.${i}`) as never, next);
+    // Without eviction this would still be 429; with eviction 10.0.0.0 starts a fresh window.
     const revisit = makeCtx("10.0.0.0");
     await middleware(revisit as never, next);
     expect(revisit.status).toBe(200);
-    expect(next).toHaveBeenCalledTimes(11);
   });
 
   it("reads server.proxy from strapi config in the Strapi factory", async () => {
