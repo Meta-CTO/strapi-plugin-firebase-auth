@@ -332,7 +332,7 @@ await admin.auth().setCustomUserClaims(uid, { strapiAdmin: true });
 ### Security notes
 
 - Feature is off by default. Enabling it with an empty allowlist means only the `strapiAdmin` claim grants access; the plugin logs a warning at boot.
-- All denials return the same 403 message, so the endpoint cannot be used to find out which emails have admin accounts. The exact reason is written to the plugin activity log (`admin_login_denied`).
+- All 403 denials return the same message, so the endpoint cannot be used to find out which emails have admin accounts. The exact reason is written to the plugin activity log (`admin_login_denied`).
 - The endpoint is rate limited to 5 attempts per 5 minutes per IP.
 - Auto-created admins have no password. Password login for existing admins stays available; disabling it requires Strapi's paid SSO feature.
 - The admin panel must be served from the same origin as the API (Strapi default).

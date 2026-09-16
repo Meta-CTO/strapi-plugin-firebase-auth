@@ -33,7 +33,7 @@ SSO license is required.
     `POST /admin/access-token` with `credentials: 'include'` on a 401.
   - The cookie helpers in `@strapi/admin/shared/utils/session-auth.ts` are not
     exported from the package. The plugin mirrors them.
-  - `admin::user.findOneByEmail(email)` (case-insensitive since 5.53),
+  - `admin::user.findOneByEmail(email)` (case-insensitive since 5.34),
     `admin::user.create({ email, firstname, lastname, roles, isActive: true })`,
     `admin::user.sanitizeUser(user)`, `admin::role.findOne({ code })`.
   - Core POST /admin/login uses an admin-namespaced rate-limit middleware. The plugin does not reference it: a route middleware from another namespace that fails to resolve would break plugin boot for every install. The plugin ships its own per-IP limiter instead (5 requests per 5 minutes).
@@ -97,7 +97,7 @@ Fixed, not configurable in this iteration:
 - Providers on the page: Google and email/password.
 - Page and API path: `/api/firebase-authentication/admin-login`.
 
-Startup validation (in `register`):
+Startup validation (in `bootstrap`):
 
 - `enabled: true` with empty `allowedEmails` and `allowedDomains` logs a
   warning: only the custom-claim path can grant access.
@@ -119,8 +119,8 @@ Startup validation (in `register`):
 | `server/src/routes/content-api.ts` | Adds `GET /admin-login` and `POST /admin-login`, both `auth: false`. POST adds middlewares: ['plugin::firebase-authentication.admin-login-rate-limit'] |
 | `server/src/middlewares/admin-login-rate-limit.ts` (new) | Fixed-window per-IP limiter, 5 per 5 minutes, in memory |
 | `server/src/services/index.ts`, `server/src/controllers/index.ts` | Register the new service and controller |
-| `server/src/register.ts` | Startup validation described in section 4 |
-| `vitest.config.ts`, `package.json` | Vitest dev dependency and `test` script |
+| `server/src/bootstrap.ts` | Startup validation described in section 4 |
+| `vitest.config.mts`, `package.json` | Vitest dev dependency and `test` script |
 | `README.md` | New section: setup, Firebase "Authorized domains", limitations |
 
 ### Service contracts

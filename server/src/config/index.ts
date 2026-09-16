@@ -112,7 +112,7 @@ export default {
       }
     }
 
-    if (config.adminLogin !== undefined) {
+    if (config.adminLogin !== undefined && config.adminLogin !== null) {
       const block = config.adminLogin as Record<string, unknown>;
       const isStringArray = (value: unknown) =>
         Array.isArray(value) && value.every((item) => typeof item === "string");

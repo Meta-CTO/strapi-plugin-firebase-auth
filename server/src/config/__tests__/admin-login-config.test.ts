@@ -56,6 +56,10 @@ describe("adminLogin config validator", () => {
       /adminLogin.enabled must be a boolean/
     );
   });
+
+  it("accepts adminLogin: null as feature off", () => {
+    expect(() => config.validator({ ...base, adminLogin: null })).not.toThrow();
+  });
 });
 
 describe("normalizeAdminLoginConfig", () => {
@@ -81,5 +85,9 @@ describe("normalizeAdminLoginConfig", () => {
 
   it("treats empty autoCreateRole as null", () => {
     expect(normalizeAdminLoginConfig({ autoCreateRole: "  " }).autoCreateRole).toBeNull();
+  });
+
+  it("treats null as the defaults", () => {
+    expect(normalizeAdminLoginConfig(null)).toEqual(DEFAULT_ADMIN_LOGIN_CONFIG);
   });
 });

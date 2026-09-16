@@ -178,6 +178,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         user: resolved.user,
       });
 
+      ctx.set("Cache-Control", "no-store");
       ctx.status = 200;
       ctx.body = {
         data: {

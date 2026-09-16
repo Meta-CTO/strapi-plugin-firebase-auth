@@ -107,6 +107,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         lastname,
         roles: [role.id],
         isActive: true,
+        registrationToken: null,
       });
       return { ok: true, user: created, created: true };
     },

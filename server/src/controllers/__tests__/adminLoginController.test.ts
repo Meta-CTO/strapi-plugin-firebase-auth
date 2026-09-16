@@ -253,6 +253,7 @@ describe("adminLoginController.login", () => {
       },
     });
     expect(strapi._sanitizeUser).toHaveBeenCalled();
+    expect(ctx.set).toHaveBeenCalledWith("Cache-Control", "no-store");
     expect(strapi._logActivity).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "admin_login",

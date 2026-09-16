@@ -109,7 +109,7 @@ export function renderAdminLoginPage(options: AdminLoginPageOptions): string {
     buttons.forEach(function (b) { b.disabled = state; });
   }
   function deviceId() {
-    var key = "firebaseAdminLoginDeviceId";
+    var key = "strapi.admin.deviceId";
     var existing = localStorage.getItem(key);
     if (existing) return existing;
     var id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);

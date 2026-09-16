@@ -59,6 +59,11 @@ describe("renderAdminLoginPage", () => {
     expect(html).toContain("signInWithEmailAndPassword");
     expect(html).toContain('id="remember"');
   });
+
+  it("stores the device id under the admin UI's key so logout revokes the session", () => {
+    expect(html).toContain('"strapi.admin.deviceId"');
+    expect(html).not.toContain("firebaseAdminLoginDeviceId");
+  });
 });
 
 describe("buildAdminLoginCsp", () => {

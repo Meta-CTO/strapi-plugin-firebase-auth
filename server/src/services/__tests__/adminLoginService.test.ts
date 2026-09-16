@@ -178,6 +178,7 @@ describe("adminLoginService.resolveAdminUser", () => {
       lastname: "Silva",
       roles: [3],
       isActive: true,
+      registrationToken: null,
     });
   });
 
