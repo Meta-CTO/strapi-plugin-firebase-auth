@@ -88,5 +88,24 @@ export default {
         policies: ["plugin::firebase-authentication.is-authenticated"],
       },
     },
+    {
+      method: "GET",
+      path: "/admin-login",
+      handler: "adminLoginController.page",
+      config: {
+        auth: false, // Public page - sign-in happens on it
+        policies: [],
+      },
+    },
+    {
+      method: "POST",
+      path: "/admin-login",
+      handler: "adminLoginController.login",
+      config: {
+        auth: false, // Public endpoint - the Firebase ID token IS the credential
+        policies: [],
+        middlewares: ["plugin::firebase-authentication.admin-login-rate-limit"],
+      },
+    },
   ],
 };
