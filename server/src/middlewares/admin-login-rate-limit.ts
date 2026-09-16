@@ -1,19 +1,17 @@
 import type { Core } from "@strapi/strapi";
 import type Koa from "koa";
-import { getClientIP } from "../utils/client-ip";
+import { getPeerIP } from "../utils/client-ip";
 
 export type AdminLoginRateLimitOptions = {
-  /** Attempts allowed per IP inside one window. Default 5. */
+  /** Attempts allowed per peer address inside one window. Default 20. */
   max?: number;
   /** Window length in milliseconds. Default 5 minutes. */
   windowMs?: number;
-  /** Whether Strapi configured Koa as proxy-aware (server.proxy.koa); see getClientIP. */
-  proxyConfigured?: boolean;
   /** Hard cap on tracked IPs. Default 10000. */
   maxEntries?: number;
 };
 
-const DEFAULT_MAX = 5;
+const DEFAULT_MAX = 20;
 const DEFAULT_WINDOW_MS = 5 * 60 * 1000;
 const DEFAULT_MAX_ENTRIES = 10_000;
 
@@ -48,7 +46,7 @@ export function createAdminLoginRateLimiter(options: AdminLoginRateLimitOptions 
       }
     }
 
-    const ip = getClientIP(ctx, { proxyConfigured: options.proxyConfigured });
+    const ip = getPeerIP(ctx);
     const bucket = buckets.get(ip);
 
     if (!bucket || now - bucket.windowStart >= windowMs) {
@@ -81,8 +79,5 @@ export function createAdminLoginRateLimiter(options: AdminLoginRateLimitOptions 
  * Strapi route-middleware factory. Referenced from routes as
  * "plugin::firebase-authentication.admin-login-rate-limit".
  */
-export default (config: AdminLoginRateLimitOptions, { strapi }: { strapi: Core.Strapi }) =>
-  createAdminLoginRateLimiter({
-    ...(config ?? {}),
-    proxyConfigured: Boolean(strapi.config.get("server.proxy.koa")),
-  }).middleware;
+export default (config: AdminLoginRateLimitOptions, _ctx: { strapi: Core.Strapi }) =>
+  createAdminLoginRateLimiter(config ?? {}).middleware;

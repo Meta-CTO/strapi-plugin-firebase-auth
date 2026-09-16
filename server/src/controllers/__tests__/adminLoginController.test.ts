@@ -160,14 +160,8 @@ describe("adminLoginController.login", () => {
     await createController({ strapi: strapi as never }).login(ctx as never);
     expect(ctx.status).toBe(401);
     expect(ctx.body).toMatchObject({ error: { message: "Authentication failed" } });
-    expect(strapi._logActivity).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "admin_login_denied",
-        firebaseUserId: "unknown",
-        errorMessage: "token_missing",
-        success: false,
-      })
-    );
+    expect(strapi._logActivity).not.toHaveBeenCalled();
+    expect(strapi.log.warn).toHaveBeenCalledWith(expect.stringContaining("without an idToken"));
   });
 
   it("returns 401 when Firebase rejects the token, with revocation check on", async () => {

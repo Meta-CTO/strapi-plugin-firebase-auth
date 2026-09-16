@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { getClientIP } from "../client-ip";
+import { getClientIP, getPeerIP } from "../client-ip";
 
-const ctx = (headers: Record<string, string | string[] | undefined>, ip?: string) => ({
-  request: { headers, ip },
+const ctx = (headers: Record<string, string | string[] | undefined>, ip?: string, peer?: string) => ({
+  request: { headers, ip, socket: peer === undefined ? undefined : { remoteAddress: peer } },
 });
 
 describe("getClientIP", () => {
@@ -26,13 +26,16 @@ describe("getClientIP", () => {
     expect(getClientIP(ctx({}, "9.9.9.9"))).toBe("9.9.9.9");
     expect(getClientIP(ctx({}))).toBe("unknown");
   });
+});
 
-  it("ignores forwarded headers and uses ctx.request.ip when a proxy is configured", () => {
-    expect(
-      getClientIP(ctx({ "x-forwarded-for": "1.1.1.1", "x-real-ip": "5.5.5.5" }, "9.9.9.9"), {
-        proxyConfigured: true,
-      })
-    ).toBe("9.9.9.9");
-    expect(getClientIP(ctx({}), { proxyConfigured: true })).toBe("unknown");
+describe("getPeerIP", () => {
+  it("uses the TCP peer address and ignores every forwarded header", () => {
+    const c = ctx({ "x-forwarded-for": "1.1.1.1", "x-real-ip": "5.5.5.5" }, "1.1.1.1", "9.9.9.9");
+    expect(getPeerIP(c)).toBe("9.9.9.9");
+  });
+
+  it("falls back to ctx.request.ip, then unknown, when there is no socket", () => {
+    expect(getPeerIP(ctx({}, "8.8.8.8"))).toBe("8.8.8.8");
+    expect(getPeerIP(ctx({}))).toBe("unknown");
   });
 });

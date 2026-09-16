@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createAdminLoginRateLimiter } from "../admin-login-rate-limit";
 
 const makeCtx = (ip: string) => ({
-  request: { headers: {}, ip },
+  request: { headers: {}, ip, socket: { remoteAddress: ip } },
   status: 200,
   body: undefined as unknown,
   set: vi.fn(),
@@ -61,46 +61,51 @@ describe("admin-login rate limiter", () => {
     expect(next).toHaveBeenCalledTimes(2);
   });
 
-  it("uses x-forwarded-for when present", async () => {
+  it("gives two peers sharing a forwarded header separate buckets", async () => {
+    // A client cannot forge x-forwarded-for to burn through someone else's allowance either.
     const { middleware } = createAdminLoginRateLimiter({ max: 1, windowMs: 60_000 });
     const next = vi.fn(async () => {});
-    const first = {
-      ...makeCtx("9.9.9.9"),
-      request: { headers: { "x-forwarded-for": "7.7.7.7" }, ip: "9.9.9.9" },
-    };
-    const second = {
-      ...makeCtx("8.8.8.8"),
-      request: { headers: { "x-forwarded-for": "7.7.7.7" }, ip: "8.8.8.8" },
-    };
-    await middleware(first as never, next);
-    await middleware(second as never, next);
-    expect(second.status).toBe(429);
+    const peer = (remoteAddress: string) => ({
+      ...makeCtx(remoteAddress),
+      request: { headers: { "x-forwarded-for": "7.7.7.7" }, ip: "7.7.7.7", socket: { remoteAddress } },
+    });
+    await middleware(peer("9.9.9.9") as never, next);
+    const other = peer("8.8.8.8");
+    await middleware(other as never, next);
+    expect(other.status).toBe(200);
   });
 
-  it("defaults to 5 attempts per 5 minutes", async () => {
+  it("defaults to 20 attempts per 5 minutes", async () => {
     const { middleware } = createAdminLoginRateLimiter();
     const next = vi.fn(async () => {});
-    for (let i = 0; i < 5; i += 1) await middleware(makeCtx("1.1.1.1") as never, next);
+    for (let i = 0; i < 20; i += 1) await middleware(makeCtx("1.1.1.1") as never, next);
     const blocked = makeCtx("1.1.1.1");
     await middleware(blocked as never, next);
     expect(blocked.status).toBe(429);
     expect(blocked.set).toHaveBeenCalledWith("Retry-After", "300");
   });
 
-  it("keys on ctx.request.ip and ignores x-forwarded-for when a proxy is configured", async () => {
-    const { middleware } = createAdminLoginRateLimiter({ max: 1, windowMs: 60_000, proxyConfigured: true });
+  it("keys on the TCP peer address, so rotating x-forwarded-for cannot open new buckets", async () => {
+    const { middleware } = createAdminLoginRateLimiter({ max: 1, windowMs: 60_000 });
     const next = vi.fn(async () => {});
-    const first = {
+    const spoof = (xff: string) => ({
       ...makeCtx("9.9.9.9"),
-      request: { headers: { "x-forwarded-for": "1.1.1.1" }, ip: "9.9.9.9" },
-    };
-    const second = {
-      ...makeCtx("9.9.9.9"),
-      request: { headers: { "x-forwarded-for": "2.2.2.2" }, ip: "9.9.9.9" },
-    };
-    await middleware(first as never, next);
+      request: { headers: { "x-forwarded-for": xff }, ip: xff, socket: { remoteAddress: "9.9.9.9" } },
+    });
+    await middleware(spoof("1.1.1.1") as never, next);
+    const second = spoof("2.2.2.2");
     await middleware(second as never, next);
     expect(second.status).toBe(429);
+  });
+
+  it("the Strapi factory returns a working limiter", async () => {
+    const factory = (await import("../admin-login-rate-limit")).default;
+    const mw = factory({ max: 1, windowMs: 60_000 }, { strapi: {} as never });
+    const next = vi.fn(async () => {});
+    await mw(makeCtx("7.7.7.7") as never, next);
+    const blocked = makeCtx("7.7.7.7");
+    await mw(blocked as never, next);
+    expect(blocked.status).toBe(429);
   });
 
   it("never tracks more than maxEntries IPs", async () => {
@@ -117,24 +122,5 @@ describe("admin-login rate limiter", () => {
     const revisit = makeCtx("10.0.0.0");
     await middleware(revisit as never, next);
     expect(revisit.status).toBe(200);
-  });
-
-  it("reads server.proxy.koa from strapi config in the Strapi factory", async () => {
-    const factory = (await import("../admin-login-rate-limit")).default;
-    const strapi = { config: { get: vi.fn(() => true) } };
-    const mw = factory({ max: 1, windowMs: 60_000 }, { strapi: strapi as never });
-    const next = vi.fn(async () => {});
-    const a = {
-      ...makeCtx("9.9.9.9"),
-      request: { headers: { "x-forwarded-for": "1.1.1.1" }, ip: "9.9.9.9" },
-    };
-    const b = {
-      ...makeCtx("9.9.9.9"),
-      request: { headers: { "x-forwarded-for": "2.2.2.2" }, ip: "9.9.9.9" },
-    };
-    await mw(a as never, next);
-    await mw(b as never, next);
-    expect(strapi.config.get).toHaveBeenCalledWith("server.proxy.koa");
-    expect(b.status).toBe(429);
   });
 });

@@ -59,7 +59,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       action: success ? "admin_login" : "admin_login_denied",
       endpoint: ctx.path,
       method: ctx.method,
-      ipAddress: getClientIP(ctx, { proxyConfigured: Boolean(s.config.get("server.proxy.koa")) }),
+      ipAddress: getClientIP(ctx),
       userAgent: ctx.request.headers["user-agent"],
       success,
       errorMessage: success ? undefined : reason,
@@ -112,7 +112,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         rememberMe?: unknown;
       };
       if (typeof body.idToken !== "string" || body.idToken.length === 0) {
-        log({ ctx, success: false, reason: "token_missing" });
+        // Logged, not stored: this path needs no credential, so writing a row per request would
+        // let anyone grow the activity-log table from an unauthenticated endpoint.
+        s.log.warn("[Firebase Auth Plugin] Admin login called without an idToken");
         return ctx.unauthorized(MESSAGES.authFailed);
       }
 
