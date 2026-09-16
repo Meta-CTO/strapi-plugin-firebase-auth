@@ -18,6 +18,10 @@ describe("getClientIP", () => {
     expect(getClientIP(ctx({ "x-real-ip": "5.5.5.5" }, "9.9.9.9"))).toBe("5.5.5.5");
   });
 
+  it("accepts an array x-real-ip", () => {
+    expect(getClientIP(ctx({ "x-real-ip": ["6.6.6.6", "7.7.7.7"] }, "9.9.9.9"))).toBe("6.6.6.6");
+  });
+
   it("falls back to ctx.request.ip, then unknown", () => {
     expect(getClientIP(ctx({}, "9.9.9.9"))).toBe("9.9.9.9");
     expect(getClientIP(ctx({}))).toBe("unknown");
